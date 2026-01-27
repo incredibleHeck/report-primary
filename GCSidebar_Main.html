@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <?!= include('GCSidebar_CSS'); ?>
+  
+</head>
+<body>
+
+  <div class="header">
+    <div class="student-info">
+      Generating for: <span id="studentNameDisplay">Loading...</span>
+    </div>
+    <input type="text" id="searchTraits" class="search-box" placeholder="🔍 Search traits (e.g. 'Polite', 'Talkative')...">
+  </div>
+
+  <div id="accordionContainer">
+    <div style="padding: 20px; text-align: center; color: #999;">
+      Loading Categories...
+    </div>
+  </div>
+
+  <div class="footer">
+    <button id="generateBtn" class="btn-primary" disabled>
+      <span id="btnText">GENERATE COMMENT</span>
+      <div id="loadingSpinner" class="spinner"></div>
+    </button>
+  </div>
+
+  <?!= include('GCSidebar_JS'); ?>
+
+</body>
+</html>

@@ -1,0 +1,221 @@
+<script>
+    let currentRowIndex = null;
+    let currentStudentName = "";
+    let pollingInterval = null;
+
+    // 1. START POLLING ON LOAD
+    window.onload = function() { 
+      loadStudentData(); 
+      startPolling(); 
+    };
+
+    function startPolling() {
+      // Check every 1 second (1000ms) if the user moved to a new row
+      pollingInterval = setInterval(function() {
+        google.script.run
+          .withSuccessHandler(checkSelectionChange)
+          .pollCurrentStudent(); 
+      }, 1000);
+    }
+
+    // 2. CHECK IF SELECTION CHANGED
+    function checkSelectionChange(result) {
+      // If row index is different, we reload the data
+      if (result && result.valid && result.rowIndex !== currentRowIndex) {
+        console.log("New student detected at row " + result.rowIndex);
+        loadStudentData(); 
+      }
+    }
+
+    function loadStudentData() {
+      disableUI(true);
+      google.script.run
+        .withSuccessHandler(renderSidebar)
+        .withFailureHandler(showError)
+        .getSidebarData();
+    }
+
+    function renderSidebar(data) {
+      if (data.error) {
+        document.getElementById('studentNameDisplay').innerHTML = `<span style="color:red; font-size:12px;">${data.error}</span>`;
+        disableUI(false); 
+        return;
+      }
+
+      // ---------------------------------------------------------
+      // 🛡️ THE FIX: DETECT STUDENT CHANGE & CLEAR TRAITS
+      // ---------------------------------------------------------
+      // If we have a previous name, and the new name is different...
+      if (currentStudentName !== "" && currentStudentName !== data.studentName) {
+          clearTraits(); // Uncheck all boxes
+          console.log("Student changed. Traits reset.");
+      }
+      // ---------------------------------------------------------
+
+      // Update State
+      currentRowIndex = data.rowIndex;
+      currentStudentName = data.studentName;
+
+      document.getElementById('studentNameDisplay').textContent = data.studentName;
+
+      // Only build the Accordion DOM if it's empty (First Load) 
+      const container = document.getElementById('accordionContainer');
+      if (container.innerHTML.trim() === "" || container.innerText.includes("Loading")) {
+          renderAccordionContent(data.traits);
+      }
+      
+      disableUI(false);
+    }
+
+    /**
+     * Helper to uncheck all boxes (The Clean Slate)
+     */
+    function clearTraits() {
+      const checkboxes = document.querySelectorAll('input[name="traitCheckbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+      });
+    }
+
+    function renderAccordionContent(traitsData) {
+      const container = document.getElementById('accordionContainer');
+      container.innerHTML = ''; 
+
+      let first = true;
+      for (const [category, traits] of Object.entries(traitsData)) {
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'accordion-item';
+
+        const header = document.createElement('div');
+        header.className = 'accordion-header';
+        header.innerHTML = `${category} <span class="arrow">▼</span>`;
+        header.onclick = function() { toggleAccordion(this); };
+        
+        const content = document.createElement('div');
+        content.className = 'accordion-content';
+        
+        const grid = document.createElement('div');
+        grid.className = 'checkbox-grid';
+
+        traits.forEach(trait => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-item';
+          label.innerHTML = `<input type="checkbox" name="traitCheckbox" value="${trait}"><span>${trait}</span>`;
+          grid.appendChild(label);
+        });
+
+        content.appendChild(grid);
+        itemDiv.appendChild(header);
+        itemDiv.appendChild(content);
+        container.appendChild(itemDiv);
+
+        if (first) {
+          header.classList.add('active');
+          content.style.maxHeight = content.scrollHeight + "px";
+          first = false;
+        }
+      }
+    }
+
+    function toggleAccordion(header) {
+      const content = header.nextElementSibling;
+      const isActive = header.classList.contains('active');
+
+      // Optional: Close others when opening one (Accordion style)
+      // Remove this block if you want multiple sections open at once
+      document.querySelectorAll('.accordion-header').forEach(h => {
+        h.classList.remove('active');
+        h.nextElementSibling.style.maxHeight = null;
+      });
+
+      if (!isActive) {
+        header.classList.add('active');
+        content.style.maxHeight = content.scrollHeight + "px";
+      }
+    }
+
+    document.getElementById('searchTraits').addEventListener('input', function(e) {
+      const term = e.target.value.toLowerCase();
+      const items = document.querySelectorAll('.accordion-item');
+
+      items.forEach(item => {
+        const checkboxes = item.querySelectorAll('.checkbox-item');
+        let hasMatch = false;
+
+        checkboxes.forEach(box => {
+          const text = box.innerText.toLowerCase();
+          if (text.includes(term)) {
+            box.style.display = 'flex';
+            hasMatch = true;
+          } else {
+            box.style.display = 'none';
+          }
+        });
+
+        if (term === "") {
+          item.style.display = 'block';
+          item.querySelector('.accordion-content').style.maxHeight = null;
+          item.querySelector('.accordion-header').classList.remove('active');
+        } else if (hasMatch) {
+          item.style.display = 'block';
+          item.querySelector('.accordion-header').classList.add('active');
+          item.querySelector('.accordion-content').style.maxHeight = "1000px"; // Force open
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+
+    document.getElementById('generateBtn').addEventListener('click', function() {
+      const selected = [];
+      document.querySelectorAll('input[name="traitCheckbox"]:checked').forEach(cb => { selected.push(cb.value); });
+
+      if (selected.length === 0) {
+        showToast("Please select at least one trait.", "orange");
+        return;
+      }
+
+      const btn = document.getElementById('generateBtn');
+      const text = document.getElementById('btnText');
+      const spinner = document.getElementById('loadingSpinner');
+      
+      btn.disabled = true;
+      text.textContent = "WRITING...";
+      spinner.style.display = "inline-block";
+
+      google.script.run
+        .withSuccessHandler(function() {
+          text.textContent = "DONE! ✨";
+          spinner.style.display = "none";
+          setTimeout(() => {
+            btn.disabled = false;
+            text.textContent = "REGENERATE"; 
+          }, 2000);
+        })
+        .withFailureHandler(function(err) {
+          text.textContent = "RETRY";
+          spinner.style.display = "none";
+          btn.disabled = false;
+          showError(err);
+        })
+        .processGeneralCommentWithTraits(selected, currentRowIndex);
+    });
+
+    function showToast(msg, color) {
+      const originalText = document.getElementById('studentNameDisplay').innerHTML;
+      document.getElementById('studentNameDisplay').innerHTML = `<span style="color:${color}">${msg}</span>`;
+      setTimeout(() => { document.getElementById('studentNameDisplay').innerHTML = originalText; }, 3000);
+    }
+
+    function disableUI(loading) {
+      document.getElementById('generateBtn').disabled = loading;
+      if(loading) document.getElementById('btnText').innerText = "LOADING...";
+      else document.getElementById('btnText').innerText = "GENERATE COMMENT";
+    }
+
+    function showError(e) {
+      document.getElementById('studentNameDisplay').innerText = "Error";
+      alert(e);
+    }
+</script>
