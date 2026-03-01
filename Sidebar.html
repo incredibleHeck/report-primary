@@ -433,12 +433,12 @@
     </div>
 
     <script>
-      const MAX_CONCURRENT_REQUESTS = 2;
+      const MAX_CONCURRENT_REQUESTS = 3;
       const MAX_RETRIES = 3;
 
       let totalRows = 0;
       let rowsCompleted = 0;
-      let chunkSize = 15;
+      let chunkSize = 10;
       let currentAction = "";
       let isCancelled = false;
       let chunkQueue = [];
@@ -513,7 +513,7 @@
         }
 
         totalRows = info.numRows;
-        chunkSize = info.chunkSize || 15;
+        chunkSize = info.chunkSize || 10;
         currentAction = info.action;
         
         document.getElementById('sidebar-title').textContent = info.title;
