@@ -40,7 +40,7 @@ const MidtermReportGenerator = {
         const contactData = contactSheet.getDataRange().getValues();
         const contactMap = new Map();
         for (let r = 1; r < contactData.length; r++) {
-            const cName = contactData[r][0];
+            const cName = contactData[r][Config.COL_NAME - 1];
             if (cName) {
                 contactMap.set(Config.normalizeName(cName), r);
             }
@@ -86,7 +86,7 @@ const MidtermReportGenerator = {
         }
 
         if (successCount > 0) {
-            contactSheet.getRange(1, Config.COL_PDF_ID, pdfUpdates.length, 2).setValues(pdfUpdates);
+            contactSheet.getRange(2, Config.COL_PDF_ID, pdfUpdates.length - 1, 2).setValues(pdfUpdates.slice(1));
         }
 
         const msg = isPreview 
@@ -104,9 +104,9 @@ const MidtermReportGenerator = {
         
         // --- HEADER ROWS 6-8 ---
         const headerData = [
-            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "", "No. on Roll: 25", ""],
-            ["Class: YEAR FIVE (A)", "", "", "", "", "Programme: PRIMARY", "", "", "", "", "Year: 2025 / 2026 Term: ONE (1)", ""],
-            ["SCHOOL BREAKS: 11TH DECEMBER 2025", "", "", "", "", "", "", "SCHOOL RESUMES: 6TH JANUARY 2026", "", "", "", ""]
+            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "", "No. on Roll: " + Config.ROLL_COUNT, ""],
+            ["Class: " + Config.CLASS_NAME, "", "", "", "", "Programme: PRIMARY", "", "", "", "", Config.TERM_YEAR_INFO, ""],
+            [Config.SCHOOL_BREAKS, "", "", "", "", "", "", Config.SCHOOL_RESUMES, "", "", "", ""]
         ];
         sheet.getRange("A6:L8").setValues(headerData);
         
@@ -141,12 +141,12 @@ const MidtermReportGenerator = {
 
         sheet.getRange(this.CELLS.NAME).setValue("STUDENT NAME: ");
         sheet.getRange(this.CELLS.ID).setValue("STUDENT ID: ");
-        sheet.getRange(this.CELLS.ROLL).setValue("No. on Roll: 25"); 
-        sheet.getRange(this.CELLS.CLASS).setValue("Class: YEAR FIVE (A)");
+        sheet.getRange(this.CELLS.ROLL).setValue("No. on Roll: " + Config.ROLL_COUNT); 
+        sheet.getRange(this.CELLS.CLASS).setValue("Class: " + Config.CLASS_NAME);
         sheet.getRange(this.CELLS.PROG).setValue("Programme: PRIMARY");
-        sheet.getRange(this.CELLS.YEAR).setValue("Year: 2025 / 2026 Term: ONE (1)");
-        sheet.getRange(this.CELLS.BREAK).setValue("SCHOOL BREAKS: 11TH DECEMBER 2025");
-        sheet.getRange(this.CELLS.RESUME).setValue("SCHOOL RESUMES: 6TH JANUARY 2026");
+        sheet.getRange(this.CELLS.YEAR).setValue(Config.TERM_YEAR_INFO);
+        sheet.getRange(this.CELLS.BREAK).setValue(Config.SCHOOL_BREAKS);
+        sheet.getRange(this.CELLS.RESUME).setValue(Config.SCHOOL_RESUMES);
 
         sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
         sheet.getRange("G20").setValue("Out of: 700");

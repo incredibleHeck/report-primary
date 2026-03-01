@@ -2,21 +2,42 @@
  * Centralized API Management - SuperBatch with Retry Logic
  * HECKTECK API.js
  */
-
 const APICache = {
     get: (key) => {
         try {
             return CacheService.getUserCache().get(key);
         } catch (e) {
+            logSysError("Cache Get Failed", e.message);
             return null;
         }
     },
     set: (key, value) => {
         try {
+            // TTL: 6 hours
             CacheService.getUserCache().put(key, value, 21600);
-        } catch (e) { }
+        } catch (e) {
+            logSysError("Cache Set Failed", e.message);
+        }
     }
 };
+
+/**
+ * Helper to log critical errors to a hidden SYS_LOGS sheet.
+ */
+function logSysError(action, message) {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName("SYS_LOGS");
+        if (!sheet) {
+            sheet = ss.insertSheet("SYS_LOGS");
+            sheet.hideSheet();
+            sheet.appendRow(["Timestamp", "User", "Action", "Error"]);
+        }
+        sheet.appendRow([new Date(), Session.getActiveUser().getEmail(), action, message]);
+    } catch (e) {
+        console.error("Failed to write to SYS_LOGS", e);
+    }
+}
 
 /**
  * User-friendly error messages for common API issues

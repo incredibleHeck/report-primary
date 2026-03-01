@@ -91,12 +91,10 @@ const EmailManager = {
    * Sends email with exponential backoff retry
    */
   sendSingleReport: function(studentName, parentEmail, pdfId, attempt = 1) {
-    const MAX_RETRIES = 3;
-    
     try {
       const file = DriveApp.getFileById(pdfId);
       const pdfBlob = file.getAs(MimeType.PDF);
-      
+
       const htmlBody = `
         <div style="font-family: Arial, sans-serif;">
           <h2 style="color: #2c3e50;">Academic Report</h2>
@@ -113,20 +111,12 @@ const EmailManager = {
 
       return { success: true };
     } catch (e) {
-      const errorMsg = e.message.toLowerCase();
-      const isRetryable = errorMsg.includes("service") || 
-                          errorMsg.includes("unavailable") || 
-                          errorMsg.includes("timeout") ||
-                          errorMsg.includes("limit") ||
-                          errorMsg.includes("try again");
-      
-      if (isRetryable && attempt <= MAX_RETRIES) {
-        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-        console.warn(`Email retry ${attempt}/${MAX_RETRIES} for ${studentName} in ${delay}ms`);
-        Utilities.sleep(delay);
-        return this.sendSingleReport(studentName, parentEmail, pdfId, attempt + 1);
+      if (attempt <= 3) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.warn(`Email Busy/Failed. Retrying in ${delay}ms...`);
+          Utilities.sleep(delay);
+          return this.sendSingleReport(studentName, parentEmail, pdfId, attempt + 1);
       }
-      
       return { success: false, error: e.message };
     }
   }

@@ -48,7 +48,7 @@ const ReportCardGenerator = {
         const contactData = contactSheet.getDataRange().getValues();
         const contactMap = new Map();
         for (let r = 1; r < contactData.length; r++) {
-            const cName = contactData[r][0];
+            const cName = contactData[r][Config.COL_NAME - 1];
             if (cName) {
                 contactMap.set(Config.normalizeName(cName), r);
             }
@@ -98,7 +98,7 @@ const ReportCardGenerator = {
 
         // Bulk write-back updated D:E columns to Contact List
         if (successCount > 0) {
-            contactSheet.getRange(1, Config.COL_PDF_ID, pdfUpdates.length, 2).setValues(pdfUpdates);
+            contactSheet.getRange(2, Config.COL_PDF_ID, pdfUpdates.length - 1, 2).setValues(pdfUpdates.slice(1));
         }
 
         const msg = isPreview 
@@ -117,9 +117,9 @@ const ReportCardGenerator = {
         
         // --- HEADER ROW 6-8: Use batch setValues for 3 rows ---
         const headerData = [
-            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "No. on Roll: 25", "", ""],
-            ["Class: YEAR FIVE (A)", "", "", "", "", "Attendance: " + row[cols.ATTENDANCE] + " / " + attendanceTotal, "", "", "", "Year: 2025 / 2026 Term: ONE (1)", "", ""],
-            ["Programme: PRIMARY", "", "", "", "", "DATE: 11TH DECEMBER 2025.", "", "", "Term: ONE (1)", "Next Term Begins 6TH JANUARY 2026.", "", ""]
+            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "No. on Roll: " + Config.ROLL_COUNT, "", ""],
+            ["Class: " + Config.CLASS_NAME, "", "", "", "", "Attendance: " + row[cols.ATTENDANCE] + " / " + attendanceTotal, "", "", "", Config.TERM_YEAR_INFO, "", ""],
+            ["Programme: PRIMARY", "", "", "", "", Config.REPORT_DATE, "", "", "", Config.NEXT_TERM_BEGINS, "", ""]
         ];
         sheet.getRange("A6:L8").setValues(headerData);
         
@@ -168,14 +168,13 @@ const ReportCardGenerator = {
 
         sheet.getRange(this.CELLS.NAME).setValue("STUDENT NAME: ");
         sheet.getRange(this.CELLS.ID).setValue("STUDENT ID: ");
-        sheet.getRange(this.CELLS.ROLL).setValue("No. on Roll: 25"); 
-        sheet.getRange(this.CELLS.CLASS).setValue("Class: YEAR FIVE (A)");
+        sheet.getRange(this.CELLS.ROLL).setValue("No. on Roll: " + Config.ROLL_COUNT); 
+        sheet.getRange(this.CELLS.CLASS).setValue("Class: " + Config.CLASS_NAME);
         sheet.getRange(this.CELLS.ATT).setValue("Attendance: ");
-        sheet.getRange(this.CELLS.YEAR).setValue("Year: 2025 / 2026 Term: ONE (1)");
+        sheet.getRange(this.CELLS.YEAR).setValue(Config.TERM_YEAR_INFO);
         sheet.getRange(this.CELLS.PROG).setValue("Programme: PRIMARY");
-        sheet.getRange(this.CELLS.DATE).setValue("DATE: 11TH DECEMBER 2025.");
-        sheet.getRange(this.CELLS.TERM).setValue("Term: ONE (1)");
-        sheet.getRange(this.CELLS.NEXT_TERM).setValue("Next Term Begins 6TH JANUARY 2026.");
+        sheet.getRange(this.CELLS.DATE).setValue(Config.REPORT_DATE);
+        sheet.getRange(this.CELLS.NEXT_TERM).setValue(Config.NEXT_TERM_BEGINS);
 
         sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
         sheet.getRange(this.CELLS.OUT_OF).setValue(`Out of: ${Object.keys(Config.SUBJECT_CONFIG).length * 100}`);

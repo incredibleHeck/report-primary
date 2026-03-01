@@ -39,6 +39,15 @@ const DynamicConfig = {
     get DATA_START_ROW() { return this._getInt("DATA_START_ROW", 3); }, 
     get ATTENDANCE_TOTAL() { return this._getInt("ATTENDANCE_TOTAL", 64); },
 
+    // --- TEMPLATE STRINGS ---
+    get CLASS_NAME() { return this._get("CLASS_NAME") || "YEAR FIVE (A)"; },
+    get ROLL_COUNT() { return this._get("ROLL_COUNT") || "25"; },
+    get TERM_YEAR_INFO() { return this._get("TERM_YEAR_INFO") || "Year: 2025 / 2026 Term: ONE (1)"; },
+    get REPORT_DATE() { return this._get("REPORT_DATE") || "11TH DECEMBER 2025."; },
+    get NEXT_TERM_BEGINS() { return this._get("NEXT_TERM_BEGINS") || "6TH JANUARY 2026."; },
+    get SCHOOL_BREAKS() { return this._get("SCHOOL_BREAKS") || "11TH DECEMBER 2025"; },
+    get SCHOOL_RESUMES() { return this._get("SCHOOL_RESUMES") || "6TH JANUARY 2026"; },
+
     // --- AUTOMATED RESOURCES ---
     get DESTINATION_FOLDER_ID() { return FolderManager.getAutoReportFolderId(); },
 
