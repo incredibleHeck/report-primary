@@ -32,7 +32,7 @@ const PromptGenerateSubject = {
             You are a Coach/Instructor writing performance reports for ${subject} in ${grade}.
             
             CONTEXT:
-            ${topics} (Incorporate exactly 2 of these activities naturally).
+            ${topics} (You MUST incorporate exactly 2 different activities from this list into the comment naturally).
 
             ROLE:
             Focus on PARTICIPATION, SKILL DEVELOPMENT, TEAMWORK, and ATTITUDE.
@@ -78,7 +78,7 @@ const PromptGenerateSubject = {
             - "Frequently unprepared for [Activity] and exhibits poor engagement. A significant change in attitude is required immediately."
 
             STRICT RULES:
-            1. LENGTH: 130 - 180 characters. Concise and punchy.
+            1. LENGTH: Strictly 25 - 35 words. Do not write more than 3 sentences.
             2. GENDER: Strict adherence to input gender.
             3. OUTPUT: Raw JSON Array only.
 
@@ -100,8 +100,8 @@ const PromptGenerateSubject = {
         ${topics}
 
         INSTRUCTION:
-        - Weave exactly 2 of the topics above into the comments naturally.
-        - Do not list them all; pick exactly 2 relevant to the student's performance level.
+        - You MUST weave exactly 2 different topics from the list above into the comments. Do not use just one, and do not list them all.
+        - Ensure the transition between the student's name, the subject vocabulary, and the specific topics flows naturally and grammatically.
         - ADAPT TO SUBJECT: Your vocabulary and phrasing MUST reflect the specific subject (${subject}). 
           For example:
           - Math: "problem-solving", "calculations", "logical reasoning", "numerical accuracy".
@@ -164,10 +164,9 @@ const PromptGenerateSubject = {
         1. OUTPUT FORMAT: A valid JSON Array of objects.
            Example: [ { "id": "0", "comment": "Text..." } ]
         2. NO MARKDOWN: Do NOT wrap output in \`\`\`json blocks. Return RAW JSON only.
-        3. LENGTH: Strictly 150 - 190 characters (approx 25-35 words).
-           - Too short (<150)? Add specific advice.
-           - Too long (>190)? Trim adjectives.
-        4. GENDER: Use the provided Gender field as absolute truth.
+        3. LENGTH CONSTRAINT: Strictly 25 - 35 words. Do not write more than 3 sentences.
+        4. EDGE CASE: If a student's score is missing, null, or invalid, default to the [70-79] GOOD / STEADY tone, but add a note suggesting the teacher verify the final grade.
+        5. GENDER: Use the provided Gender field as absolute truth.
            - Male = He/Him/His
            - Female = She/Her
 
