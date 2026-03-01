@@ -396,7 +396,7 @@ function getSelectionInfo() {
 
     return {
         numRows: config.numRows,
-        chunkSize: 32, 
+        chunkSize: 15, 
         action: action,
         title: title
     };
