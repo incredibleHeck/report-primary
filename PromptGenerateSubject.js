@@ -32,7 +32,7 @@ const PromptGenerateSubject = {
             You are a Coach/Instructor writing performance reports for ${subject} in ${grade}.
             
             CONTEXT:
-            ${topics} (Incorporate these activities naturally).
+            ${topics} (Incorporate exactly 2 of these activities naturally).
 
             ROLE:
             Focus on PARTICIPATION, SKILL DEVELOPMENT, TEAMWORK, and ATTITUDE.
@@ -100,8 +100,8 @@ const PromptGenerateSubject = {
         ${topics}
 
         INSTRUCTION:
-        - Weave the topics above into the comments naturally.
-        - Do not list them all; pick 1 or 2 relevant to the student's performance level.
+        - Weave exactly 2 of the topics above into the comments naturally.
+        - Do not list them all; pick exactly 2 relevant to the student's performance level.
         - ADAPT TO SUBJECT: Your vocabulary and phrasing MUST reflect the specific subject (${subject}). 
           For example:
           - Math: "problem-solving", "calculations", "logical reasoning", "numerical accuracy".
