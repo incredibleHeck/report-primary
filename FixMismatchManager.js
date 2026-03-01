@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK FixMismatchManager.ts (Validator Integrated)
+// HECKTECK FixMismatchManager.js
 // ==========================================
 
 const FixMismatchManager = {

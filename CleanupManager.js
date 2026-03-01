@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK CleanupManager.ts (Finalized)
+// HECKTECK CleanupManager.js
 // ==========================================
 
 const CleanupManager = {
@@ -13,7 +13,7 @@ const CleanupManager = {
             return;
         }
 
-        // 2. Validate Range (Needs RangeValidator.ts)
+        // 2. Validate Range
         const range = RangeValidator.getValidDataRange(selection);
         if (!range) return;
 

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK EmailManager.ts (Targeting Col F)
+// HECKTECK EmailManager.js
 // ==========================================
 
 const EmailManager = {
@@ -13,7 +13,7 @@ const EmailManager = {
     const ui = SpreadsheetApp.getUi();
     const sheet = ss.getSheetByName(Config.CONTACT_SHEET_NAME);
     
-    if (!sheet) { ui.alert("❌ Contact Sheet missing."); return; }
+    if (!sheet) { ui.alert(`❌ Contact Sheet "${Config.CONTACT_SHEET_NAME}" missing.`); return; }
 
     // 1. QUOTA CHECK
     const quota = MailApp.getRemainingDailyQuota();
@@ -22,18 +22,24 @@ const EmailManager = {
       return;
     }
 
-    // 2. GET DATA (Fetch up to Col F)
+    // 2. GET DATA (Use dynamic column count based on config)
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return;
 
-    // Fetch Cols A to F (1 to 6)
-    const data = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+    // Determine how many columns we need based on config
+    const maxCol = Math.max(
+      Config.COL_NAME, 
+      Config.COL_EMAIL, 
+      Config.COL_PDF_ID, 
+      Config.COL_EMAIL_STATUS
+    );
+    const data = sheet.getRange(2, 1, lastRow - 1, maxCol).getValues();
 
-    // 3. MAP COLUMNS
+    // 3. MAP COLUMNS (0-based indices)
     const idxName = Config.COL_NAME - 1;
     const idxEmail = Config.COL_EMAIL - 1;
     const idxPdf = Config.COL_PDF_ID - 1;
-    const idxStatus = Config.COL_EMAIL_STATUS - 1; // Index 5 (Col F)
+    const idxStatus = Config.COL_EMAIL_STATUS - 1;
 
     let pendingCount = 0;
     data.forEach(row => {

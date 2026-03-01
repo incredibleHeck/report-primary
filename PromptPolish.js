@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptPolish.ts (Hardened Architecture)
+// HECKTECK PromptPolish.js
 // ==========================================
 
 const PromptPolish = {

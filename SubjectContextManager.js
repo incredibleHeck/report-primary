@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SubjectContextManager.ts (Sheet-Aware)
+// HECKTECK SubjectContextManager.js
 // ==========================================
 
 const SubjectContextManager = {

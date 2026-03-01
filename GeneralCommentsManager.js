@@ -1,11 +1,11 @@
 // ==========================================
-// HECKTECK GeneralCommentsManager.ts (Fixed)
+// HECKTECK GeneralCommentsManager.js
 // ==========================================
 
 const GeneralCommentsManager = {
 
     // 🟢 STRICT CONFIG: Only these sheets are checked for "Areas of Improvement"
-    SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES"],
+    SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES", "BIBLE KNOWLEDGE"],
 
     openSidebar: function() {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
@@ -152,14 +152,13 @@ const GeneralCommentsManager = {
                     // 🛡️ Safety: Ensure Column is Number
                     let scoreCol = -1;
                     if (typeof Config !== 'undefined') {
-                        scoreCol = Config.getColByName(sheetName, "100 MKS", -1);
+                        // Primary: Look for "TOTAL SCORE" column (header: "TOTAL SCORE (100)")
+                        scoreCol = Config.getColByName(sheetName, "TOTAL SCORE", -1);
                     }
                     
-                    // If Smart Discovery fails, try Manual Fallbacks based on typical sheet layout
+                    // If Smart Discovery fails, skip this subject
                     if (scoreCol === -1) {
-                         // Default logic: Usually 'TOTAL' or '100 MKS' is around Col 27-40 depending on subject
-                         // But we can't guess blindly. We skip if not found.
-                         console.warn(`Could not find score column for ${sheetName}`);
+                         console.warn(`Could not find TOTAL SCORE column for ${sheetName}`);
                          return;
                     }
                     

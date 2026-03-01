@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK TraitsConfig.ts (Master List - Expanded)
+// HECKTECK TraitsConfig.js
 // ==========================================
 
 const TraitsConfig = {

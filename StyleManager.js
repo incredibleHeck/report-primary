@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK StyleManager.ts
+// HECKTECK StyleManager.js
 // ==========================================
 const StyleManager = {
     // Config: Bright Cyan for high visibility on dark/brown backgrounds

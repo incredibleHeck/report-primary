@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SubjectCommentManager.ts (Hardened Architecture)
+// HECKTECK SubjectCommentManager.js
 // ==========================================
 
 const SubjectCommentManager = {

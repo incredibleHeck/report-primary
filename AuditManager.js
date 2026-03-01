@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK AuditManager.ts (Integrated Validator Edition)
+// HECKTECK AuditManager.js
 // ==========================================
 
 const AuditManager = {

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK WhatsAppManager.ts (Hardened Architecture)
+// HECKTECK WhatsAppManager.js
 // ==========================================
 
 const WhatsAppManager = {

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PolishManager.ts (Hardened Architecture)
+// HECKTECK PolishManager.js
 // ==========================================
 
 const PolishManager = {

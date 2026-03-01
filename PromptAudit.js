@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptAudit.ts (Hardened Architecture)
+// HECKTECK PromptAudit.js
 // ==========================================
 
 const PromptAudit = {

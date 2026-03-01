@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptPronouns.ts (Hardened Architecture)
+// HECKTECK PromptPronouns.js
 // ==========================================
 
 const PromptPronouns = {

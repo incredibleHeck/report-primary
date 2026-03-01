@@ -1,50 +1,42 @@
 // ==========================================
-// HECKTECK ReportCardGenerator.js (Turbo Mode)
+// HECKTECK MidtermReportGenerator.js
 // ==========================================
 
-const ReportCardGenerator = {
-    // 🟢 CELL COORDINATES (Template sheet positions)
+const MidtermReportGenerator = {
+    // 🟢 CELL COORDINATES for Midterm Template
     CELLS: {
-        NAME: "A6",    ID: "F6",      ROLL: "J6",      
-        CLASS: "A7",   ATT: "F7",     YEAR: "J7",      
-        PROG: "A8",    DATE: "F8",    TERM: "I8",      NEXT_TERM: "J8",
+        NAME: "A6",    ID: "F6",      ROLL: "K6",      
+        CLASS: "A7",   PROG: "F7",    YEAR: "K7",      
+        BREAK: "A8",   RESUME: "H8",
         
-        MUSIC_TOT: "F17", MUSIC_AVE: "G17", MUSIC_GRD: "H17", MUSIC_REM: "I17", 
-        PE_REM: "F18",    
-        CLUB_REM: "F19",  
+        RAW_SCR: "D20", OUT_OF: "G20", AVE_MARK: "J20", 
+        AVE_GRD: "D21", BEST_GRD: "G21", WORST_GRD: "J21", 
         
-        RAW_SCR: "D23", OUT_OF: "G23", AVE_MARK: "I23", 
-        AVE_GRD: "D24", BEST_GRD: "G24", WORST_GRD: "I24", 
-        
-        GEN_REM: "D26", TEACHER: "L26" 
+        GEN_REM: "E23", TEACHER: "L24" 
     },
 
     runPreview: function() { this.process(true); },
 
     process: function (isPreview = false) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
-        const sourceSheet = ss.getSheetByName(Config.REPORT_SHEET_NAME);
-        const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
+        const sourceSheet = ss.getSheetByName(Config.MIDTERM_SHEET_NAME);
+        const templateSheet = ss.getSheetByName(Config.MIDTERM_TEMPLATE_NAME);
         const contactSheet = ss.getSheetByName(Config.CONTACT_SHEET_NAME);
         
-        if (!sourceSheet) throw new Error(`❌ Missing sheet: "${Config.REPORT_SHEET_NAME}"`);
-        if (!templateSheet) throw new Error(`❌ Missing sheet: "${Config.TEMPLATE_SHEET_NAME}"`);
+        if (!sourceSheet) throw new Error(`❌ Missing sheet: "${Config.MIDTERM_SHEET_NAME}"`);
+        if (!templateSheet) throw new Error(`❌ Missing sheet: "${Config.MIDTERM_TEMPLATE_NAME}"`);
         if (!contactSheet) throw new Error(`❌ Missing sheet: "${Config.CONTACT_SHEET_NAME}"`);
 
-        // Get column indices from config
-        const cols = Config.REPORT_COLUMNS;
-        const subjects = Config.SUBJECT_CONFIG;
-        const attendanceTotal = Config.ATTENDANCE_TOTAL;
+        const cols = Config.MIDTERM_COLUMNS;
+        const subjects = Config.MIDTERM_SUBJECT_CONFIG;
 
-        // Ensure gridlines are off once (not in loop)
         templateSheet.setHiddenGridlines(false);
 
-        // Fetch OAuth token once
         const token = ScriptApp.getOAuthToken();
         const folderId = FolderManager.getAutoReportFolderId();
         const destinationFolder = DriveApp.getFolderById(folderId);
 
-        // Pre-map Contact List for O(1) Lookup using normalized names
+        // Pre-map Contact List
         const contactData = contactSheet.getDataRange().getValues();
         const contactMap = new Map();
         for (let r = 1; r < contactData.length; r++) {
@@ -54,7 +46,6 @@ const ReportCardGenerator = {
             }
         }
 
-        // Prepare memory storage for batch write-back (Cols D & E)
         const pdfIdCol = Config.COL_PDF_ID - 1;
         const waStatusCol = Config.COL_WHATSAPP_STATUS - 1;
         const pdfUpdates = contactData.map(row => [row[pdfIdCol], row[waStatusCol]]);
@@ -71,33 +62,22 @@ const ReportCardGenerator = {
             if (!studentName) continue;
 
             // --- 1. Fill Template ---
-            this.rebuildTemplateLabels(templateSheet, attendanceTotal);
+            this.rebuildTemplateLabels(templateSheet);
             
             this.setRichText(templateSheet, this.CELLS.NAME, "STUDENT NAME: ", studentName);
             this.setRichText(templateSheet, this.CELLS.ID, "STUDENT ID: ", row[cols.STUDENT_ID]);
-            this.setRichText(templateSheet, this.CELLS.ATT, "Attendance: ", `${row[cols.ATTENDANCE]} / ${attendanceTotal}`);
 
-            // Fill subject rows using config
+            // Fill subject rows (Midterm: simpler structure - 100, GRADE, COMMENT, AVE)
+            // Template columns: B=Total, C=Ave, E=Grade, F=Comment
             Object.keys(subjects).forEach(subject => {
                 const map = subjects[subject];
                 const r = map.row;
                 const sIdx = map.startIdx;
-                templateSheet.getRange(`B${r}`).setValue(row[sIdx]);     
-                templateSheet.getRange(`C${r}`).setValue(row[sIdx + 1]); 
-                templateSheet.getRange(`E${r}`).setValue(row[sIdx + 2]); 
-                templateSheet.getRange(`F${r}`).setValue(row[sIdx + 3]); 
-                templateSheet.getRange(`G${r}`).setValue(row[sIdx + 6]); 
-                templateSheet.getRange(`H${r}`).setValue(row[sIdx + 4]); 
-                templateSheet.getRange(`I${r}`).setValue(row[sIdx + 5]); 
+                templateSheet.getRange(`B${r}`).setValue(row[sIdx]);       // Total Score (100)
+                templateSheet.getRange(`C${r}`).setValue(row[sIdx + 3]);   // Class Average
+                templateSheet.getRange(`E${r}`).setValue(row[sIdx + 1]);   // Grade
+                templateSheet.getRange(`F${r}`).setValue(row[sIdx + 2]);   // Comment
             });
-
-            // Fill music, PE, clubs from config indices
-            templateSheet.getRange(this.CELLS.MUSIC_TOT).setValue(row[cols.MUSIC_TOTAL]);
-            templateSheet.getRange(this.CELLS.MUSIC_AVE).setValue(row[cols.MUSIC_AVG]);
-            templateSheet.getRange(this.CELLS.MUSIC_GRD).setValue(row[cols.MUSIC_GRADE]);
-            templateSheet.getRange(this.CELLS.MUSIC_REM).setValue(row[cols.MUSIC_REMARK]);
-            templateSheet.getRange(this.CELLS.PE_REM).setValue(row[cols.PE_REMARK]);
-            templateSheet.getRange(this.CELLS.CLUB_REM).setValue(row[cols.CLUB_REMARK]);
 
             // Fill summary fields
             this.setRichText(templateSheet, this.CELLS.RAW_SCR, "Raw Score: ", row[cols.RAW_SCORE]);
@@ -106,58 +86,53 @@ const ReportCardGenerator = {
             this.setRichText(templateSheet, this.CELLS.BEST_GRD, "Best Grade: ", row[cols.BEST_GRADE]);
             this.setRichText(templateSheet, this.CELLS.WORST_GRD, "Worst Grade: ", row[cols.WORST_GRADE]);
             templateSheet.getRange(this.CELLS.GEN_REM).setValue(row[cols.GENERAL_REMARK]);
-            templateSheet.getRange(this.CELLS.TEACHER).setValue(row[cols.TEACHER_NAME]); 
 
             // --- 2. Generate PDF ---
             SpreadsheetApp.flush();
             try {
-                const pdfBlob = this.createBlobFromSheet(templateSheet, studentName, token);
+                const pdfBlob = this.createBlobFromSheet(templateSheet, studentName + " Midterm", token);
                 const pdfFile = destinationFolder.createFile(pdfBlob);
                 
-                // Update memory array using normalized name matching
                 const normalizedName = Config.normalizeName(studentName);
                 const targetIndex = contactMap.get(normalizedName);
                 if (targetIndex !== undefined) {
                     pdfUpdates[targetIndex][0] = pdfFile.getId();
-                    pdfUpdates[targetIndex][1] = "PDF_READY";
+                    pdfUpdates[targetIndex][1] = "MIDTERM_READY";
                 } else {
                     console.warn(`⚠️ No contact match for: "${studentName}"`);
                 }
                 successCount++;
             } catch (err) { 
-                console.error(`PDF Error for ${studentName}: ${err.message}`);
+                console.error(`Midterm PDF Error for ${studentName}: ${err.message}`);
                 errorCount++;
             }
         }
 
-        // Bulk write-back updated D:E columns to Contact List
         if (successCount > 0) {
             contactSheet.getRange(1, Config.COL_PDF_ID, pdfUpdates.length, 2).setValues(pdfUpdates);
         }
 
         const msg = isPreview 
-            ? "Preview Ready." 
-            : `Batch Complete! ${successCount} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
+            ? "Midterm Preview Ready." 
+            : `Midterm Batch Complete! ${successCount} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
         ss.toast(msg, "HeckTeck Engine", 5);
     },
 
-    rebuildTemplateLabels: function(sheet, attendanceTotal) {
-        const ranges = ["A6:L8", "B10:I19", "D23:L24", "D26:L32"];
+    rebuildTemplateLabels: function(sheet) {
+        const ranges = ["A6:L8", "B10:F16", "D19:L21", "E23:L26"];
         sheet.getRangeList(ranges).clearContent();
 
         sheet.getRange(this.CELLS.NAME).setValue("STUDENT NAME: ");
         sheet.getRange(this.CELLS.ID).setValue("STUDENT ID: ");
         sheet.getRange(this.CELLS.ROLL).setValue("No. on Roll: 25"); 
         sheet.getRange(this.CELLS.CLASS).setValue("Class: YEAR FIVE (A)");
-        sheet.getRange(this.CELLS.ATT).setValue("Attendance: ");
-        sheet.getRange(this.CELLS.YEAR).setValue("Year: 2025 / 2026 Term: ONE (1)");
         sheet.getRange(this.CELLS.PROG).setValue("Programme: PRIMARY");
-        sheet.getRange(this.CELLS.DATE).setValue("DATE: 11TH DECEMBER 2025.");
-        sheet.getRange(this.CELLS.TERM).setValue("Term: ONE (1)");
-        sheet.getRange(this.CELLS.NEXT_TERM).setValue("Next Term Begins 6TH JANUARY 2026.");
+        sheet.getRange(this.CELLS.YEAR).setValue("Year: 2025 / 2026 Term: ONE (1)");
+        sheet.getRange(this.CELLS.BREAK).setValue("SCHOOL BREAKS: 11TH DECEMBER 2025");
+        sheet.getRange(this.CELLS.RESUME).setValue("SCHOOL RESUMES: 6TH JANUARY 2026");
 
         sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
-        sheet.getRange(this.CELLS.OUT_OF).setValue(`Out of: ${Object.keys(Config.SUBJECT_CONFIG).length * 100}`);
+        sheet.getRange("G20").setValue("Out of: 700");
         sheet.getRange(this.CELLS.AVE_MARK).setValue("Average Mark: ");
         sheet.getRange(this.CELLS.AVE_GRD).setValue("Average Grade: ");
         sheet.getRange(this.CELLS.BEST_GRD).setValue("Best Grade: ");
@@ -174,7 +149,6 @@ const ReportCardGenerator = {
         sheet.getRange(cell).setRichTextValue(richText);
     },
 
-    // ⚡ Update: Accepts Token as Argument
     createBlobFromSheet: function(sheet, fileName, token) {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const gid = sheet.getSheetId();

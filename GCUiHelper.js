@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GCUiHelper.ts
+// HECKTECK GCUiHelper.js
 // ==========================================
 
 function include(filename) {

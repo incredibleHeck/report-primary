@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptGenerateGeneral.ts (Unified & Hardened)
+// HECKTECK PromptGenerateGeneral.js
 // ==========================================
 
 const PromptGenerateGeneral = {

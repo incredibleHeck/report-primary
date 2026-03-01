@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK main.ts (Final Master - With Pro Dashboard)
+// HECKTECK Main.js (Final Master - With Pro Dashboard)
 // ==========================================
 
 function onOpen() {
@@ -26,10 +26,14 @@ function onOpen() {
         .addItem(' 🏥 Run System Health Check', 'RUN_SYSTEM_READINESS_CHECK') 
         .addSeparator()
 
-        // --- PHASE 5: REPORT CARD GENERATION (NEW) ---
-        // Teachers should always run Preview first to check alignment/merged cells.
-        .addItem(' 📄 Step A: Preview (Check 1st Two Students)', 'runReportPreview')
-        .addItem(' 🚀 Step B: Generate Full Batch (PDFs)', 'runFullReportBatch')
+        // --- PHASE 5: END OF TERM REPORT GENERATION ---
+        .addItem(' 📄 EOT Preview (Check 1st Two Students)', 'runReportPreview')
+        .addItem(' 🚀 EOT Generate Full Batch (PDFs)', 'runFullReportBatch')
+        .addSeparator()
+        
+        // --- PHASE 5b: MIDTERM REPORT GENERATION ---
+        .addItem(' 📋 Midterm Preview', 'runMidtermPreview')
+        .addItem(' 📊 Midterm Generate Full Batch', 'runMidtermBatch')
         .addSeparator()
 
         
@@ -126,23 +130,53 @@ function RUN_SYSTEM_READINESS_CHECK() {
   // 3. DRIVE & WHATSAPP RESOURCES
   try {
     const fid = Config.DESTINATION_FOLDER_ID;
-    const folder = DriveApp.getFolderById(fid);
-    checks.push({ category: "DRIVE", item: "Report Folder", status: "OK", msg: "Connected" }); // Shortened msg for UI
+    if (fid) {
+      const folder = DriveApp.getFolderById(fid);
+      checks.push({ category: "DRIVE", item: "Report Folder", status: "OK", msg: "Connected" });
+    } else {
+      checks.push({ category: "DRIVE", item: "Report Folder", status: "WARNING", msg: "Will auto-create on first use" });
+    }
 
-    const tid = Config.TEMPLATE_ID;
-    const template = DriveApp.getFileById(tid);
-    checks.push({ category: "DRIVE", item: "Doc Template", status: "OK", msg: "Connected" });
+    // Template Sheet Check
+    const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
+    checks.push({ 
+      category: "TEMPLATE", 
+      item: "Report Template Sheet", 
+      status: templateSheet ? "OK" : "ERROR", 
+      msg: templateSheet ? `Found: "${Config.TEMPLATE_SHEET_NAME}"` : `Missing: Create "${Config.TEMPLATE_SHEET_NAME}"`
+    });
 
     // WhatsApp Credentials
     const phoneId = Config.WHATSAPP_PHONE_ID;
-    checks.push({ category: "WHATSAPP", item: "Phone ID", status: phoneId ? "OK" : "ERROR", msg: phoneId ? "Configured" : "Missing in Script Props" });
+    const waToken = Config.WHATSAPP_ACCESS_TOKEN;
+    checks.push({ 
+      category: "WHATSAPP", 
+      item: "Phone ID", 
+      status: (phoneId && !phoneId.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (phoneId && !phoneId.includes("YOUR_")) ? "Configured" : "Missing in Script Props" 
+    });
+    checks.push({ 
+      category: "WHATSAPP", 
+      item: "Access Token", 
+      status: (waToken && !waToken.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (waToken && !waToken.includes("YOUR_")) ? "Configured" : "Missing in Script Props" 
+    });
+
+    // Gemini API Key Check
+    const apiKey = Config.API_KEY;
+    checks.push({ 
+      category: "AI", 
+      item: "Gemini API Key", 
+      status: (apiKey && !apiKey.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (apiKey && !apiKey.includes("YOUR_")) ? "Configured" : "Missing - Run Setup" 
+    });
 
     // Email Quota
     const quota = MailApp.getRemainingDailyQuota();
     checks.push({ category: "EMAIL", item: "Daily Quota", status: quota > 10 ? "OK" : "WARNING", msg: `${quota} remaining` });
 
   } catch(e) {
-    checks.push({ category: "RESOURCES", item: "Drive/Config", status: "ERROR", msg: "Check IDs in Script Properties" });
+    checks.push({ category: "RESOURCES", item: "Drive/Config", status: "ERROR", msg: e.message });
   }
 
   // 4. GENERATE DASHBOARD HTML
@@ -206,6 +240,24 @@ function runFullReportBatch() {
     }
 }
 
+// 2b. Midterm Report Preview
+function runMidtermPreview() {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.runPreview();
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
+// 2c. Midterm Full Report Batch
+function runMidtermBatch() {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.process();
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
 // 3. Subject Comment Generator (Scores + 2)
 function runCommentGenerator() {
     if (typeof SubjectCommentManager !== 'undefined') {
@@ -259,17 +311,17 @@ function runResetStatuses() {
     }
 }
 
-// --- STANDARD AI ACTIONS (Generic Dispatcher) ---
-function runPolish() { initiateAction('polish'); }
-function runPronouns() { initiateAction('pronouns'); }
-function runAudit() { initiateAction('audit'); }
+// --- STANDARD AI ACTIONS (With Batch Sidebar) ---
+function runPolish() { 
+    initiateBatchAction('Polish Grammar & Style', 'polish'); 
+}
 
-function initiateAction(type) {
-    if (typeof ActionManager !== 'undefined') {
-        ActionManager.run(type);
-    } else {
-        SpreadsheetApp.getUi().alert(`Manager for ${type} not found.`);
-    }
+function runPronouns() { 
+    initiateBatchAction('Fix Pronouns', 'pronouns'); 
+}
+
+function runAudit() { 
+    initiateBatchAction('Audit Comments', 'audit'); 
 }
 
 // --- SIDEBARS & UTILS ---
@@ -290,10 +342,10 @@ function runUndo() {
 }
 
 // --- BATCHING LOGIC ---
-function initiateAction(title, action) {
+function initiateBatchAction(title, action) {
     const selection = SelectionProcessor.getSmartSelection(); 
     if (!selection) {
-        SpreadsheetApp.getActiveSpreadsheet().toast("Please select a column.", "No Selection");
+        SpreadsheetApp.getActiveSpreadsheet().toast("Please select a column with comments.", "No Selection");
         return;
     }
 
@@ -305,7 +357,7 @@ function initiateAction(title, action) {
         startCol: selection.getColumn(),
         numRows: numRows,
         numCols: selection.getNumColumns(),
-        timestamp: new Date().getTime() // 🟢 Expire old configs
+        timestamp: new Date().getTime()
     };
     PropertiesService.getUserProperties().setProperty('ACTIVE_BATCH_CONFIG', JSON.stringify(rangeConfig));
 

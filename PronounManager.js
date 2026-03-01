@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PronounManager.ts (Hardened Architecture)
+// HECKTECK PronounManager.js
 // ==========================================
 
 const PronounManager = {

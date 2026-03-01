@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK FolderManager.ts (Hardened Architecture)
+// HECKTECK FolderManager.js
 // ==========================================
 
 const FolderManager = {

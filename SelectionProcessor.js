@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SelectionProcessor.ts (Hardened Architecture)
+// HECKTECK SelectionProcessor.js
 // ==========================================
 
 const SelectionProcessor = {

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK RangeValidator.ts (Hardened Architecture)
+// HECKTECK RangeValidator.js
 // ==========================================
 
 const RangeValidator = {

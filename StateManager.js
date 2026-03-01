@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK StateManager.ts (Fixed)
+// HECKTECK StateManager.js
 // ==========================================
 
 const StateManager = {

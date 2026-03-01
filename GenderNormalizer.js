@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GenderNormalizer.ts (Hardened Architecture)
+// HECKTECK GenderNormalizer.js
 // ==========================================
 
 const GenderNormalizer = {
