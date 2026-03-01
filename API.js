@@ -5,7 +5,7 @@
 const APICache = {
     get: (key) => {
         try {
-            return CacheService.getUserCache().get(key);
+            return CacheService.getDocumentCache().get(key);
         } catch (e) {
             logSysError("Cache Get Failed", e.message);
             return null;
@@ -14,7 +14,7 @@ const APICache = {
     set: (key, value) => {
         try {
             // TTL: 6 hours
-            CacheService.getUserCache().put(key, value, 21600);
+            CacheService.getDocumentCache().put(key, value, 21600);
         } catch (e) {
             logSysError("Cache Set Failed", e.message);
         }

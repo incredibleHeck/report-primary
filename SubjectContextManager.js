@@ -14,7 +14,7 @@ const SubjectContextManager = {
      * Saves context SPECIFIC to the provided sheet name
      */
     saveContext: function(data) {
-        const props = PropertiesService.getUserProperties();
+        const props = PropertiesService.getDocumentProperties();
         
         // We use a unique key for every subject (e.g., "CTX_MATHEMATICS", "CTX_SCIENCE")
         const storageKey = `CTX_${data.subjectName.toUpperCase().replace(/\s+/g, '_')}`;
@@ -36,7 +36,7 @@ const SubjectContextManager = {
         const sheet = SpreadsheetApp.getActiveSheet();
         const sheetName = sheet.getName();
         
-        const props = PropertiesService.getUserProperties();
+        const props = PropertiesService.getDocumentProperties();
         const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}`;
         
         const storedJson = props.getProperty(storageKey);

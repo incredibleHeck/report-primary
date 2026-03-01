@@ -73,6 +73,7 @@ const DynamicConfig = {
             const headerRow = (sheetName === "CONTACT LIST") ? 1 : this.HEADER_ROW;
             
             const lastCol = sheet.getLastColumn();
+            // getRange(row, column, numRows, numColumns). 1 row, lastCol columns.
             const headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
             
             // Normalize for matching

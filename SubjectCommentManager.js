@@ -44,7 +44,7 @@ const SubjectCommentManager = {
 
         // 2. FETCH CONTEXT (Immutable ID)
         // 🟢 FIX: Use Sheet ID so renaming doesn't kill context
-        const props = PropertiesService.getUserProperties();
+        const props = PropertiesService.getDocumentProperties();
         const storageKey = `CTX_${sheet.getSheetId()}`; 
         const storedJson = props.getProperty(storageKey);
         
