@@ -29,9 +29,19 @@ const PromptPolish = {
            - Do NOT change the student's grade or performance level.
            - Do NOT rewrite the comment entirely if it is already grammatically correct.
            - Keep the original meaning intact.
+        4. LENGTH CONSTRAINT: Your polished comment MUST be roughly the same length as the original comment. Do not exceed the original length by more than 10%.
 
         // ==================================================
-        // 3. INPUT/OUTPUT STRUCTURE
+        // 3. EXAMPLES
+        // ==================================================
+        Original: "He is a good boy. He works hard in class. His grades are okay but he needs to study more for tests."
+        Polished: "He is a diligent student who consistently works hard in class. While his current performance is satisfactory, increasing his focus on test preparation will help improve his grades."
+
+        Original: "she talks to much and forgets her books"
+        Polished: "She is a sociable student; however, she frequently forgets her materials and can be overly talkative during lessons."
+
+        // ==================================================
+        // 4. INPUT/OUTPUT STRUCTURE
         // ==================================================
         - You will receive a JSON list of students. Each student has a 'comments' object with numbered keys.
         - You MUST return the EXACT SAME structure.

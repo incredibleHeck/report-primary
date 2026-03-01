@@ -41,6 +41,7 @@ const PromptAudit = {
         OUTPUT FORMAT:
         Return ONLY a JSON Array of objects. No markdown blocks (\`\`\`).
         Return an object for EVERY input item.
+        You MUST include the exact 'id' from the INPUT DATA in your output for each item. Do not skip any items.
 
         Example:
         [
