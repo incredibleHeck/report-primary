@@ -42,10 +42,9 @@ const SubjectCommentManager = {
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
-        // 2. FETCH CONTEXT (Immutable ID)
-        // 🟢 FIX: Use Sheet ID so renaming doesn't kill context
+        // 2. FETCH CONTEXT
         const props = PropertiesService.getDocumentProperties();
-        const storageKey = `CTX_${sheet.getSheetId()}`; 
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}`; 
         const storedJson = props.getProperty(storageKey);
         
         let contextData = { grade: "", topics: "" };
