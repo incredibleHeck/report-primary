@@ -186,10 +186,25 @@ function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
         // Clean JSON formatting
         let rawText = result.text.replace(/```json/g, "").replace(/```/g, "").trim();
         
+        // 🟢 HARDENED EXTRACTOR: Look for the JSON array boundaries
+        const startIndex = rawText.indexOf('[');
+        const endIndex = rawText.lastIndexOf(']');
+        
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            rawText = rawText.substring(startIndex, endIndex + 1);
+        } else {
+            // Fallback: maybe it returned a single object wrapped in an array or just an object
+            const objStart = rawText.indexOf('{');
+            const objEnd = rawText.lastIndexOf('}');
+            if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+                rawText = "[" + rawText.substring(objStart, objEnd + 1) + "]";
+            }
+        }
+
         try {
             return JSON.parse(rawText);
         } catch (parseError) {
-            console.error("JSON Parse Error:", parseError, "Raw:", rawText.substring(0, 500));
+            console.error("JSON Parse Error:", parseError, "Raw Length:", rawText.length, "Raw Preview:", rawText.substring(0, 500));
             showAPIError("AI returned invalid data format. Please try again.");
             return [];
         }
