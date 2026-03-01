@@ -260,11 +260,7 @@ function runMidtermBatch() {
 
 // 3. Subject Comment Generator (Scores + 2)
 function runCommentGenerator() {
-    if (typeof SubjectCommentManager !== 'undefined') {
-        SubjectCommentManager.process();
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ SubjectCommentManager not found.");
-    }
+    initiateBatchAction('Generate Subject Comments', 'generate'); 
 }
 
 // 4. Audit & Name Mismatch Fix
@@ -375,7 +371,7 @@ function openSidebar(title, action) {
 
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
         .setTitle(title)
-        .setWidth(350); 
+        .setWidth(420); 
     SpreadsheetApp.getUi().showSidebar(html);
 }
 

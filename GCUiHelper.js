@@ -11,6 +11,6 @@ function openGeneralSidebar() {
   const template = HtmlService.createTemplateFromFile('GCSidebar_Main'); // We will create this file next
   const html = template.evaluate()
       .setTitle('Class Teacher General Comment')
-      .setWidth(350);
+      .setWidth(420);
   SpreadsheetApp.getUi().showSidebar(html);
 }

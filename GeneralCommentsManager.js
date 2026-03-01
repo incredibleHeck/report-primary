@@ -11,7 +11,7 @@ const GeneralCommentsManager = {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
         const html = template.evaluate()
             .setTitle('Class Teacher General Comment')
-            .setWidth(350)
+            .setWidth(420)
             .addMetaTag('viewport', 'width=device-width, initial-scale=1');
         SpreadsheetApp.getUi().showSidebar(html);
     },
