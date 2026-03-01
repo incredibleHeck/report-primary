@@ -61,31 +61,8 @@ const MidtermReportGenerator = {
             const studentName = row[cols.STUDENT_NAME];
             if (!studentName) continue;
 
-            // --- 1. Fill Template ---
-            this.rebuildTemplateLabels(templateSheet);
-            
-            this.setRichText(templateSheet, this.CELLS.NAME, "STUDENT NAME: ", studentName);
-            this.setRichText(templateSheet, this.CELLS.ID, "STUDENT ID: ", row[cols.STUDENT_ID]);
-
-            // Fill subject rows (Midterm: simpler structure - 100, GRADE, COMMENT, AVE)
-            // Template columns: B=Total, C=Ave, E=Grade, F=Comment
-            Object.keys(subjects).forEach(subject => {
-                const map = subjects[subject];
-                const r = map.row;
-                const sIdx = map.startIdx;
-                templateSheet.getRange(`B${r}`).setValue(row[sIdx]);       // Total Score (100)
-                templateSheet.getRange(`C${r}`).setValue(row[sIdx + 3]);   // Class Average
-                templateSheet.getRange(`E${r}`).setValue(row[sIdx + 1]);   // Grade
-                templateSheet.getRange(`F${r}`).setValue(row[sIdx + 2]);   // Comment
-            });
-
-            // Fill summary fields
-            this.setRichText(templateSheet, this.CELLS.RAW_SCR, "Raw Score: ", row[cols.RAW_SCORE]);
-            this.setRichText(templateSheet, this.CELLS.AVE_MARK, "Average Mark: ", row[cols.AVG_MARK]);
-            this.setRichText(templateSheet, this.CELLS.AVE_GRD, "Average Grade: ", row[cols.AVG_GRADE]);
-            this.setRichText(templateSheet, this.CELLS.BEST_GRD, "Best Grade: ", row[cols.BEST_GRADE]);
-            this.setRichText(templateSheet, this.CELLS.WORST_GRD, "Worst Grade: ", row[cols.WORST_GRADE]);
-            templateSheet.getRange(this.CELLS.GEN_REM).setValue(row[cols.GENERAL_REMARK]);
+            // --- 1. Fill Template Using Optimized Batch Operations ---
+            this.fillTemplateFast(templateSheet, row, cols, subjects);
 
             // --- 2. Generate PDF ---
             SpreadsheetApp.flush();
@@ -118,7 +95,47 @@ const MidtermReportGenerator = {
         ss.toast(msg, "HeckTeck Engine", 5);
     },
 
+    /**
+     * 🟢 OPTIMIZED: Fill template using batch setValues() for speed
+     */
+    fillTemplateFast: function(sheet, row, cols, subjects) {
+        // Clear content areas in one batch call
+        sheet.getRangeList(["A6:L8", "B10:F16", "D19:L21", "E23:L26"]).clearContent();
+        
+        // --- HEADER ROWS 6-8 ---
+        const headerData = [
+            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "", "No. on Roll: 25", ""],
+            ["Class: YEAR FIVE (A)", "", "", "", "", "Programme: PRIMARY", "", "", "", "", "Year: 2025 / 2026 Term: ONE (1)", ""],
+            ["SCHOOL BREAKS: 11TH DECEMBER 2025", "", "", "", "", "", "", "SCHOOL RESUMES: 6TH JANUARY 2026", "", "", "", ""]
+        ];
+        sheet.getRange("A6:L8").setValues(headerData);
+        
+        // --- SUBJECT ROWS 10-16: Midterm structure (Total, Ave, empty, Grade, Comment) ---
+        const subjectOrder = ["English", "Mathematics", "Science", "Bible Knowledge", "French", "Humanities", "Computing"];
+        const subjectData = subjectOrder.map(subj => {
+            const sIdx = subjects[subj].startIdx;
+            return [
+                row[sIdx],       // B: Total Score (100)
+                row[sIdx + 3],   // C: Class Average
+                "",              // D: empty
+                row[sIdx + 1],   // E: Grade
+                row[sIdx + 2]    // F: Comment
+            ];
+        });
+        sheet.getRange("B10:F16").setValues(subjectData);
+        
+        // --- SUMMARY ROWS 20-21 ---
+        const summaryData1 = ["Raw Score: " + row[cols.RAW_SCORE], "", "", "Out of: 700", "", "", "Average Mark: " + row[cols.AVG_MARK]];
+        const summaryData2 = ["Average Grade: " + row[cols.AVG_GRADE], "", "", "Best Grade: " + row[cols.BEST_GRADE], "", "", "Worst Grade: " + row[cols.WORST_GRADE]];
+        sheet.getRange("D20:J20").setValues([summaryData1]);
+        sheet.getRange("D21:J21").setValues([summaryData2]);
+        
+        // --- GENERAL COMMENT ---
+        sheet.getRange(this.CELLS.GEN_REM).setValue(row[cols.GENERAL_REMARK]);
+    },
+
     rebuildTemplateLabels: function(sheet) {
+        // Legacy method - kept for compatibility
         const ranges = ["A6:L8", "B10:F16", "D19:L21", "E23:L26"];
         sheet.getRangeList(ranges).clearContent();
 

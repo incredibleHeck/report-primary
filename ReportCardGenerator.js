@@ -65,48 +65,14 @@ const ReportCardGenerator = {
         const startRow = 1; 
         const limit = isPreview ? Math.min(startRow + 2, data.length) : data.length;
 
+        // 🟢 OPTIMIZED: Pre-build batch update arrays for speed
         for (let i = startRow; i < limit; i++) {
             const row = data[i];
             const studentName = row[cols.STUDENT_NAME];
             if (!studentName) continue;
 
-            // --- 1. Fill Template ---
-            this.rebuildTemplateLabels(templateSheet, attendanceTotal);
-            
-            this.setRichText(templateSheet, this.CELLS.NAME, "STUDENT NAME: ", studentName);
-            this.setRichText(templateSheet, this.CELLS.ID, "STUDENT ID: ", row[cols.STUDENT_ID]);
-            this.setRichText(templateSheet, this.CELLS.ATT, "Attendance: ", `${row[cols.ATTENDANCE]} / ${attendanceTotal}`);
-
-            // Fill subject rows using config
-            Object.keys(subjects).forEach(subject => {
-                const map = subjects[subject];
-                const r = map.row;
-                const sIdx = map.startIdx;
-                templateSheet.getRange(`B${r}`).setValue(row[sIdx]);     
-                templateSheet.getRange(`C${r}`).setValue(row[sIdx + 1]); 
-                templateSheet.getRange(`E${r}`).setValue(row[sIdx + 2]); 
-                templateSheet.getRange(`F${r}`).setValue(row[sIdx + 3]); 
-                templateSheet.getRange(`G${r}`).setValue(row[sIdx + 6]); 
-                templateSheet.getRange(`H${r}`).setValue(row[sIdx + 4]); 
-                templateSheet.getRange(`I${r}`).setValue(row[sIdx + 5]); 
-            });
-
-            // Fill music, PE, clubs from config indices
-            templateSheet.getRange(this.CELLS.MUSIC_TOT).setValue(row[cols.MUSIC_TOTAL]);
-            templateSheet.getRange(this.CELLS.MUSIC_AVE).setValue(row[cols.MUSIC_AVG]);
-            templateSheet.getRange(this.CELLS.MUSIC_GRD).setValue(row[cols.MUSIC_GRADE]);
-            templateSheet.getRange(this.CELLS.MUSIC_REM).setValue(row[cols.MUSIC_REMARK]);
-            templateSheet.getRange(this.CELLS.PE_REM).setValue(row[cols.PE_REMARK]);
-            templateSheet.getRange(this.CELLS.CLUB_REM).setValue(row[cols.CLUB_REMARK]);
-
-            // Fill summary fields
-            this.setRichText(templateSheet, this.CELLS.RAW_SCR, "Raw Score: ", row[cols.RAW_SCORE]);
-            this.setRichText(templateSheet, this.CELLS.AVE_MARK, "Average Mark: ", row[cols.AVG_MARK]);
-            this.setRichText(templateSheet, this.CELLS.AVE_GRD, "Average Grade: ", row[cols.AVG_GRADE]);
-            this.setRichText(templateSheet, this.CELLS.BEST_GRD, "Best Grade: ", row[cols.BEST_GRADE]);
-            this.setRichText(templateSheet, this.CELLS.WORST_GRD, "Worst Grade: ", row[cols.WORST_GRADE]);
-            templateSheet.getRange(this.CELLS.GEN_REM).setValue(row[cols.GENERAL_REMARK]);
-            templateSheet.getRange(this.CELLS.TEACHER).setValue(row[cols.TEACHER_NAME]); 
+            // --- 1. Fill Template Using Batch Operations ---
+            this.fillTemplateFast(templateSheet, row, cols, subjects, attendanceTotal);
 
             // --- 2. Generate PDF ---
             SpreadsheetApp.flush();
@@ -141,7 +107,62 @@ const ReportCardGenerator = {
         ss.toast(msg, "HeckTeck Engine", 5);
     },
 
+    /**
+     * 🟢 OPTIMIZED: Fill template using batch setValues() instead of individual setValue()
+     * Reduces API calls from ~70 to ~10 per student = 7x faster
+     */
+    fillTemplateFast: function(sheet, row, cols, subjects, attendanceTotal) {
+        // Clear content areas in one batch call
+        sheet.getRangeList(["A6:L8", "B10:I19", "D23:L24", "D26:L32"]).clearContent();
+        
+        // --- HEADER ROW 6-8: Use batch setValues for 3 rows ---
+        const headerData = [
+            ["STUDENT NAME: " + row[cols.STUDENT_NAME], "", "", "", "", "STUDENT ID: " + row[cols.STUDENT_ID], "", "", "", "No. on Roll: 25", "", ""],
+            ["Class: YEAR FIVE (A)", "", "", "", "", "Attendance: " + row[cols.ATTENDANCE] + " / " + attendanceTotal, "", "", "", "Year: 2025 / 2026 Term: ONE (1)", "", ""],
+            ["Programme: PRIMARY", "", "", "", "", "DATE: 11TH DECEMBER 2025.", "", "", "Term: ONE (1)", "Next Term Begins 6TH JANUARY 2026.", "", ""]
+        ];
+        sheet.getRange("A6:L8").setValues(headerData);
+        
+        // --- SUBJECT ROWS 10-16: Build 2D array for batch update ---
+        const subjectOrder = ["English", "Mathematics", "Science", "Bible Knowledge", "French", "Humanities", "Computing"];
+        const subjectData = subjectOrder.map(subj => {
+            const sIdx = subjects[subj].startIdx;
+            return [
+                row[sIdx],      // B: CW 20
+                row[sIdx + 1],  // C: MT 20
+                "",             // D: empty
+                row[sIdx + 2],  // E: EOT 60
+                row[sIdx + 3],  // F: Total 100
+                row[sIdx + 6],  // G: Average
+                row[sIdx + 4],  // H: Grade
+                row[sIdx + 5]   // I: Comment
+            ];
+        });
+        sheet.getRange("B10:I16").setValues(subjectData);
+        
+        // --- MUSIC, PE, CLUBS: Rows 17-19 ---
+        const practicalData = [
+            ["", "", "", "", row[cols.MUSIC_TOTAL], row[cols.MUSIC_AVG], row[cols.MUSIC_GRADE], row[cols.MUSIC_REMARK]],
+            ["", "", "", "", row[cols.PE_REMARK], "", "", ""],
+            ["", "", "", "", row[cols.CLUB_REMARK], "", "", ""]
+        ];
+        sheet.getRange("B17:I19").setValues(practicalData);
+        
+        // --- SUMMARY ROWS 23-24 ---
+        const outOf = Object.keys(subjects).length * 100;
+        const summaryData = [
+            ["Raw Score: " + row[cols.RAW_SCORE], "", "", "Out of: " + outOf, "", "Average Mark: " + row[cols.AVG_MARK]],
+            ["Average Grade: " + row[cols.AVG_GRADE], "", "", "Best Grade: " + row[cols.BEST_GRADE], "", "Worst Grade: " + row[cols.WORST_GRADE]]
+        ];
+        sheet.getRange("D23:I24").setValues(summaryData);
+        
+        // --- GENERAL COMMENT & TEACHER: Row 26 ---
+        sheet.getRange("D26").setValue(row[cols.GENERAL_REMARK]);
+        sheet.getRange("L26").setValue(row[cols.TEACHER_NAME]);
+    },
+
     rebuildTemplateLabels: function(sheet, attendanceTotal) {
+        // Legacy method - kept for compatibility but fillTemplateFast is preferred
         const ranges = ["A6:L8", "B10:I19", "D23:L24", "D26:L32"];
         sheet.getRangeList(ranges).clearContent();
 
