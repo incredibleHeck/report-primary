@@ -87,14 +87,13 @@ const AuditManager = {
         if (batchRequest.length === 0) return { success: true, issues: 0 };
 
         try {
-            // 6. CALL GEMINI
+            // 6. CALL GEMINI (Force gemini-2.5-pro for Audit tasks)
             const results = callGeminiAnalysisBatch(
-                batchRequest, 
-                Config.MODEL_NAME, 
+                batchRequest,
+                "gemini-2.5-pro",
                 Config.API_KEY,
                 () => PromptAudit.getAnalysisPrompt(batchRequest)
             );
-
             const resultMap = {};
             if (Array.isArray(results)) {
                 results.forEach(res => { if (res && res.id) resultMap[res.id] = res; });
