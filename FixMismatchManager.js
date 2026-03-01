@@ -82,10 +82,10 @@ const FixMismatchManager = {
         if (batchRequest.length === 0) return { success: true, changes: 0 };
 
         try {
-            // 6. CALL GEMINI (Force gemini-2.5-pro for Fix tasks)
-            const aiResponseArray = callGeminiCommentBatch(
-                batchRequest,
-                "gemini-2.5-pro",
+            // 6. CALL GEMINI
+            const fixedComments = callGeminiJsonBatch(
+                batchRequest, 
+                Config.MODEL_NAME, 
                 Config.API_KEY,
                 () => PromptFixMismatch.getFixMismatchPrompt(batchRequest)
             );
