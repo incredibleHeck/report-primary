@@ -89,7 +89,7 @@ function validateAPIKey(key) {
  * Base function for fetching Gemini API responses.
  */
 function fetchGeminiResponse(payload, model, key) {
-    const safeModel = model || "gemini-2.0-flash";
+    const safeModel = model || "gemini-2.5-pro";
     
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${key}`;
     const options = {

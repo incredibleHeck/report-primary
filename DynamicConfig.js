@@ -20,7 +20,7 @@ const DynamicConfig = {
 
     // --- AI & CORE ---
     get API_KEY() { return this._get("GEMINI_API_KEY") || ""; },
-    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.0-flash"; },
+    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.5-pro"; },
     
     // --- SHEET NAMES (Configurable via Script Properties with defaults) ---
     get CLASSLIST_SHEET_NAME() { return this._get("CLASSLIST_SHEET_NAME") || "CLASSLIST"; },
