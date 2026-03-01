@@ -3,32 +3,30 @@
 // ==========================================
 
 const PromptGenerateSubject = {
+  /**
+   * PROMPT: Generate Subject Comment (Dual-Mode: Academic vs. Practical)
+   * Merges "Context + 7 Bands" logic with "Hardened Architecture".
+   *
+   * @param {Array} data - List of student objects { id, name, gender, score, subject, isPractical }
+   * @param {Object} contextData - { grade: "Grade 4", topics: "Fractions, Photosynthesis..." }
+   */
+  getCommentGenerationPrompt: (data, contextData) => {
+    // 1. Setup Context (Safe Fallbacks)
+    const grade = contextData?.grade || "Student";
+    const subject = data[0].subject || "Subject";
+    const isPractical = data[0].isPractical === true; // 🟢 DUAL-MODE TRIGGER
 
-    /**
-     * PROMPT: Generate Subject Comment (Dual-Mode: Academic vs. Practical)
-     * Merges "Context + 7 Bands" logic with "Hardened Architecture".
-     * 
-     * @param {Array} data - List of student objects { id, name, gender, score, subject, isPractical }
-     * @param {Object} contextData - { grade: "Grade 4", topics: "Fractions, Photosynthesis..." }
-     */
-    getCommentGenerationPrompt: (data, contextData) => {
-        
-        // 1. Setup Context (Safe Fallbacks)
-        const grade = contextData?.grade || "Student";
-        const subject = data[0].subject || "Subject";
-        const isPractical = data[0].isPractical === true; // 🟢 DUAL-MODE TRIGGER
+    // 2. TOPIC INJECTION
+    const topics = contextData?.topics
+      ? `The class has covered these specific topics: "${contextData.topics}".`
+      : "No specific topics provided. Use general subject concepts.";
 
-        // 2. TOPIC INJECTION
-        const topics = contextData?.topics 
-            ? `The class has covered these specific topics: "${contextData.topics}".` 
-            : "No specific topics provided. Use general subject concepts.";
-
-        // =================================================================================
-        // 🟢 BRANCH 1: PRACTICAL SUBJECTS (PE, CLUBS, ART, MUSIC)
-        // Focus: Participation, Skill, Teamwork, Attitude. (No academic jargon).
-        // =================================================================================
-        if (isPractical) {
-            return `
+    // =================================================================================
+    // 🟢 BRANCH 1: PRACTICAL SUBJECTS (PE, CLUBS, ART, MUSIC)
+    // Focus: Participation, Skill, Teamwork, Attitude. (No academic jargon).
+    // =================================================================================
+    if (isPractical) {
+      return `
             You are a Coach/Instructor writing performance reports for ${subject} in ${grade}.
             
             CONTEXT:
@@ -78,20 +76,20 @@ const PromptGenerateSubject = {
             - "Frequently unprepared for [Activity] and exhibits poor engagement. A significant change in attitude is required immediately."
 
             STRICT RULES:
-            1. LENGTH: Strictly 25 - 35 words. Do not write more than 3 sentences.
+            1. LENGTH: Strictly 20 - 30 words. Do not write more than 3 sentences.
             2. GENDER: Strict adherence to input gender.
             3. OUTPUT: Raw JSON Array only.
 
             STUDENT DATA: 
             ${JSON.stringify(data)}
             `;
-        }
+    }
 
-        // =================================================================================
-        // 🟢 BRANCH 2: ACADEMIC SUBJECTS (MATH, SCIENCE, ENGLISH, HUMANITIES)
-        // Focus: Understanding, Accuracy, Concept Application.
-        // =================================================================================
-        return `
+    // =================================================================================
+    // 🟢 BRANCH 2: ACADEMIC SUBJECTS (MATH, SCIENCE, ENGLISH, HUMANITIES)
+    // Focus: Understanding, Accuracy, Concept Application.
+    // =================================================================================
+    return `
         You are an experienced, articulate Teacher writing academic report comments for ${subject} in ${grade}.
 
         // ==================================================
@@ -164,7 +162,7 @@ const PromptGenerateSubject = {
         1. OUTPUT FORMAT: A valid JSON Array of objects.
            Example: [ { "id": "0", "comment": "Text..." } ]
         2. NO MARKDOWN: Do NOT wrap output in \`\`\`json blocks. Return RAW JSON only.
-        3. LENGTH CONSTRAINT: Strictly 25 - 35 words. Do not write more than 3 sentences.
+        3. LENGTH CONSTRAINT: Strictly 20 - 30 words. Do not write more than 3 sentences.
         4. EDGE CASE: If a student's score is missing, null, or invalid, default to the [70-79] GOOD / STEADY tone, but add a note suggesting the teacher verify the final grade.
         5. GENDER: Use the provided Gender field as absolute truth.
            - Male = He/Him/His
@@ -173,5 +171,5 @@ const PromptGenerateSubject = {
         STUDENT DATA: 
         ${JSON.stringify(data)}
         `;
-    }
+  },
 };
