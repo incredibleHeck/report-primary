@@ -1,10 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <base target="_top">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
+    <base target="_top" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
+      rel="stylesheet"
+    />
+
     <style>
       :root {
         --primary: #6366f1;
@@ -24,8 +30,10 @@
         --terminal-bg: #0f172a;
         --terminal-text: #e2e8f0;
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --shadow:
+          0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg:
+          0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         --radius: 12px;
         --radius-sm: 8px;
       }
@@ -37,7 +45,11 @@
       }
 
       body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
         background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         min-height: 100vh;
         padding: 16px;
@@ -56,13 +68,17 @@
       }
 
       .card::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        background: linear-gradient(
+          90deg,
+          var(--primary),
+          var(--primary-light)
+        );
       }
 
       .card-header {
@@ -76,7 +92,11 @@
         width: 44px;
         height: 44px;
         border-radius: var(--radius-sm);
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
         display: flex;
         align-items: center;
         justify-content: center;
@@ -139,26 +159,39 @@
       .progress-fill {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        background: linear-gradient(
+          90deg,
+          var(--primary),
+          var(--primary-light)
+        );
         border-radius: 999px;
         transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
       }
 
       .progress-fill::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
         animation: shimmer 2s infinite;
       }
 
       @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
       }
 
       .progress-fill.success {
@@ -246,16 +279,16 @@
         border-radius: var(--radius);
         overflow: hidden;
         box-shadow: var(--shadow-lg);
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .terminal-header {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
         padding: 12px 16px;
         display: flex;
         align-items: center;
         gap: 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .terminal-dots {
@@ -269,9 +302,15 @@
         border-radius: 50%;
       }
 
-      .terminal-dot.red { background: #ef4444; }
-      .terminal-dot.yellow { background: #f59e0b; }
-      .terminal-dot.green { background: #10b981; }
+      .terminal-dot.red {
+        background: #ef4444;
+      }
+      .terminal-dot.yellow {
+        background: #f59e0b;
+      }
+      .terminal-dot.green {
+        background: #10b981;
+      }
 
       .terminal-title {
         flex: 1;
@@ -284,7 +323,7 @@
       }
 
       #log {
-        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
         font-size: 11px;
         line-height: 1.6;
         height: 200px;
@@ -302,7 +341,7 @@
       }
 
       #log::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 3px;
       }
 
@@ -310,14 +349,20 @@
         padding: 6px 10px;
         margin-bottom: 4px;
         border-radius: 4px;
-        background: rgba(255,255,255,0.03);
+        background: rgba(255, 255, 255, 0.03);
         border-left: 3px solid transparent;
         animation: fadeIn 0.3s ease;
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateX(-10px); }
-        to { opacity: 1; transform: translateX(0); }
+        from {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
       }
 
       .log-entry .timestamp {
@@ -325,9 +370,18 @@
         margin-right: 8px;
       }
 
-      .log-info { border-left-color: var(--primary-light); color: #93c5fd; }
-      .log-success { border-left-color: var(--success); color: #6ee7b7; }
-      .log-error { border-left-color: var(--error); color: #fca5a5; }
+      .log-info {
+        border-left-color: var(--primary-light);
+        color: #93c5fd;
+      }
+      .log-success {
+        border-left-color: var(--success);
+        color: #6ee7b7;
+      }
+      .log-error {
+        border-left-color: var(--error);
+        color: #fca5a5;
+      }
 
       .status-badge {
         display: inline-flex;
@@ -364,15 +418,23 @@
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(0.8); }
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
       }
 
-      .hidden { display: none !important; }
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
-
     <div class="card">
       <div class="card-header">
         <div class="icon-wrapper" id="status-icon">
@@ -380,10 +442,12 @@
         </div>
         <div>
           <h2 id="sidebar-title">Initializing...</h2>
-          <p class="subtitle" id="sidebar-desc">Connecting to HeckTeck AI Engine</p>
+          <p class="subtitle" id="sidebar-desc">
+            Connecting to HeckTeck AI Engine
+          </p>
         </div>
       </div>
-      
+
       <div class="status-badge running" id="status-badge">
         <span class="pulse-dot"></span>
         <span id="status-label">Connecting</span>
@@ -433,74 +497,80 @@
     </div>
 
     <script>
-      const MAX_CONCURRENT_REQUESTS = 3;
+      const MAX_CONCURRENT_REQUESTS = 5;
       const MAX_RETRIES = 3;
 
       let totalRows = 0;
       let rowsCompleted = 0;
-      let chunkSize = 10;
+      let chunkSize = 6;
       let currentAction = "";
       let isCancelled = false;
       let chunkQueue = [];
       let activeRequests = 0;
 
       function log(message, type = "info") {
-        const logDiv = document.getElementById('log');
-        const entry = document.createElement('div');
-        
+        const logDiv = document.getElementById("log");
+        const entry = document.createElement("div");
+
         let colorClass = "log-info";
         if (type === "error") colorClass = "log-error";
         if (type === "success") colorClass = "log-success";
-        
+
         const time = new Date().toLocaleTimeString([], { hour12: false });
         entry.className = `log-entry ${colorClass}`;
         entry.innerHTML = `<span class="timestamp">${time}</span>${message}`;
-        
+
         logDiv.appendChild(entry);
         logDiv.scrollTop = logDiv.scrollHeight;
       }
 
       function updateProgress() {
-        const percent = totalRows > 0 ? Math.min(100, Math.round((rowsCompleted / totalRows) * 100)) : 0;
-        
-        document.getElementById('progress-bar').style.width = percent + '%';
-        document.getElementById('progress-percent').textContent = percent + '%';
-        document.getElementById('completed-count').textContent = rowsCompleted;
-        document.getElementById('total-count').textContent = totalRows;
-        
+        const percent =
+          totalRows > 0
+            ? Math.min(100, Math.round((rowsCompleted / totalRows) * 100))
+            : 0;
+
+        document.getElementById("progress-bar").style.width = percent + "%";
+        document.getElementById("progress-percent").textContent = percent + "%";
+        document.getElementById("completed-count").textContent = rowsCompleted;
+        document.getElementById("total-count").textContent = totalRows;
+
         if (percent === 100) {
-          document.getElementById('progress-bar').classList.add('success');
-          setStatus('complete', 'Complete');
+          document.getElementById("progress-bar").classList.add("success");
+          setStatus("complete", "Complete");
         }
       }
 
       function setStatus(type, label) {
-        const badge = document.getElementById('status-badge');
-        const iconWrapper = document.getElementById('status-icon');
-        const icon = iconWrapper.querySelector('.material-icons-round');
-        
-        badge.className = 'status-badge ' + type;
-        document.getElementById('status-label').textContent = label;
-        
-        if (type === 'complete') {
-          icon.textContent = 'check_circle';
-          iconWrapper.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
-        } else if (type === 'error') {
-          icon.textContent = 'error';
-          iconWrapper.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+        const badge = document.getElementById("status-badge");
+        const iconWrapper = document.getElementById("status-icon");
+        const icon = iconWrapper.querySelector(".material-icons-round");
+
+        badge.className = "status-badge " + type;
+        document.getElementById("status-label").textContent = label;
+
+        if (type === "complete") {
+          icon.textContent = "check_circle";
+          iconWrapper.style.background =
+            "linear-gradient(135deg, #10b981, #34d399)";
+        } else if (type === "error") {
+          icon.textContent = "error";
+          iconWrapper.style.background =
+            "linear-gradient(135deg, #ef4444, #f87171)";
         } else {
-          icon.textContent = 'sync';
+          icon.textContent = "sync";
         }
       }
 
-      window.onload = function() {
+      window.onload = function () {
         log("Establishing connection...", "info");
         google.script.run
           .withSuccessHandler(initQueue)
-          .withFailureHandler(err => {
+          .withFailureHandler((err) => {
             log("Connection failed: " + err, "error");
-            setStatus('error', 'Failed');
-            document.getElementById('sidebar-title').innerText = "Connection Error";
+            setStatus("error", "Failed");
+            document.getElementById("sidebar-title").innerText =
+              "Connection Error";
           })
           .getSelectionInfo();
       };
@@ -508,27 +578,28 @@
       function initQueue(info) {
         if (info.error) {
           log(info.error, "error");
-          setStatus('error', 'Error');
+          setStatus("error", "Error");
           return;
         }
 
         totalRows = info.numRows;
-        chunkSize = info.chunkSize || 10;
+        chunkSize = info.chunkSize || 6;
         currentAction = info.action;
-        
-        document.getElementById('sidebar-title').textContent = info.title;
-        document.getElementById('sidebar-desc').textContent = `Processing ${totalRows} items in smart batches`;
-        document.getElementById('batch-size').textContent = chunkSize;
-        document.getElementById('total-count').textContent = totalRows;
-        document.getElementById('cancel-btn').classList.remove('hidden');
-        
-        setStatus('running', 'Processing');
+
+        document.getElementById("sidebar-title").textContent = info.title;
+        document.getElementById("sidebar-desc").textContent =
+          `Processing ${totalRows} items in smart batches`;
+        document.getElementById("batch-size").textContent = chunkSize;
+        document.getElementById("total-count").textContent = totalRows;
+        document.getElementById("cancel-btn").classList.remove("hidden");
+
+        setStatus("running", "Processing");
 
         for (let i = 0; i < totalRows; i += chunkSize) {
           let size = Math.min(chunkSize, totalRows - i);
           chunkQueue.push({ startRowIndex: i, count: size, retries: 0 });
         }
-        
+
         log(`Queue initialized: ${chunkQueue.length} batches`, "info");
         processQueue();
       }
@@ -536,7 +607,10 @@
       function processQueue() {
         if (isCancelled) return;
 
-        while (activeRequests < MAX_CONCURRENT_REQUESTS && chunkQueue.length > 0) {
+        while (
+          activeRequests < MAX_CONCURRENT_REQUESTS &&
+          chunkQueue.length > 0
+        ) {
           const chunk = chunkQueue.shift();
           activeRequests++;
           sendChunk(chunk);
@@ -544,11 +618,15 @@
 
         if (activeRequests === 0 && chunkQueue.length === 0) {
           log("All tasks completed successfully!", "success");
-          document.getElementById('sidebar-title').textContent = "Complete";
-          document.getElementById('sidebar-desc').textContent = "All items have been processed";
-          document.getElementById('cancel-btn').classList.add('hidden');
-          setStatus('complete', 'Done');
-          google.script.run.toast("HeckTeck: Batch process complete!", "Success");
+          document.getElementById("sidebar-title").textContent = "Complete";
+          document.getElementById("sidebar-desc").textContent =
+            "All items have been processed";
+          document.getElementById("cancel-btn").classList.add("hidden");
+          setStatus("complete", "Done");
+          google.script.run.toast(
+            "HeckTeck: Batch process complete!",
+            "Success",
+          );
         }
       }
 
@@ -567,10 +645,13 @@
           .withFailureHandler((err) => {
             activeRequests--;
             log(`Batch ${batchNum} failed: ${err.message}`, "error");
-            
+
             if (chunk.retries < MAX_RETRIES) {
               chunk.retries++;
-              log(`Retrying batch ${batchNum} (attempt ${chunk.retries + 1})`, "info");
+              log(
+                `Retrying batch ${batchNum} (attempt ${chunk.retries + 1})`,
+                "info",
+              );
               chunkQueue.push(chunk);
             } else {
               log(`Batch ${batchNum} permanently failed`, "error");
@@ -580,13 +661,14 @@
           .processChunk(currentAction, chunk.startRowIndex, chunk.count);
       }
 
-      document.getElementById('cancel-btn').onclick = function() {
+      document.getElementById("cancel-btn").onclick = function () {
         isCancelled = true;
         this.disabled = true;
-        this.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Stopping...</span>';
+        this.innerHTML =
+          '<span class="material-icons-round">hourglass_empty</span><span>Stopping...</span>';
         log("Process cancelled by user", "error");
-        document.getElementById('progress-bar').classList.add('error');
-        setStatus('error', 'Cancelled');
+        document.getElementById("progress-bar").classList.add("error");
+        setStatus("error", "Cancelled");
       };
     </script>
   </body>
