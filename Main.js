@@ -5,6 +5,10 @@
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
     ui.createMenu('HeckTeck AI 🎓')
+        // --- SETTINGS ---
+        .addItem(' ⚙️ Class Settings', 'openSettingsSidebar')
+        .addSeparator()
+
         // --- PHASE 1: DRAFTING ---
         .addItem(' 📝 1a. Set Subject Context (Topics)', 'openSubjectContextSidebar')
         .addItem(' ⚡ 1b. Auto-Generate Subject Comments', 'runCommentGenerator')
@@ -214,7 +218,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
       <div><button onclick='google.script.host.close()'>Done</button></div>
     </div>`;
 
-  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(600).setHeight(650);
+  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(800).setHeight(650);
   ui.showModalDialog(htmlOutput, 'System Readiness Check');
 }
 
@@ -233,11 +237,7 @@ function runReportPreview() {
 
 // 2. Full Report Batch
 function runFullReportBatch() {
-    if (typeof ReportCardGenerator !== 'undefined') {
-        ReportCardGenerator.process();
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ ReportCardGenerator not found.");
-    }
+    runAllReportsSafely();
 }
 
 // 2b. Midterm Report Preview
@@ -265,11 +265,7 @@ function runCommentGenerator() {
 
 // 4. Audit & Name Mismatch Fix
 function runAuditFix() {
-    if (typeof FixMismatchManager !== 'undefined') {
-        FixMismatchManager.run();
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ FixMismatchManager not found.");
-    }
+    initiateBatchAction('Fix Name Mismatches', 'auditfix');
 }
 
 // 5. WhatsApp Integration
@@ -371,7 +367,7 @@ function openSidebar(title, action) {
 
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
         .setTitle(title)
-        .setWidth(420); 
+        .setWidth(300); 
     SpreadsheetApp.getUi().showSidebar(html);
 }
 

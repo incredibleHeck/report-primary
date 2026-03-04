@@ -204,7 +204,26 @@ function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
         try {
             return JSON.parse(rawText);
         } catch (parseError) {
-            console.error("JSON Parse Error:", parseError, "Raw Length:", rawText.length, "Raw Preview:", rawText.substring(0, 500));
+            console.warn("Initial JSON Parse Failed, attempting fallback extraction:", parseError, "Raw Length:", rawText.length, "Raw Preview:", rawText.substring(0, 500));
+            
+            // Fallback: Try to extract individual JSON objects using regex
+            const jsonObjects = [];
+            const regex = /{[^{}]*?}/g; // Matches objects without nested braces at first
+            let match;
+            while ((match = regex.exec(rawText)) !== null) {
+                try {
+                    const obj = JSON.parse(match[0]);
+                    jsonObjects.push(obj);
+                } catch (innerParseError) {
+                    console.warn("Fallback JSON object parse failed for:", match[0].substring(0, 100), innerParseError);
+                }
+            }
+            
+            if (jsonObjects.length > 0) {
+                console.log(`Successfully extracted ${jsonObjects.length} objects from malformed response.`);
+                return jsonObjects;
+            }
+
             showAPIError("AI returned invalid data format. Please try again.");
             return [];
         }

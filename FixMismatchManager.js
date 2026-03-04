@@ -16,7 +16,7 @@ const FixMismatchManager = {
         if (typeof StateManager !== 'undefined') StateManager.saveForUndo(range);
         
         // 1. FRESH SLATE RESET
-        range.setFontColor("#000000"); // Reset to default black
+        range.setFontColor("#FFFFFF"); // Reset to white for dark background visibility
         range.clearNote();
         SpreadsheetApp.flush();
 
@@ -127,6 +127,7 @@ const FixMismatchManager = {
     extractFirstName: function(fullName) {
         if (!fullName) return "Student";
         const parts = fullName.toString().trim().split(/\s+/);
+        // Returns 2nd part if exists (e.g. "Doe John" -> "John"), else 1st part
         return (parts.length > 1) ? parts[1] : parts[0];
     }
 };

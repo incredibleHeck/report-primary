@@ -6,7 +6,7 @@ const SubjectContextManager = {
     openSidebar: function() {
         const html = HtmlService.createHtmlOutputFromFile('SubjectContextSidebar')
             .setTitle('Subject Context Manager')
-            .setWidth(420);
+            .setWidth(300);
         SpreadsheetApp.getUi().showSidebar(html);
     },
 

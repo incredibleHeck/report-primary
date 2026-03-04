@@ -11,7 +11,7 @@ const GeneralCommentsManager = {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
         const html = template.evaluate()
             .setTitle('Class Teacher General Comment')
-            .setWidth(420)
+            .setWidth(300)
             .addMetaTag('viewport', 'width=device-width, initial-scale=1');
         SpreadsheetApp.getUi().showSidebar(html);
     },
@@ -23,7 +23,7 @@ const GeneralCommentsManager = {
 
         const row = range.getRow();
         // 🛡️ Safety: Ensure Config is loaded, default to 3 if not
-        const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3; 
+        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
         
         if (row < minRow) return { valid: false, rowIndex: row }; 
         return { valid: true, rowIndex: row };
@@ -36,7 +36,7 @@ const GeneralCommentsManager = {
             if (!activeRange) return { error: "Please click on a student row." };
             
             const row = activeRange.getRow();
-            const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3; 
+            const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
 
             if (row < minRow) return { error: `Please select a valid student (Row ${minRow}+).` };
 
@@ -120,7 +120,7 @@ const GeneralCommentsManager = {
         const classlist = ss.getSheetByName(classSheetName);
         
         // Alignment
-        const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3;
+        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2
         const rowOffset = minRow - 2;
         const classlistRow = row - rowOffset;
 
