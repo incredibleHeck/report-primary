@@ -2,25 +2,6 @@
  * Centralized API Management - SuperBatch with Retry Logic
  * HECKTECK API.js
  */
-const APICache = {
-    get: (key) => {
-        try {
-            return CacheService.getDocumentCache().get(key);
-        } catch (e) {
-            logSysError("Cache Get Failed", e.message);
-            return null;
-        }
-    },
-    set: (key, value) => {
-        try {
-            // TTL: 6 hours
-            CacheService.getDocumentCache().put(key, value, 21600);
-        } catch (e) {
-            logSysError("Cache Set Failed", e.message);
-        }
-    }
-};
-
 /**
  * Helper to log critical errors to a hidden SYS_LOGS sheet.
  */

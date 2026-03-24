@@ -95,9 +95,9 @@ const WhatsAppManager = {
         try {
             return this.uploadPdfToMeta(fileId);
         } catch (e) {
-            if (e.message.includes("429") || e.message.includes("limit") || attempt <= 3) {
-                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-                console.warn(`Meta Busy. Retrying Upload in ${delay}ms...`);
+            if (attempt <= 3) {
+                const delay = Math.pow(2, attempt) * 1000;
+                console.warn(`Upload failed (attempt ${attempt}/3). Retrying in ${delay}ms...`);
                 Utilities.sleep(delay);
                 return this.uploadWithRetry(fileId, attempt + 1);
             }
@@ -133,9 +133,9 @@ const WhatsAppManager = {
         try {
             return this.sendTemplateMessage(phone, studentName, mediaId);
         } catch (e) {
-            if (e.message.includes("429") || e.message.includes("limit") || attempt <= 3) {
-                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-                console.warn(`Meta Busy. Retrying Send in ${delay}ms...`);
+            if (attempt <= 3) {
+                const delay = Math.pow(2, attempt) * 1000;
+                console.warn(`Send failed (attempt ${attempt}/3). Retrying in ${delay}ms...`);
                 Utilities.sleep(delay);
                 return this.sendWithRetry(phone, studentName, mediaId, attempt + 1);
             }

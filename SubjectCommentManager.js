@@ -15,9 +15,8 @@ const SubjectCommentManager = {
         let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
         
         if (commentColIndex === -1) {
-            // Fallback for sheets that might not match the standard template exactly
             commentColIndex = scoreCol + 2;
-            console.warn("Could not find 'COMMENT' header. Defaulting to +3.");
+            console.warn("Could not find 'COMMENT' header. Defaulting to scoreCol + 2.");
         }
 
         // Save State for Undo

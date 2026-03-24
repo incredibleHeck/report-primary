@@ -6,11 +6,14 @@ const StateManager = {
     /**
      * SAVES state before an operation (for Undo).
      */
+    _undoKey: function() {
+        return "UNDO_" + SpreadsheetApp.getActiveSpreadsheet().getId();
+    },
+
     saveForUndo: function (range) {
         try {
             const sheet = range.getSheet();
             const values = range.getValues();
-            // Limit check to prevent cache errors (100kb limit)
             if (JSON.stringify(values).length > 90000) return;
             
             const undoData = {
@@ -18,7 +21,7 @@ const StateManager = {
                 rangeA1: range.getA1Notation(),
                 values: values
             };
-            CacheService.getUserCache().put("LAST_ACTION_UNDO", JSON.stringify(undoData), 3600);
+            CacheService.getUserCache().put(this._undoKey(), JSON.stringify(undoData), 3600);
         } catch (e) {
             console.error("Undo save failed:", e);
         }
@@ -28,7 +31,7 @@ const StateManager = {
      * RESTORES the previous state.
      */
     undo: function () {
-        const json = CacheService.getUserCache().get("LAST_ACTION_UNDO");
+        const json = CacheService.getUserCache().get(this._undoKey());
         if (!json) {
             SpreadsheetApp.getActiveSpreadsheet().toast("Nothing to undo.", "Undo");
             return;
@@ -41,12 +44,11 @@ const StateManager = {
         const range = sheet.getRange(data.rangeA1);
         range.setValues(data.values);
         
-        // Reset style to "Clean" state (White text)
         range.setFontColor("#FFFFFF"); 
         range.setFontWeight("normal");
         
         SpreadsheetApp.getActiveSpreadsheet().toast("Last action undone.", "Success");
-        CacheService.getUserCache().remove("LAST_ACTION_UNDO");
+        CacheService.getUserCache().remove(this._undoKey());
     },
 
     /**

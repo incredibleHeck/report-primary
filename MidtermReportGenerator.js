@@ -79,8 +79,7 @@ const MidtermReportGenerator = {
       const studentName = row[cols.STUDENT_NAME];
       if (!studentName) continue;
 
-      // --- 1. Fill Template Using Optimized Batch Operations ---
-      this.fillTemplateFast(templateSheet, row, cols, subjects);
+      this.fillTemplateFast(templateSheet, row, cols, subjects, Object.keys(subjects).length);
 
       // --- 2. Generate PDF ---
       SpreadsheetApp.flush();
@@ -122,7 +121,7 @@ const MidtermReportGenerator = {
   /**
    * 🟢 OPTIMIZED: Fill template using batch setValues() for speed
    */
-  fillTemplateFast: function (sheet, row, cols, subjects) {
+  fillTemplateFast: function (sheet, row, cols, subjects, subjectCount) {
     // Clear content areas in one batch call
     sheet
       .getRangeList(["A6:L8", "B10:F16", "D19:L21", "E23:L26"])
@@ -198,11 +197,12 @@ const MidtermReportGenerator = {
     sheet.getRange("B10:F16").setValues(subjectData);
 
     // --- SUMMARY ROWS 20-21 ---
+    const outOf = subjectCount * 100;
     const summaryData1 = [
       "Raw Score: " + row[cols.RAW_SCORE],
       "",
       "",
-      "Out of: 700",
+      "Out of: " + outOf,
       "",
       "",
       "Average Mark: " + row[cols.AVG_MARK],
@@ -240,7 +240,7 @@ const MidtermReportGenerator = {
     sheet.getRange(this.CELLS.RESUME).setValue(Config.SCHOOL_RESUMES);
 
     sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
-    sheet.getRange("G20").setValue("Out of: 700");
+    sheet.getRange("G20").setValue("Out of: " + (Object.keys(Config.MIDTERM_SUBJECT_CONFIG).length * 100));
     sheet.getRange(this.CELLS.AVE_MARK).setValue("Average Mark: ");
     sheet.getRange(this.CELLS.AVE_GRD).setValue("Average Grade: ");
     sheet.getRange(this.CELLS.BEST_GRD).setValue("Best Grade: ");

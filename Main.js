@@ -407,14 +407,7 @@ function processChunk(action, relativeStartRow, numRows) {
     const absoluteStartRow = config.startRow + relativeStartRow;
     const chunkRange = sheet.getRange(absoluteStartRow, config.startCol, numRows, config.numCols);
 
-    // 🟢 DYNAMIC DISCOVERY FOR BATCH ACTIONS
     switch (action) {
-        case 'generate': 
-            // Look for "COMMENT" column dynamically
-            let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
-            if (commentColIndex === -1) commentColIndex = chunkRange.getColumn() + 2; // Fallback
-            return SubjectCommentManager.generateBatch(chunkRange, commentColIndex);
-
         case 'polish': return PolishManager.processRange(chunkRange);
         case 'pronouns': return PronounManager.processRange(chunkRange);
         case 'audit': return AuditManager.processRange(chunkRange);
