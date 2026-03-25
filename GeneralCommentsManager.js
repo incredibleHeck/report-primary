@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GeneralCommentsManager.js
+// HECTECH GeneralCommentsManager.js
 // ==========================================
 
 const GeneralCommentsManager = {

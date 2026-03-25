@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK AuditManager.js
+// HECTECH AuditManager.js
 // ==========================================
 
 const AuditManager = {
@@ -24,7 +24,7 @@ const AuditManager = {
 
     SpreadsheetApp.getActiveSpreadsheet().toast(
       "🔍 Running Professional Audit...",
-      "HeckTeck AI",
+      "HecTech AI",
       -1,
     );
 

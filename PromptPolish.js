@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptPolish.js
+// HECTECH PromptPolish.js
 // ==========================================
 
 const PromptPolish = {

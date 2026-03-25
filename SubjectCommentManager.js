@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SubjectCommentManager.js
+// HECTECH SubjectCommentManager.js
 // ==========================================
 
 const SubjectCommentManager = {
@@ -30,6 +30,26 @@ const SubjectCommentManager = {
         if (result && result.success) {
             SpreadsheetApp.getActiveSpreadsheet().toast(`📝 Generated ${result.count} comments.`, "Success");
         }
+    },
+
+    // 🟢 NEW: Process a specific chunk range from the sidebar
+    processRange: function (chunkRange) {
+        const sheet = chunkRange.getSheet();
+        let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
+        
+        if (commentColIndex === -1) {
+            // Default to 2 columns to the right of the score column
+            commentColIndex = chunkRange.getColumn() + 2;
+        }
+
+        // Save State for Undo
+        if (typeof StateManager !== 'undefined') {
+            const undoRange = sheet.getRange(chunkRange.getRow(), commentColIndex, chunkRange.getNumRows(), 1);
+            StateManager.saveForUndo(undoRange);
+        }
+
+        const result = this.generateBatch(chunkRange, commentColIndex);
+        return result ? "Done" : "Failed";
     },
 
     generateBatch: function (scoreRange, commentColIndex) {

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK FixMismatchManager.js
+// HECTECH FixMismatchManager.js
 // ==========================================
 
 const FixMismatchManager = {
@@ -25,7 +25,7 @@ const FixMismatchManager = {
             if (result.changes > 0) {
                 SpreadsheetApp.getActiveSpreadsheet().toast(`✅ Auto-Fixed ${result.changes} identity errors!`, "Complete");
             } else {
-                SpreadsheetApp.getActiveSpreadsheet().toast("✨ No identity mismatches found.", "HeckTeck");
+                SpreadsheetApp.getActiveSpreadsheet().toast("✨ No identity mismatches found.", "HecTech");
             }
         }
     },

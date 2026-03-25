@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SubjectContextManager.js
+// HECTECH SubjectContextManager.js
 // ==========================================
 
 const SubjectContextManager = {

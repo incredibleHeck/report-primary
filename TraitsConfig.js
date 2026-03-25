@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK TraitsConfig.js
+// HECTECH TraitsConfig.js
 // ==========================================
 
 const TraitsConfig = {

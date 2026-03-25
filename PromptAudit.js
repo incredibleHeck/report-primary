@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptAudit.js
+// HECTECH PromptAudit.js
 // ==========================================
 
 const PromptAudit = {

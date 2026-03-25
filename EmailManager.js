@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK EmailManager.js
+// HECTECH EmailManager.js
 // ==========================================
 
 const EmailManager = {
@@ -54,7 +54,7 @@ const EmailManager = {
     if (response !== ui.Button.OK) return;
 
     // 4. SENDING LOOP
-    ss.toast("🚀 Sending Emails...", "HeckTeck", -1);
+    ss.toast("🚀 Sending Emails...", "HecTech", -1);
     
     let sentCount = 0;
     let failCount = 0;

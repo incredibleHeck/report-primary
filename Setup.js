@@ -1,6 +1,6 @@
 /**
  * ==========================================
- * HECKTECK Setup.js (Hardened Architecture)
+ * HECTECH Setup.js (Hardened Architecture)
  * ==========================================
  * Use this file to initialize or update system settings.
  * 

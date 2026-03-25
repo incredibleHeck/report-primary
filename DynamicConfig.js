@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK DynamicConfig.js (Cleaned & Optimized)
+// HECTECH DynamicConfig.js (Cleaned & Optimized)
 // ==========================================
 
 const DynamicConfig = {

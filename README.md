@@ -1,4 +1,4 @@
-# HeckTeck AI - School Report Card Generator
+# HecTech AI - School Report Card Generator
 
 An AI-powered Google Apps Script system for generating, managing, and distributing student report cards. Built for scale - supports multi-campus deployments with 30+ students per class.
 
@@ -75,7 +75,7 @@ An AI-powered Google Apps Script system for generating, managing, and distributi
 ### 2. Configure Credentials
 
 1. Open your Google Sheet
-2. Go to **HeckTeck AI** menu → **Run System Health Check**
+2. Go to **HecTech AI** menu → **Run System Health Check**
 3. If credentials are missing, run Setup:
    - In Apps Script editor, open `Setup.js`
    - Update the `initialConfig` with your actual credentials
@@ -248,7 +248,7 @@ Report generators use `fillTemplateFast()` which batches setValue operations:
 ## Troubleshooting
 
 ### "API Key not configured"
-Run Setup from the HeckTeck menu or manually set `GEMINI_API_KEY` in Script Properties.
+Run Setup from the HecTech menu or manually set `GEMINI_API_KEY` in Script Properties.
 
 ### "Manager not found" errors
 Ensure all files are properly pushed to Apps Script and there are no syntax errors.
@@ -262,7 +262,7 @@ Check that student names in `REPORT DATA` exactly match names in `CONTACT LIST`.
 3. Ensure phone numbers are in correct format (no spaces, include country code)
 
 ### Email delivery fails
-1. Check daily quota: HeckTeck menu → System Health Check
+1. Check daily quota: HecTech menu → System Health Check
 2. Emails now auto-retry on "Service Unavailable" errors
 3. For persistent failures, check recipient email validity
 
@@ -292,4 +292,4 @@ The sidebars use a modern design system:
 
 ## License
 
-Private - HeckTeck AI
+Private - HecTech AI

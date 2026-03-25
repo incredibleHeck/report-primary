@@ -1,10 +1,10 @@
 // ==========================================
-// HECKTECK Main.js (Final Master - With Pro Dashboard)
+// HECTECH Main.js (Final Master - With Pro Dashboard)
 // ==========================================
 
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
-    ui.createMenu('HeckTeck AI 🎓')
+    ui.createMenu('HecTech AI 🎓')
         // --- SETTINGS ---
         .addItem(' ⚙️ Class Settings', 'openSettingsSidebar')
         .addSeparator()
@@ -204,7 +204,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
       button:hover { background: #1557b0; }
     </style>
     <div class="container">
-      <h3>🚀 HeckTeck System Health</h3>
+      <h3>🚀 HecTech System Health</h3>
       <table>
         <tr><th>Category</th><th>Check Item</th><th>Status</th><th>Details</th></tr>
   `;
@@ -334,8 +334,8 @@ function runUndo() {
 }
 
 // --- BATCHING LOGIC ---
-// 🟢 FIX: Use DocumentProperties instead of UserProperties
-// This prevents race conditions when multiple spreadsheets are open in different tabs
+// 🟢 FIX: Switched to UserProperties to allow multiple teachers to work in the same sheet simultaneously.
+// Note: Users should avoid running batches in multiple tabs at the exact same time.
 function initiateBatchAction(title, action) {
     const selection = SelectionProcessor.getSmartSelection(); 
     if (!selection) {
@@ -354,16 +354,16 @@ function initiateBatchAction(title, action) {
         timestamp: new Date().getTime()
     };
     
-    // 🟢 DocumentProperties is bound to THIS specific spreadsheet file
-    PropertiesService.getDocumentProperties().setProperty('ACTIVE_BATCH_CONFIG', JSON.stringify(rangeConfig));
+    // 🟢 UserProperties isolates memory per-user, preventing collisions in a shared sheet
+    PropertiesService.getUserProperties().setProperty('ACTIVE_BATCH_CONFIG', JSON.stringify(rangeConfig));
 
     openSidebar(title, action);
 }
 
 function openSidebar(title, action) {
-    const docProps = PropertiesService.getDocumentProperties();
-    docProps.setProperty('CURRENT_SIDEBAR_ACTION', action);
-    docProps.setProperty('CURRENT_SIDEBAR_TITLE', title);
+    const userProps = PropertiesService.getUserProperties();
+    userProps.setProperty('CURRENT_SIDEBAR_ACTION', action);
+    userProps.setProperty('CURRENT_SIDEBAR_TITLE', title);
 
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
         .setTitle(title)
@@ -372,10 +372,10 @@ function openSidebar(title, action) {
 }
 
 function getSelectionInfo() {
-    const docProps = PropertiesService.getDocumentProperties();
-    const configStr = docProps.getProperty('ACTIVE_BATCH_CONFIG');
-    const action = docProps.getProperty('CURRENT_SIDEBAR_ACTION');
-    const title = docProps.getProperty('CURRENT_SIDEBAR_TITLE');
+    const userProps = PropertiesService.getUserProperties();
+    const configStr = userProps.getProperty('ACTIVE_BATCH_CONFIG');
+    const action = userProps.getProperty('CURRENT_SIDEBAR_ACTION');
+    const title = userProps.getProperty('CURRENT_SIDEBAR_TITLE');
 
     if (!configStr) return { error: "No active selection found." };
 
@@ -395,8 +395,8 @@ function getSelectionInfo() {
 }
 
 function processChunk(action, relativeStartRow, numRows) {
-    const docProps = PropertiesService.getDocumentProperties();
-    const configStr = docProps.getProperty('ACTIVE_BATCH_CONFIG');
+    const userProps = PropertiesService.getUserProperties();
+    const configStr = userProps.getProperty('ACTIVE_BATCH_CONFIG');
     if (!configStr) throw new Error("Lost selection context.");
     
     const config = JSON.parse(configStr);
@@ -408,6 +408,7 @@ function processChunk(action, relativeStartRow, numRows) {
     const chunkRange = sheet.getRange(absoluteStartRow, config.startCol, numRows, config.numCols);
 
     switch (action) {
+        case 'generate': return SubjectCommentManager.processRange(chunkRange);
         case 'polish': return PolishManager.processRange(chunkRange);
         case 'pronouns': return PronounManager.processRange(chunkRange);
         case 'audit': return AuditManager.processRange(chunkRange);

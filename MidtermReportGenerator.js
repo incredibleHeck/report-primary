@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK MidtermReportGenerator.js
+// HECTECH MidtermReportGenerator.js
 // ==========================================
 
 const MidtermReportGenerator = {
@@ -115,7 +115,7 @@ const MidtermReportGenerator = {
     const msg = isPreview
       ? "Midterm Preview Ready."
       : `Midterm Batch Complete! ${successCount} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`;
-    ss.toast(msg, "HeckTeck Engine", 5);
+    ss.toast(msg, "HecTech Engine", 5);
   },
 
   /**

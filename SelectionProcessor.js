@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SelectionProcessor.js
+// HECTECH SelectionProcessor.js
 // ==========================================
 
 const SelectionProcessor = {

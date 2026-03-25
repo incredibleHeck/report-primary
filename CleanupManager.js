@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK CleanupManager.js
+// HECTECH CleanupManager.js
 // ==========================================
 
 const CleanupManager = {

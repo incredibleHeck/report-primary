@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptGenerateGeneral.js
+// HECTECH PromptGenerateGeneral.js
 // ==========================================
 
 const PromptGenerateGeneral = {

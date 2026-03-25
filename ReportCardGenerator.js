@@ -1,9 +1,9 @@
 // ==========================================
-// HECKTECK ReportCardGenerator.js (Turbo Mode)
+// HECTECH ReportCardGenerator.js (Turbo Mode)
 // ==========================================
 
 // ==========================================
-// HECKTECK TURBO BATCH MANAGER
+// HECTECH TURBO BATCH MANAGER
 // ==========================================
 
 function runAllReportsSafely() {
@@ -13,7 +13,7 @@ function runAllReportsSafely() {
     let batchNumber = 1;
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    ss.toast("Starting batch generation...", "HeckTeck Engine", 5);
+    ss.toast("Starting batch generation...", "HecTech Engine", 5);
 
     // Keep running until the process function says 0 students are left
     while (remainingStudents > 0) {
@@ -24,7 +24,7 @@ function runAllReportsSafely() {
 
         if (remainingStudents > 0) {
             console.log(`Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s to avoid rate limits...`);
-            ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} reports left.`, "HeckTeck Engine", PAUSE_SECONDS);
+            ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} reports left.`, "HecTech Engine", PAUSE_SECONDS);
             
             // 🟢 The 20-second pause between batches
             Utilities.sleep(PAUSE_SECONDS * 1000); 
@@ -34,7 +34,7 @@ function runAllReportsSafely() {
     }
 
     console.log("🎉 All reports generated successfully!");
-    ss.toast("🎉 All reports generated successfully!", "HeckTeck Engine", -1);
+    ss.toast("🎉 All reports generated successfully!", "HecTech Engine", -1);
 }
 
 const ReportCardGenerator = {
@@ -179,7 +179,7 @@ const ReportCardGenerator = {
         const msg = isPreview 
             ? "Preview Ready." 
             : `Batch Complete! ${processedInThisBatch} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
-        ss.toast(msg, "HeckTeck Engine", 5);
+        ss.toast(msg, "HecTech Engine", 5);
 
         // Tell the Autopilot how many are left
         return remainingToProcess; 

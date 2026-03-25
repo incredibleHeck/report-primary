@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK FolderManager.js
+// HECTECH FolderManager.js
 // ==========================================
 
 const FolderManager = {
@@ -14,7 +14,7 @@ const FolderManager = {
         
         // 1. UNIQUE CACHE KEY (Prevents cross-sheet collisions)
         const cache = CacheService.getUserCache();
-        const cacheKey = `HECKTECK_FOLDER_${ssId}`; 
+        const cacheKey = `HECTECH_FOLDER_${ssId}`; 
         const cachedId = cache.get(cacheKey);
 
         if (cachedId) {
@@ -72,6 +72,6 @@ const FolderManager = {
      */
     resetCache: function() {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        CacheService.getUserCache().remove(`HECKTECK_FOLDER_${ssId}`);
+        CacheService.getUserCache().remove(`HECTECH_FOLDER_${ssId}`);
     }
 };

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GenderNormalizer.js
+// HECTECH GenderNormalizer.js
 // ==========================================
 
 const GenderNormalizer = {

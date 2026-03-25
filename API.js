@@ -1,6 +1,6 @@
 /**
  * Centralized API Management - SuperBatch with Retry Logic
- * HECKTECK API.js
+ * HECTECH API.js
  */
 /**
  * Helper to log critical errors to a hidden SYS_LOGS sheet.
@@ -24,7 +24,7 @@ function logSysError(action, message) {
  * User-friendly error messages for common API issues
  */
 const APIErrors = {
-    NO_API_KEY: "Gemini API Key not configured. Please run Setup from the HeckTeck menu.",
+    NO_API_KEY: "Gemini API Key not configured. Please run Setup from the HecTech menu.",
     INVALID_API_KEY: "Invalid API Key. Please check your Gemini API Key in Script Properties.",
     RATE_LIMITED: "AI service is busy. Please wait a moment and try again.",
     CONTENT_BLOCKED: "AI could not generate a response for this content. Try modifying the input.",

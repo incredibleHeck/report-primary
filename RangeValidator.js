@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK RangeValidator.js
+// HECTECH RangeValidator.js
 // ==========================================
 
 const RangeValidator = {
@@ -23,7 +23,7 @@ const RangeValidator = {
         
         // Validation: If selection is entirely in the header zone (e.g. Row 1-2 only)
         if (startRow > endRow) {
-            SpreadsheetApp.getActiveSpreadsheet().toast(`⚠️ Please select data starting from Row ${minStartRow}.`, "HeckTeck");
+            SpreadsheetApp.getActiveSpreadsheet().toast(`⚠️ Please select data starting from Row ${minStartRow}.`, "HecTech");
             return null;
         }
         

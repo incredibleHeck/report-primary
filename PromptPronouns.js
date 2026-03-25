@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptPronouns.js
+// HECTECH PromptPronouns.js
 // ==========================================
 
 const PromptPronouns = {

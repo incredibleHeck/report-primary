@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SettingsManager.js
+// HECTECH SettingsManager.js
 // ==========================================
 
 const SettingsManager = {

@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK WhatsAppManager.js
+// HECTECH WhatsAppManager.js
 // ==========================================
 
 const WhatsAppManager = {
@@ -46,7 +46,7 @@ const WhatsAppManager = {
         let successCount = 0;
         let failCount = 0;
 
-        ss.toast("Starting WhatsApp Batch...", "HeckTeck", -1);
+        ss.toast("Starting WhatsApp Batch...", "HecTech", -1);
 
         for (let i = 0; i < data.length; i++) {
             const row = data[i];

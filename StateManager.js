@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK StateManager.js
+// HECTECH StateManager.js
 // ==========================================
 
 const StateManager = {
