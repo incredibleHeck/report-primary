@@ -333,6 +333,10 @@ function runUndo() {
     if (typeof StateManager !== 'undefined') StateManager.undo();
 }
 
+function toast(msg, title) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(msg, title || "System");
+}
+
 // --- BATCHING LOGIC ---
 // 🟢 FIX: Switched to UserProperties to allow multiple teachers to work in the same sheet simultaneously.
 // Note: Users should avoid running batches in multiple tabs at the exact same time.
