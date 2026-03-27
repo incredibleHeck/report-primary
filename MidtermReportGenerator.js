@@ -25,11 +25,12 @@ const MidtermReportGenerator = {
     TEACHER: "L24",
   },
 
-  runPreview: function () {
-    this.process(true);
+  runPreview: function (clientToken) {
+    this.process(true, 999, clientToken);
   },
 
-  process: function (isPreview = false) {
+  process: function (isPreview = false, batchLimit = 999, clientToken) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: clientToken type=${typeof clientToken}`);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sourceSheet = ss.getSheetByName(Config.MIDTERM_SHEET_NAME);
     const templateSheet = ss.getSheetByName(Config.MIDTERM_TEMPLATE_NAME);
@@ -45,10 +46,17 @@ const MidtermReportGenerator = {
     const cols = Config.MIDTERM_COLUMNS;
     const subjects = Config.MIDTERM_SUBJECT_CONFIG;
 
-    templateSheet.setHiddenGridlines(false);
+    // Use clientToken if provided, fallback to ScriptApp
+    let finalToken = clientToken;
+    if (typeof clientToken !== 'string' || !clientToken) {
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: generating fallback token`);
+        finalToken = ScriptApp.getOAuthToken();
+    }
+    const token = finalToken;
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: final token type=${typeof token}`);
 
-    const token = ScriptApp.getOAuthToken();
-    const folderId = FolderManager.getAutoReportFolderId();
+    templateSheet.setHiddenGridlines(false);
+    const folderId = FolderManager.getAutoReportFolderId(token);
     const destinationFolder = DriveApp.getFolderById(folderId);
 
     // Pre-map Contact List
@@ -72,7 +80,7 @@ const MidtermReportGenerator = {
     let successCount = 0;
     let errorCount = 0;
     const startRow = 1;
-    const limit = isPreview ? Math.min(startRow + 2, data.length) : data.length;
+    const limit = isPreview ? Math.min(startRow + 5, data.length) : data.length;
 
     for (let i = startRow; i < limit; i++) {
       const row = data[i];
@@ -83,6 +91,10 @@ const MidtermReportGenerator = {
 
       // --- 2. Generate PDF ---
       SpreadsheetApp.flush();
+      
+      // Add a 3-second pause to prevent Google's "Server Error" on PDF export
+      Utilities.sleep(3000);
+      
       try {
         const pdfBlob = this.createBlobFromSheet(
           templateSheet,
@@ -113,7 +125,7 @@ const MidtermReportGenerator = {
     }
 
     const msg = isPreview
-      ? "Midterm Preview Ready."
+      ? `Midterm Preview Ready.${errorCount > 0 ? ` (${errorCount} errors, check console)` : ""}`
       : `Midterm Batch Complete! ${successCount} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`;
     ss.toast(msg, "HecTech Engine", 5);
   },
@@ -266,12 +278,20 @@ const MidtermReportGenerator = {
   },
 
   createBlobFromSheet: function (sheet, fileName, token) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm createBlobFromSheet: token type=${typeof token}, length=${token ? token.length : 0}`);
     const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
     const gid = sheet.getSheetId();
     const url = `https://docs.google.com/spreadsheets/d/${ssId}/export?format=pdf&size=A4&portrait=false&fitw=true&fith=false&gridlines=false&gid=${gid}`;
-    const params = { headers: { Authorization: "Bearer " + token } };
-    return UrlFetchApp.fetch(url, params)
-      .getBlob()
-      .setName(`${fileName} Report.pdf`);
+    const params = { 
+        headers: { Authorization: "Bearer " + token },
+        muteHttpExceptions: true
+    };
+    const response = UrlFetchApp.fetch(url, params);
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm createBlobFromSheet: response code=${response.getResponseCode()}`);
+    if (response.getResponseCode() !== 200) {
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm createBlobFromSheet: error body=${response.getContentText().substring(0, 500)}`);
+        throw new Error(`Export failed (${response.getResponseCode()}): Google Servers are busy. Please try again.`);
+    }
+    return response.getBlob().setName(`${fileName} Report.pdf`);
   },
 };

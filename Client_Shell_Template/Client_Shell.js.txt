@@ -12,6 +12,22 @@
 // =========================================================================
 
 /**
+ * 🟢 REQUIRED PERMISSIONS (DO NOT DELETE)
+ * This dummy function ensures Google asks the user for all the necessary 
+ * permissions (Drive, Email, External APIs) when they first run the script.
+ */
+function _forcePermissions() {
+  if (false) {
+    DriveApp.getFiles();
+    MailApp.getRemainingDailyQuota();
+    UrlFetchApp.fetch("https://google.com");
+    ScriptApp.getOAuthToken();
+    CacheService.getUserCache();
+    PropertiesService.getScriptProperties();
+  }
+}
+
+/**
  * Creates the custom menu when the spreadsheet opens.
  * We delegate this to the library so the menu structure is managed centrally.
  */
@@ -47,10 +63,13 @@ function runAuditFix() { HecTechVault.runAuditFix(); }
 function runAudit() { HecTechVault.runAudit(); }
 function runFinalize() { HecTechVault.runFinalize(); }
 function RUN_SYSTEM_READINESS_CHECK() { HecTechVault.RUN_SYSTEM_READINESS_CHECK(); }
-function runReportPreview() { HecTechVault.runReportPreview(); }
-function runFullReportBatch() { HecTechVault.runFullReportBatch(); }
-function runMidtermPreview() { HecTechVault.runMidtermPreview(); }
-function runMidtermBatch() { HecTechVault.runMidtermBatch(); }
+
+// 🟢 CRITICAL FIX: Pass the client's OAuth token to the Vault for PDF generation
+function runReportPreview() { HecTechVault.runReportPreview_Client(ScriptApp.getOAuthToken()); }
+function runFullReportBatch() { HecTechVault.runFullReportBatch_Client(ScriptApp.getOAuthToken()); }
+function runMidtermPreview() { HecTechVault.runMidtermPreview_Client(ScriptApp.getOAuthToken()); }
+function runMidtermBatch() { HecTechVault.runMidtermBatch_Client(ScriptApp.getOAuthToken()); }
+
 function runEmailBatch() { HecTechVault.runEmailBatch(); }
 function runWhatsAppBlaster() { HecTechVault.runWhatsAppBlaster(); }
 function runResetStatuses() { HecTechVault.runResetStatuses(); }

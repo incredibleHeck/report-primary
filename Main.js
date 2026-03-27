@@ -2,6 +2,17 @@
 // HECTECH Main.js (Final Master - With Pro Dashboard)
 // ==========================================
 
+function DEBUG_LOG(msg) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("DEBUG_LOGS");
+    if (!sheet) {
+      sheet = ss.insertSheet("DEBUG_LOGS");
+    }
+    sheet.appendRow([new Date(), msg]);
+  } catch(e) {}
+}
+
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
     ui.createMenu('HecTech AI 🎓')
@@ -228,8 +239,18 @@ function RUN_SYSTEM_READINESS_CHECK() {
 
 // 1. Report Card Preview (Safety Step)
 function runReportPreview() {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runReportPreview called directly in Master`);
     if (typeof ReportCardGenerator !== 'undefined') {
         ReportCardGenerator.runPreview();
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ ReportCardGenerator not found.");
+    }
+}
+
+function runReportPreview_Client(clientToken) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runReportPreview_Client called. token type=${typeof clientToken}`);
+    if (typeof ReportCardGenerator !== 'undefined') {
+        ReportCardGenerator.runPreview(clientToken);
     } else {
         SpreadsheetApp.getUi().alert("⚠️ ReportCardGenerator not found.");
     }
@@ -238,6 +259,10 @@ function runReportPreview() {
 // 2. Full Report Batch
 function runFullReportBatch() {
     runAllReportsSafely();
+}
+
+function runFullReportBatch_Client(clientToken) {
+    runAllReportsSafely(clientToken);
 }
 
 // 2b. Midterm Report Preview
@@ -249,10 +274,26 @@ function runMidtermPreview() {
     }
 }
 
+function runMidtermPreview_Client(clientToken) {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.runPreview(clientToken);
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
 // 2c. Midterm Full Report Batch
 function runMidtermBatch() {
     if (typeof MidtermReportGenerator !== 'undefined') {
-        MidtermReportGenerator.process();
+        MidtermReportGenerator.process(false, 999);
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
+function runMidtermBatch_Client(clientToken) {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.process(false, 999, clientToken);
     } else {
         SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
     }

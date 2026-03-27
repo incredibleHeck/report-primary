@@ -6,7 +6,8 @@
 // HECTECH TURBO BATCH MANAGER
 // ==========================================
 
-function runAllReportsSafely() {
+function runAllReportsSafely(clientToken) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllReportsSafely called. clientToken type=${typeof clientToken}`);
     const BATCH_SIZE = 8;
     const PAUSE_SECONDS = 20; 
     let remainingStudents = 999;  // Starting high to enter the loop
@@ -20,7 +21,7 @@ function runAllReportsSafely() {
         console.log(`Starting Batch #${batchNumber}...`);
         
         // Run the generator for exactly 8 students
-        remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE);
+        remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE, clientToken);
 
         if (remainingStudents > 0) {
             console.log(`Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s to avoid rate limits...`);
@@ -54,10 +55,11 @@ const ReportCardGenerator = {
         GEN_REM: "D26", TEACHER: "L26" 
     },
 
-    runPreview: function() { this.process(true); },
+    runPreview: function(clientToken) { this.process(true, 999, clientToken); },
 
     // Update the parameters to accept a batch limit
-    process: function (isPreview = false, batchLimit = 999) {
+    process: function (isPreview = false, batchLimit = 999, clientToken) {
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: clientToken type=${typeof clientToken}`);
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sourceSheet = ss.getSheetByName(Config.REPORT_SHEET_NAME);
         const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
@@ -72,12 +74,19 @@ const ReportCardGenerator = {
         const subjects = Config.SUBJECT_CONFIG;
         const attendanceTotal = Config.ATTENDANCE_TOTAL;
 
+        // Fetch OAuth token once - use clientToken if provided, fallback to ScriptApp
+        // If clientToken is an event object (e.g. from a menu click), it's an object, not a string.
+        let finalToken = clientToken;
+        if (typeof clientToken !== 'string' || !clientToken) {
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: generating fallback token`);
+            finalToken = ScriptApp.getOAuthToken();
+        }
+        const token = finalToken;
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: final token type=${typeof token}`);
+
         // Ensure gridlines are off once (not in loop)
         templateSheet.setHiddenGridlines(false);
-
-        // Fetch OAuth token once
-        const token = ScriptApp.getOAuthToken();
-        const folderId = FolderManager.getAutoReportFolderId();
+        const folderId = FolderManager.getAutoReportFolderId(token);
         const destinationFolder = DriveApp.getFolderById(folderId);
 
         // Pre-map Contact List for O(1) Lookup using normalized names
@@ -95,16 +104,29 @@ const ReportCardGenerator = {
         const waStatusCol = Config.COL_WHATSAPP_STATUS - 1;
         const pdfUpdates = contactData.map(row => [row[pdfIdCol], row[waStatusCol]]);
 
-        const data = sourceSheet.getRange(2, 1, sourceSheet.getLastRow() - 1, sourceSheet.getLastColumn()).getValues();
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: fetching data from source sheet`);
+        const lastRow = sourceSheet.getLastRow();
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sourceSheet lastRow=${lastRow}`);
+        
+        if (lastRow < 2) {
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: No data in REPORT DATA sheet`);
+            ss.toast("No data found in REPORT DATA sheet.", "HecTech Engine", 5);
+            return 0;
+        }
+
+        const data = sourceSheet.getRange(2, 1, lastRow - 1, sourceSheet.getLastColumn()).getValues();
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: data length=${data.length}, contactMap size=${contactMap.size}`);
+
         let successCount = 0;
         let errorCount = 0;
         let processedInThisBatch = 0; // Track how many we've done this round
         let remainingToProcess = 0;   // Track how many are left overall
 
         const startIdx = 0; // Data array is 0-indexed relative to row 2
-        const limitIdx = isPreview ? Math.min(startIdx + 2, data.length) : data.length;
+        const limitIdx = isPreview ? Math.min(startIdx + 5, data.length) : data.length;
 
         // 🟢 PRE-CHECK: Count how many are actually left before we start looping
+        let missingContacts = 0;
         for (let r = 0; r < data.length; r++) {
             const sName = data[r][cols.STUDENT_NAME];
             if (!sName) continue;
@@ -116,12 +138,21 @@ const ReportCardGenerator = {
                 if (stat !== "PDF_READY" && stat !== "SENT") {
                     remainingToProcess++;
                 }
+            } else {
+                missingContacts++;
             }
         }
+        
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: remainingToProcess=${remainingToProcess}, missingContacts=${missingContacts}`);
 
         // If nothing left, return 0 to stop the Autopilot
-        if (remainingToProcess === 0) return 0;
+        if (remainingToProcess === 0 && !isPreview) {
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: remainingToProcess is 0. All done.`);
+            ss.toast("All reports are already generated! Use 'Reset Sent Statuses' to regenerate.", "HecTech Engine", 5);
+            return 0;
+        }
 
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: starting loop from ${startIdx} to ${limitIdx}`);
         for (let i = startIdx; i < limitIdx; i++) {
             // 🛑 STOP if we hit our safe batch limit for this run
             if (processedInThisBatch >= batchLimit) break;
@@ -130,32 +161,43 @@ const ReportCardGenerator = {
             const studentName = row[cols.STUDENT_NAME];
             if (!studentName) continue;
 
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: processing student ${studentName}`);
+
             const normalizedName = Config.normalizeName(studentName);
             const targetIndex = contactMap.get(normalizedName);
             
             // 🟢 CRITICAL FIX 1: Prevent Infinite Loop if Contact is Missing
             if (targetIndex !== undefined) {
                 const existingStatus = contactData[targetIndex][waStatusCol];
-                if (existingStatus === "PDF_READY" || existingStatus === "SENT") {
+                // If it's a preview, we WANT to generate it even if it's already done
+                if (!isPreview && (existingStatus === "PDF_READY" || existingStatus === "SENT")) {
+                    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: skipping ${studentName}, already ${existingStatus}`);
                     continue; // Skip already generated
                 }
             } else {
                 console.warn(`⚠️ Skipping ${studentName} - Name missing from Contact Sheet!`);
-                continue; // Force skip to prevent infinite retry loops
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: skipping ${studentName}, missing from contact sheet`);
+                if (!isPreview) continue; // Force skip to prevent infinite retry loops
             }
 
             // --- 1. Fill Template Using Batch Operations ---
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: filling template for ${studentName}`);
             this.fillTemplateFast(templateSheet, row, cols, subjects, attendanceTotal);
 
             // --- 2. Generate PDF ---
             SpreadsheetApp.flush();
             
-            // 🟢 CRITICAL FIX 2: Moved 1-second pause BEFORE the PDF is exported
-            Utilities.sleep(1000); 
+            // 🟢 CRITICAL FIX 2: Moved pause BEFORE the PDF is exported
+            // Increased to 3 seconds to prevent Google's "Server Error" on PDF export
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sleeping 3s for ${studentName}`);
+            Utilities.sleep(3000); 
             
             try {
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: creating blob for ${studentName}`);
                 const pdfBlob = this.createBlobFromSheet(templateSheet, studentName, token);
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saving file for ${studentName}`);
                 const pdfFile = destinationFolder.createFile(pdfBlob);
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saved file ${pdfFile.getId()}`);
                 
                 // Update memory array using normalized name matching
                 if (targetIndex !== undefined) {
@@ -167,6 +209,7 @@ const ReportCardGenerator = {
                 remainingToProcess--;   // Decrement our remaining counter
             } catch (err) { 
                 console.error(`PDF Error for ${studentName}: ${err.message}`);
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: ERROR for ${studentName}: ${err.message}`);
                 errorCount++;
             }
         }
@@ -177,7 +220,7 @@ const ReportCardGenerator = {
         }
 
         const msg = isPreview 
-            ? "Preview Ready." 
+            ? `Preview Ready.${errorCount > 0 ? ` (${errorCount} errors, check console)` : ''}` 
             : `Batch Complete! ${processedInThisBatch} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
         ss.toast(msg, "HecTech Engine", 5);
 
@@ -274,10 +317,20 @@ const ReportCardGenerator = {
 
     // ⚡ Update: Accepts Token as Argument
     createBlobFromSheet: function(sheet, fileName, token) {
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: token type=${typeof token}, length=${token ? token.length : 0}`);
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const gid = sheet.getSheetId();
         const url = `https://docs.google.com/spreadsheets/d/${ssId}/export?format=pdf&size=A4&portrait=false&fitw=true&fith=false&gridlines=false&gid=${gid}`;
-        const params = { headers: { "Authorization": "Bearer " + token } };
-        return UrlFetchApp.fetch(url, params).getBlob().setName(`${fileName} Report.pdf`);
+        const params = { 
+            headers: { "Authorization": "Bearer " + token },
+            muteHttpExceptions: true
+        };
+        const response = UrlFetchApp.fetch(url, params);
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: response code=${response.getResponseCode()}`);
+        if (response.getResponseCode() !== 200) {
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: error body=${response.getContentText().substring(0, 500)}`);
+            throw new Error(`Export failed (${response.getResponseCode()}): Google Servers are busy. Please try again.`);
+        }
+        return response.getBlob().setName(`${fileName} Report.pdf`);
     }
 };
