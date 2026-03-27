@@ -42,7 +42,7 @@ function onOpen() {
         .addSeparator()
 
         // --- PHASE 5: END OF TERM REPORT GENERATION ---
-        .addItem(' 📄 EOT Preview (Check 1st Two Students)', 'runReportPreview')
+        .addItem(' 📄 EOT Preview (Check 1st Five Students)', 'runReportPreview')
         .addItem(' 🚀 EOT Generate Full Batch (PDFs)', 'runFullReportBatch')
         .addSeparator()
         
