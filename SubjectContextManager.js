@@ -14,10 +14,11 @@ const SubjectContextManager = {
      * Saves context SPECIFIC to the provided sheet name
      */
     saveContext: function(data) {
-        const props = PropertiesService.getDocumentProperties();
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const props = PropertiesService.getScriptProperties();
         
-        // We use a unique key for every subject (e.g., "CTX_MATHEMATICS", "CTX_SCIENCE")
-        const storageKey = `CTX_${data.subjectName.toUpperCase().replace(/\s+/g, '_')}`;
+        // We use a unique key for every subject + client (e.g., "CTX_MATHEMATICS_1abc...")
+        const storageKey = `CTX_${data.subjectName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
         
         const contextPayload = JSON.stringify({
             grade: data.grade,
@@ -35,9 +36,10 @@ const SubjectContextManager = {
     getContext: function() {
         const sheet = SpreadsheetApp.getActiveSheet();
         const sheetName = sheet.getName();
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         
-        const props = PropertiesService.getDocumentProperties();
-        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}`;
+        const props = PropertiesService.getScriptProperties();
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
         
         const storedJson = props.getProperty(storageKey);
         let parsedData = { grade: "", topics: "" };

@@ -11,23 +11,36 @@ const SettingsManager = {
     },
 
     getSettings: function() {
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const props = PropertiesService.getScriptProperties();
+        
+        const getProp = (key, defaultVal) => {
+            return props.getProperty(`${key}_${ssId}`) || props.getProperty(key) || defaultVal;
+        };
+
         return {
-            CLASS_NAME: props.getProperty("CLASS_NAME") || "YEAR FIVE (A)",
-            ROLL_COUNT: props.getProperty("ROLL_COUNT") || "25",
-            TERM_YEAR_INFO: props.getProperty("TERM_YEAR_INFO") || "Year: 2025 / 2026 Term: ONE (1)",
-            REPORT_DATE: props.getProperty("REPORT_DATE") || "11TH DECEMBER 2025.",
-            NEXT_TERM_BEGINS: props.getProperty("NEXT_TERM_BEGINS") || "6TH JANUARY 2026.",
-            SCHOOL_BREAKS: props.getProperty("SCHOOL_BREAKS") || "11TH DECEMBER 2025",
-            SCHOOL_RESUMES: props.getProperty("SCHOOL_RESUMES") || "6TH JANUARY 2026",
-            ATTENDANCE_TOTAL: props.getProperty("ATTENDANCE_TOTAL") || "64",
-            TEACHER_NAME: props.getProperty("TEACHER_NAME") || ""
+            CLASS_NAME: getProp("CLASS_NAME", "YEAR FIVE (A)"),
+            ROLL_COUNT: getProp("ROLL_COUNT", "25"),
+            TERM_YEAR_INFO: getProp("TERM_YEAR_INFO", "Year: 2025 / 2026 Term: ONE (1)"),
+            REPORT_DATE: getProp("REPORT_DATE", "11TH DECEMBER 2025."),
+            NEXT_TERM_BEGINS: getProp("NEXT_TERM_BEGINS", "6TH JANUARY 2026."),
+            SCHOOL_BREAKS: getProp("SCHOOL_BREAKS", "11TH DECEMBER 2025"),
+            SCHOOL_RESUMES: getProp("SCHOOL_RESUMES", "6TH JANUARY 2026"),
+            ATTENDANCE_TOTAL: getProp("ATTENDANCE_TOTAL", "64"),
+            TEACHER_NAME: getProp("TEACHER_NAME", "")
         };
     },
 
     saveSettings: function(settings) {
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const props = PropertiesService.getScriptProperties();
-        props.setProperties(settings);
+        
+        const clientSettings = {};
+        for (const key in settings) {
+            clientSettings[`${key}_${ssId}`] = settings[key];
+        }
+        
+        props.setProperties(clientSettings);
         
         // Invalidate config cache so new settings reflect immediately
         if (typeof DynamicConfig !== 'undefined' && DynamicConfig._cache) {

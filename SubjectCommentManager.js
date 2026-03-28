@@ -62,8 +62,9 @@ const SubjectCommentManager = {
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
         // 2. FETCH CONTEXT
-        const props = PropertiesService.getDocumentProperties();
-        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}`; 
+        const ssId = ss.getId();
+        const props = PropertiesService.getScriptProperties();
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`; 
         const storedJson = props.getProperty(storageKey);
         
         let contextData = { grade: "", topics: "" };

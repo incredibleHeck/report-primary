@@ -7,9 +7,22 @@ const DynamicConfig = {
     _cache: {},
     
     _get: function(key) {
-        if (this._cache[key]) return this._cache[key];
-        const val = PropertiesService.getScriptProperties().getProperty(key);
-        this._cache[key] = val;
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const clientKey = `${key}_${ssId}`;
+        
+        if (this._cache[clientKey]) return this._cache[clientKey];
+        
+        const props = PropertiesService.getScriptProperties();
+        
+        // Try client-specific key first
+        let val = props.getProperty(clientKey);
+        
+        // Fallback to global key (for things like API_KEY)
+        if (!val) {
+            val = props.getProperty(key);
+        }
+        
+        this._cache[clientKey] = val;
         return val;
     },
     
