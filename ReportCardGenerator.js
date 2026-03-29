@@ -55,6 +55,24 @@ const ReportCardGenerator = {
         GEN_REM: "D26", TEACHER: "L26" 
     },
 
+    /**
+     * Writes PDF IDs (col D by default) and WhatsApp status (col E) on CONTACT LIST from row 2.
+     * Two separate single-column ranges so layout does not rely on D/E being adjacent.
+     */
+    flushContactPdfColumns: function(contactSheet, pdfUpdates) {
+        const slice = pdfUpdates.slice(1);
+        const n = slice.length;
+        if (n === 0) return;
+        const startRow = 2;
+        const cPdf = Config.COL_PDF_ID;
+        const cWa = Config.COL_WHATSAPP_STATUS;
+        const pdfVals = slice.map(function (row) { return [row[0] != null && row[0] !== "" ? row[0] : ""]; });
+        const waVals = slice.map(function (row) { return [row[1] != null && row[1] !== "" ? row[1] : ""]; });
+        contactSheet.getRange(startRow, cPdf, n, 1).setValues(pdfVals);
+        contactSheet.getRange(startRow, cWa, n, 1).setValues(waVals);
+        SpreadsheetApp.flush();
+    },
+
     runPreview: function(clientToken) { this.process(true, 999, clientToken); },
 
     // Update the parameters to accept a batch limit
@@ -103,18 +121,21 @@ const ReportCardGenerator = {
         const pdfIdCol = Config.COL_PDF_ID - 1;
         const waStatusCol = Config.COL_WHATSAPP_STATUS - 1;
         const pdfUpdates = contactData.map(row => [row[pdfIdCol], row[waStatusCol]]);
+        let contactPdfDirty = false;
 
         if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: fetching data from source sheet`);
+        const firstDataRow = Config.REPORT_DATA_FIRST_ROW;
         const lastRow = sourceSheet.getLastRow();
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sourceSheet lastRow=${lastRow}`);
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sourceSheet lastRow=${lastRow}, firstDataRow=${firstDataRow}`);
         
-        if (lastRow < 2) {
+        if (lastRow < firstDataRow) {
             if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: No data in REPORT DATA sheet`);
             ss.toast("No data found in REPORT DATA sheet.", "HecTech Engine", 5);
             return 0;
         }
 
-        const data = sourceSheet.getRange(2, 1, lastRow - 1, sourceSheet.getLastColumn()).getValues();
+        const numDataRows = lastRow - firstDataRow + 1;
+        const data = sourceSheet.getRange(firstDataRow, 1, numDataRows, sourceSheet.getLastColumn()).getValues();
         if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: data length=${data.length}, contactMap size=${contactMap.size}`);
 
         let successCount = 0;
@@ -203,6 +224,7 @@ const ReportCardGenerator = {
                 if (targetIndex !== undefined) {
                     pdfUpdates[targetIndex][0] = pdfFile.getId();
                     pdfUpdates[targetIndex][1] = "PDF_READY";
+                    contactPdfDirty = true;
                 }
                 successCount++;
                 processedInThisBatch++; // Increment our batch counter
@@ -214,9 +236,8 @@ const ReportCardGenerator = {
             }
         }
 
-        // Bulk write-back updated D:E columns to Contact List
-        if (successCount > 0) {
-            contactSheet.getRange(2, Config.COL_PDF_ID, pdfUpdates.length - 1, 2).setValues(pdfUpdates.slice(1));
+        if (contactPdfDirty) {
+            this.flushContactPdfColumns(contactSheet, pdfUpdates);
         }
 
         const msg = isPreview 

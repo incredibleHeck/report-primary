@@ -74,13 +74,7 @@ const FolderManager = {
         let folderId;
         try {
             if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("getAutoReportFolderId: trying DriveApp.createFolder");
-            const file = DriveApp.getFileById(ssId);
-            const parents = file.getParents();
-            let parentFolder = DriveApp.getRootFolder();
-            if (parents.hasNext()) {
-                parentFolder = parents.next();
-            }
-            const newFolder = parentFolder.createFolder(targetFolderName);
+            const newFolder = DriveApp.createFolder(targetFolderName);
             folderId = newFolder.getId();
             if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("getAutoReportFolderId: DriveApp created " + folderId);
         } catch (driveErr) {
@@ -105,21 +99,9 @@ const FolderManager = {
         // Use the client token if provided, otherwise fallback
         const token = clientToken || ScriptApp.getOAuthToken();
         const url = "https://www.googleapis.com/drive/v3/files";
-        
-        let parentId = "root";
-        try {
-            const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-            const file = DriveApp.getFileById(ssId);
-            const parents = file.getParents();
-            if (parents.hasNext()) {
-                parentId = parents.next().getId();
-            }
-        } catch(e) {}
-
         const payload = {
             name: folderName,
-            mimeType: "application/vnd.google-apps.folder",
-            parents: [parentId]
+            mimeType: "application/vnd.google-apps.folder"
         };
         const options = {
             method: "post",

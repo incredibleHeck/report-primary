@@ -29,6 +29,20 @@ const MidtermReportGenerator = {
     this.process(true, 999, clientToken);
   },
 
+  flushContactPdfColumns: function (contactSheet, pdfUpdates) {
+    const slice = pdfUpdates.slice(1);
+    const n = slice.length;
+    if (n === 0) return;
+    const startRow = 2;
+    const cPdf = Config.COL_PDF_ID;
+    const cWa = Config.COL_WHATSAPP_STATUS;
+    const pdfVals = slice.map(function (row) { return [row[0] != null && row[0] !== "" ? row[0] : ""]; });
+    const waVals = slice.map(function (row) { return [row[1] != null && row[1] !== "" ? row[1] : ""]; });
+    contactSheet.getRange(startRow, cPdf, n, 1).setValues(pdfVals);
+    contactSheet.getRange(startRow, cWa, n, 1).setValues(waVals);
+    SpreadsheetApp.flush();
+  },
+
   process: function (isPreview = false, batchLimit = 999, clientToken) {
     if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: clientToken type=${typeof clientToken}`);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -75,6 +89,7 @@ const MidtermReportGenerator = {
       row[pdfIdCol],
       row[waStatusCol],
     ]);
+    let contactPdfDirty = false;
 
     const data = sourceSheet.getDataRange().getValues();
     let successCount = 0;
@@ -108,6 +123,7 @@ const MidtermReportGenerator = {
         if (targetIndex !== undefined) {
           pdfUpdates[targetIndex][0] = pdfFile.getId();
           pdfUpdates[targetIndex][1] = "MIDTERM_READY";
+          contactPdfDirty = true;
         } else {
           console.warn(`⚠️ No contact match for: "${studentName}"`);
         }
@@ -118,10 +134,8 @@ const MidtermReportGenerator = {
       }
     }
 
-    if (successCount > 0) {
-      contactSheet
-        .getRange(2, Config.COL_PDF_ID, pdfUpdates.length - 1, 2)
-        .setValues(pdfUpdates.slice(1));
+    if (contactPdfDirty) {
+      this.flushContactPdfColumns(contactSheet, pdfUpdates);
     }
 
     const msg = isPreview

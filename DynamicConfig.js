@@ -50,6 +50,8 @@ const DynamicConfig = {
     // --- ARCHITECTURE ---
     get HEADER_ROW() { return 2; },     
     get DATA_START_ROW() { return this._getInt("DATA_START_ROW", 3); }, 
+    /** First row of student rows on REPORT DATA (usually 2: header row 1; set to 3 if you use a second header row). */
+    get REPORT_DATA_FIRST_ROW() { return this._getInt("REPORT_DATA_FIRST_ROW", 2); },
     get ATTENDANCE_TOTAL() { return this._getInt("ATTENDANCE_TOTAL", 64); },
 
     // --- TEMPLATE STRINGS ---
