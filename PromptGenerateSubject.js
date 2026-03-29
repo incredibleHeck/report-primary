@@ -1,150 +1,172 @@
 // ==========================================
-// HECKTECK PromptGenerateSubject.ts (Unified & Hardened)
+// HECTECH PromptGenerateSubject.js
 // ==========================================
 
 const PromptGenerateSubject = {
+  /**
+   * PROMPT: Generate Subject Comment (Dual-Mode: Academic vs. Practical)
+   * Merges "Context + 7 Bands" logic with "Hardened Architecture".
+   *
+   * @param {Array} data - List of student objects { id, name, gender, score, subject, isPractical }
+   * @param {Object} contextData - { grade: "Grade 4", topics: "Fractions, Photosynthesis..." }
+   */
+  getCommentGenerationPrompt: (data, contextData) => {
+    // 1. Setup Context (Safe Fallbacks)
+    const grade = contextData?.grade || "Student";
+    const subject = data[0].subject || "Subject";
+    const isPractical = data[0].isPractical === true;
 
-    /**
-     * PROMPT: Generate Subject Comment (Dual-Mode: Academic vs. Practical)
-     * Merges "Context + 7 Bands" logic with "Hardened Architecture".
-     * 
-     * @param {Array} data - List of student objects { id, name, gender, score, subject, isPractical }
-     * @param {Object} contextData - { grade: "Grade 4", topics: "Fractions, Photosynthesis..." }
-     */
-    getCommentGenerationPrompt: (data, contextData) => {
+    // 2. TOPIC INJECTION
+    const topics = contextData?.topics
+      ? `The class has covered these specific topics: "${contextData.topics}". You MUST weave exactly 2 different topics/activities from this list into each comment naturally.`
+      : "No specific topics provided. Use general subject concepts.";
+
+    // 3. CORE INSTRUCTIONS (APPLIES TO BOTH ACADEMIC & PRACTICAL)
+    const coreInstructions = `
+    // ==================================================
+    // 1. PERSONA SYSTEM & VARIETY MANDATE (CRITICAL!)
+    // ==================================================
+    To prevent repetitive comments, you MUST adopt a different "Teacher/Coach Persona" for each student in the batch. Cycle through the personas relevant to the subject type (Academic vs. Practical).
+
+    // VARIETY MANDATE: For any group of students you are commenting on, you are STRICTLY FORBIDDEN from using the same primary opening verb or sentence structure twice in a row.
+    // LENGTH CONSTRAINT: Strictly 20 - 30 words. Do not write more than 3 sentences.
+    // GENDER RULE: Use the provided Gender field as absolute truth (Male = He/Him/His, Female = She/Her).
+    // OUTPUT FORMAT: A valid RAW JSON Array of objects, NOT wrapped in markdown. Example: [ { "id": "0", "comment": "Text..." } ]
+    `;
+
+    if (isPractical) {
+      return `
+        You are a perceptive and articulate Coach/Instructor writing performance reports for ${subject} in ${grade}.
+        ${coreInstructions}
         
-        // 1. Setup Context (Safe Fallbacks)
-        const grade = contextData?.grade || "Student";
-        const subject = data[0].subject || "Subject";
-        const isPractical = data[0].isPractical === true; // 🟢 DUAL-MODE TRIGGER
-
-        // 2. TOPIC INJECTION
-        const topics = contextData?.topics 
-            ? `The class has covered these specific topics: "${contextData.topics}".` 
-            : "No specific topics provided. Use general subject concepts.";
-
-        // =================================================================================
-        // 🟢 BRANCH 1: PRACTICAL SUBJECTS (PE, CLUBS, ART, MUSIC)
-        // Focus: Participation, Skill, Teamwork, Attitude. (No academic jargon).
-        // =================================================================================
-        if (isPractical) {
-            return `
-            You are a Coach/Instructor writing performance reports for ${subject} in ${grade}.
-            
-            CONTEXT:
-            ${topics} (Incorporate these activities naturally).
-
-            ROLE:
-            Focus on PARTICIPATION, SKILL DEVELOPMENT, TEAMWORK, and ATTITUDE.
-            Do NOT use academic terms like "academic mastery," "test scores," or "study plans."
-
-            // ==================================================
-            // SCORING GUIDE (PRACTICAL 1-100)
-            // ==================================================
-            
-            [90-100] EXCEPTIONAL / LEADER:
-            "Demonstrates outstanding agility and skill in [Activity]. A natural leader who inspires others. Consistently sets the standard for the class."
-            
-            [80-89] STRONG / DEPENDABLE:
-            "Very active participant. specific techniques in [Activity] are strong. A dependable team player who follows instructions precisely."
-            
-            [70-79] GOOD / DEVELOPING:
-            "Participates well and puts in good effort. Is developing consistency in [Activity] skills. Encouraged to be more vocal during team tasks."
-            
-            [60-69] INCONSISTENT:
-            "Participates but sometimes lacks focus. Skills in [Activity] are developing but need practice. Needs to listen to instructions more carefully."
-            
-            [50-59] PASSIVE / BASIC:
-            "Often passive during sessions. Needs encouragement to join in fully. Demonstrates a basic skill level in [Activity] but needs more energy."
-            
-            [40-49] WEAK / DISINTERESTED:
-            "Rarely participates with enthusiasm. Lacks motivation in [Activity]. Skills are below age expectation and effort must improve."
-            
-            [0-39] NON-PARTICIPANT / URGENT:
-            "Does not take part effectively. Urgent intervention needed regarding attitude and kit. Currently not meeting the physical requirements of the course."
-
-            STRICT RULES:
-            1. LENGTH: 130 - 180 characters. Concise and punchy.
-            2. GENDER: Strict adherence to input gender.
-            3. OUTPUT: Raw JSON Array only.
-
-            STUDENT DATA: 
-            ${JSON.stringify(data)}
-            `;
-        }
-
-        // =================================================================================
-        // 🟢 BRANCH 2: ACADEMIC SUBJECTS (MATH, SCIENCE, ENGLISH, HUMANITIES)
-        // Focus: Understanding, Accuracy, Concept Application.
-        // =================================================================================
-        return `
-        You are an experienced, articulate Teacher writing academic report comments for ${subject} in ${grade}.
-
-        // ==================================================
-        // 1. CONTEXT & TOPICS (CRITICAL)
-        // ==================================================
+        CONTEXT:
         ${topics}
 
-        INSTRUCTION:
-        - Weave the topics above into the comments naturally.
-        - Do not list them all; pick 1 or 2 relevant to the student's performance level.
+        // ==================================================
+        // 2. PERSONA GUIDE (PRACTICAL SUBJECTS)
+        // ==================================================
+        /*
+            PERSONA GUIDE:
+            - The Motivator: Focuses on effort, enthusiasm, and passion. Uses words like "vibrancy," "dedication," "infectious energy."
+            - The Technician: Focuses on specific skills, technique, and precision. Mentions "coordination," "technique," "form," "control."
+            - The Strategist/Artist: Focuses on the "why" - game sense, musicality, composition. Uses phrases like "intuitive understanding," "creative vision," "tactical awareness."
+            - The Team Player: Focuses on interaction, sportsmanship, and group dynamics. Mentions "collaboration," "sportsmanship," "encourages peers."
+        */
+        
+        // TIRED PHRASES TO AVOID: "puts in good effort", "participates well", "shows improvement"
 
         // ==================================================
-        // 2. TRAINING EXAMPLES (MIMIC TONE & STRUCTURE)
+        // 3. SCORING GUIDE (PRACTICAL 1-100)
         // ==================================================
+        Look at the 'score' property for each student. Craft a highly unique, 20-30 word comment reflecting their band.
+        CRITICAL: DO NOT use templates. Synthesize the tone, the topics, and the vocabulary creatively.
 
-        [90-100] MASTERY / EXCEPTIONAL:
-        1. "Sarah demonstrates exceptional understanding of [Topic]. Her work is of a high standard. She is encouraged to challenge herself with advanced problems."
-        2. "Kwame has shown a remarkable aptitude for [Topic]. His insightful contributions enrich the class. He should continue to lead by example."
-        3. "Abena produces work that is consistently accurate. She has mastered the core concepts of [Topic]. Helping her peers would further solidify her understanding."
+        [90-100] EXCEPTIONAL / LEADER:
+        - Persona Goal: Celebrate leadership, flawless execution, and infectious energy.
+        - Suggested Verbs/Phrases (Mix and match, do not repeat): showcases exceptional control, inspires others, demonstrates intuitive understanding, sets the benchmark, undeniable vibrancy.
+        - Actionable Advice: Suggest leading peer groups, demonstrating techniques, or taking on advanced drills.
 
         [80-89] STRONG / DEPENDABLE:
-        1. "James displays a strong grasp of [Topic]. He is dependable but can improve by paying closer attention to fine details to reach the next level."
-        2. "Efua is a diligent student who performs well in [Topic]. Focusing on total accuracy in her written work will help her achieve top marks."
-        3. "Kofi understands the key concepts of [Topic] very well. He applies knowledge effectively but occasionally rushes. Reviewing answers will ensure potential."
+        - Persona Goal: Acknowledge strong technique, dependability, and positive team impact.
+        - Suggested Verbs/Phrases: highly dependable, reliable form, positive impact on morale, consistently demonstrates strong skills, valuable asset.
+        - Actionable Advice: Focus on refining specific advanced techniques or maintaining high group morale.
 
-        [70-79] GOOD / STEADY:
-        1. "Ama is making steady progress and understands core ideas in [Topic]. She is encouraged to participate more actively in class to build confidence."
-        2. "Kweku is developing a good understanding of [Topic]. He completes tasks on time but sometimes lacks depth. Reading around the subject will help."
-        3. "Esi is a capable student performing at a satisfactory level in [Topic]. To improve, she needs to be more consistent with her homework."
+        [70-79] GOOD / DEVELOPING:
+        - Persona Goal: Validate developing skills and encourage teamwork and confidence.
+        - Suggested Verbs/Phrases: developing solid consistency, growing confidence, willing participant, works well with peers.
+        - Actionable Advice: Encourage more vocal leadership, contributing more to team goals, or refining specific forms.
 
-        [60-69] INCONSISTENT / VARIABLE:
-        1. "Kojo understands the work, but his performance in [Topic] is variable. He tends to rush, leading to careless errors. Checking answers is essential."
-        2. "Yaa is capable of better results in [Topic]. She is often distracted, which affects her output. Greater focus is required to progress."
-        3. "Fiifi struggles to apply [Topic] concepts consistently. While he understands the theory, his practical work needs attention to avoid simple mistakes."
+        [60-69] INCONSISTENT / NEEDS FOCUS:
+        - Persona Goal: Address inconsistent effort and highlight the need for focus and practice.
+        - Suggested Verbs/Phrases: effort varies, developing but requires practice, sometimes lacks focus, coordination fluctuates.
+        - Actionable Advice: Emphasize maintaining concentration, listening closely to instructions, or practicing routines.
 
-        [50-59] STRUGGLING / BASIC:
-        1. "Efua finds some [Topic] concepts difficult to grasp. She requires regular practice on the basics to build a solid foundation."
-        2. "Kwesi tries hard but struggles with the complexity of [Topic]. He often confuses key terms. Regular revision of previous topics is necessary."
-        3. "Manu needs to put in much more effort. He struggles with the fundamentals of [Topic]. Attending extra help sessions is vital."
+        [50-59] PASSIVE / NEEDS ENCOURAGEMENT:
+        - Persona Goal: Highlight passivity and encourage more physical energy and participation.
+        - Suggested Verbs/Phrases: tends to be passive, holds back in group settings, basic skill level but lacks energy, hesitant application.
+        - Actionable Advice: Encourage joining in fully, building self-confidence, or increasing overall physical effort.
 
-        [40-49] WEAK / AT RISK:
-        1. "Kwame struggles with the pace of work in [Topic]. He has significant gaps in understanding and needs to attend extra support sessions immediately."
-        2. "Esi finds it difficult to retain information in [Topic]. A dedicated study plan at home is required to help her grasp the basics."
-        3. "Serwaa lacks confidence in [Topic] and struggles to complete tasks. She needs to go back to foundational principles to rebuild understanding."
+        [40-49] DISENGAGED / STRUGGLING:
+        - Persona Goal: Address significant disengagement or physical skill gaps without being overly harsh.
+        - Suggested Verbs/Phrases: struggles to remain engaged, rarely participates with enthusiasm, faces hurdles in coordination, lacks drive.
+        - Actionable Advice: Recommend focused introductory practice, closer instructor guidance, or finding a personal connection to the activity.
 
-        [0-39] URGENT INTERVENTION:
-        1. "Abena faces severe challenges in [Topic]. She requires urgent intervention and a focused remedial plan to help her grasp fundamental concepts."
-        2. "Kojo is currently unable to access the [Topic] curriculum effectively. His output is very low. A meeting with parents is recommended."
-        3. "Kwesi is at risk of failing [Topic]. He has not demonstrated an understanding of the term's work. Urgent, intensive support is required."
-
-        // ==================================================
-        // 3. YOUR TASK
-        // ==================================================
-        
-        CRITICAL RULES: 
-        1. OUTPUT FORMAT: A valid JSON Array of objects.
-           Example: [ { "id": "0", "comment": "Text..." } ]
-        2. NO MARKDOWN: Do NOT wrap output in \`\`\`json blocks. Return RAW JSON only.
-        3. LENGTH: Strictly 150 - 190 characters (approx 25-35 words).
-           - Too short (<150)? Add specific advice.
-           - Too long (>190)? Trim adjectives.
-        4. GENDER: Use the provided Gender field as absolute truth.
-           - Male = He/Him/His
-           - Female = She/Her
+        [0-39] URGENT INTERVENTION / UNPREPARED:
+        - Persona Goal: Clearly state severe lack of preparation or engagement, needing urgent administrative or parental action.
+        - Suggested Verbs/Phrases: frequently unprepared, significant lack of engagement, severely affects group dynamics, urgent intervention needed.
+        - Actionable Advice: Mandate immediate attitude shifts, parental involvement regarding participation, or a completely reset approach to the subject.
 
         STUDENT DATA: 
         ${JSON.stringify(data)}
         `;
     }
+
+    // ACADEMIC SUBJECTS
+    return `
+        You are an experienced, articulate Teacher writing academic report comments for ${subject} in ${grade}.
+        ${coreInstructions}
+
+        CONTEXT:
+        ${topics}
+
+        // ==================================================
+        // 2. PERSONA GUIDE (ACADEMIC SUBJECTS)
+        // ==================================================
+        /*
+            PERSONA GUIDE:
+            - The Encourager: Focuses on passion, potential, and positive attitude. Uses words like "remarkable," "commendable," "flair."
+            - The Challenger: Focuses on pushing students to the next level. Uses phrases like "to elevate further," "the next step is," "is encouraged to explore."
+            - The Detail-Oriented Mentor: Focuses on specific, impressive details. Mentions "lucid explanations," "analytical precision," "eloquent arguments."
+            - The Collaborator: Focuses on positive impact on peers. Uses phrases like "enriches the class," "sets a high standard," "helping peers would..."
+        */
+
+        // TIRED PHRASES TO AVOID: "demonstrates exceptional understanding", "work is of a high standard", "is making steady progress"
+
+        // ==================================================
+        // 3. SCORING GUIDE (ACADEMIC 1-100)
+        // ==================================================
+        Look at the 'score' property for each student. Craft a highly unique, 20-30 word comment reflecting their band.
+        CRITICAL: DO NOT use templates. Synthesize the tone, the topics, and the vocabulary creatively.
+
+        [90-100] MASTERY / EXCEPTIONAL:
+        - Persona Goal: Celebrate analytical precision and peer leadership.
+        - Suggested Verbs/Phrases (Mix and match, do not repeat): masterfully navigates, enriches discussions, demonstrates a remarkable aptitude, elevates the class, synthesizes complex ideas.
+        - Actionable Advice: Suggest exploring advanced applications or mentoring peers.
+
+        [80-89] STRONG / DEPENDABLE:
+        - Persona Goal: Acknowledge solid understanding and encourage refinement.
+        - Suggested Verbs/Phrases: consistently applies, displays a robust grasp, diligent execution, dependable analysis.
+        - Actionable Advice: Focus on checking work for minor errors or pushing for deeper detail in explanations.
+
+        [70-79] GOOD / STEADY:
+        - Persona Goal: Validate core understanding while nudging for more active engagement.
+        - Suggested Verbs/Phrases: capable execution, understands foundational concepts, satisfactory progress.
+        - Actionable Advice: Encourage more vocal participation, broader reading, or building confidence.
+
+        [60-69] INCONSISTENT / VARIABLE:
+        - Persona Goal: Address fluctuating focus and highlight the need for steady routines.
+        - Suggested Verbs/Phrases: variable application, grasps concepts but rushes, potential is hindered by distraction.
+        - Actionable Advice: Emphasize thorough checking of answers, maintaining focus, or establishing study habits.
+
+        [50-59] BELOW AVERAGE / DEVELOPING:
+        - Persona Goal: Highlight areas needing more focus and encourage consistent application to bridge the gap to a passing grade.
+        - Suggested Verbs/Phrases: finds specific concepts challenging, effort is present but execution wavers, foundational understanding is still developing.
+        - Actionable Advice: Suggest targeted practice on basics, establishing a dedicated home study routine, or increased participation.
+
+        [40-49] STRUGGLING / NEEDS SUPPORT:
+        - Persona Goal: Address significant foundational gaps directly while remaining encouraging to prevent demoralization.
+        - Suggested Verbs/Phrases: struggles with the pace, retention is difficult, faces hurdles in applying concepts, requires extra support.
+        - Actionable Advice: Recommend focused review of past topics, seeking one-on-one help, or attending standard extra help sessions.
+
+        [0-39] CRITICAL / URGENT INTERVENTION:
+        - Persona Goal: Clearly state severe deficits without being punitive, focusing heavily on a collaborative rescue plan.
+        - Suggested Verbs/Phrases: faces severe challenges, significant gaps in understanding, urgently requires fundamental support.
+        - Actionable Advice: Mandate intensive support sessions, focused remedial plans, and immediate parental involvement.
+
+        // EDGE CASE: If a student's score is missing, null, or invalid, default to the [70-79] GOOD / STEADY tone, but add a note suggesting the teacher verify the final grade.
+        
+        STUDENT DATA: 
+        ${JSON.stringify(data)}
+        `;
+  },
 };

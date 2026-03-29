@@ -1,12 +1,12 @@
 // ==========================================
-// HECKTECK SubjectContextManager.ts (Sheet-Aware)
+// HECTECH SubjectContextManager.js
 // ==========================================
 
 const SubjectContextManager = {
     openSidebar: function() {
         const html = HtmlService.createHtmlOutputFromFile('SubjectContextSidebar')
             .setTitle('Subject Context Manager')
-            .setWidth(350);
+            .setWidth(300);
         SpreadsheetApp.getUi().showSidebar(html);
     },
 
@@ -14,10 +14,11 @@ const SubjectContextManager = {
      * Saves context SPECIFIC to the provided sheet name
      */
     saveContext: function(data) {
-        const props = PropertiesService.getUserProperties();
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const props = PropertiesService.getScriptProperties();
         
-        // We use a unique key for every subject (e.g., "CTX_MATHEMATICS", "CTX_SCIENCE")
-        const storageKey = `CTX_${data.subjectName.toUpperCase().replace(/\s+/g, '_')}`;
+        // We use a unique key for every subject + client (e.g., "CTX_MATHEMATICS_1abc...")
+        const storageKey = `CTX_${data.subjectName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
         
         const contextPayload = JSON.stringify({
             grade: data.grade,
@@ -35,9 +36,10 @@ const SubjectContextManager = {
     getContext: function() {
         const sheet = SpreadsheetApp.getActiveSheet();
         const sheetName = sheet.getName();
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         
-        const props = PropertiesService.getUserProperties();
-        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}`;
+        const props = PropertiesService.getScriptProperties();
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
         
         const storedJson = props.getProperty(storageKey);
         let parsedData = { grade: "", topics: "" };

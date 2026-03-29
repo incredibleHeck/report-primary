@@ -1,29 +1,76 @@
- /**
+/**
  * Centralized API Management - SuperBatch with Retry Logic
- * Updated: Modular Prompts & Error Handling
+ * HECTECH API.js
  */
-
-const APICache = {
-    get: (key) => {
-        try {
-            return CacheService.getUserCache().get(key);
-        } catch (e) {
-            return null;
+/**
+ * Helper to log critical errors to a hidden SYS_LOGS sheet.
+ */
+function logSysError(action, message) {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName("SYS_LOGS");
+        if (!sheet) {
+            sheet = ss.insertSheet("SYS_LOGS");
+            sheet.hideSheet();
+            sheet.appendRow(["Timestamp", "User", "Action", "Error"]);
         }
-    },
-    set: (key, value) => {
-        try {
-            // TTL: 6 hours
-            CacheService.getUserCache().put(key, value, 21600);
-        } catch (e) { }
+        sheet.appendRow([new Date(), Session.getActiveUser().getEmail(), action, message]);
+    } catch (e) {
+        console.error("Failed to write to SYS_LOGS", e);
+    }
+}
+
+/**
+ * User-friendly error messages for common API issues
+ */
+const APIErrors = {
+    NO_API_KEY: "Gemini API Key not configured. Please run Setup from the HecTech menu.",
+    INVALID_API_KEY: "Invalid API Key. Please check your Gemini API Key in Script Properties.",
+    RATE_LIMITED: "AI service is busy. Please wait a moment and try again.",
+    CONTENT_BLOCKED: "AI could not generate a response for this content. Try modifying the input.",
+    NETWORK_ERROR: "Network error connecting to AI service. Check your internet connection.",
+    QUOTA_EXCEEDED: "API quota exceeded. Please check your Gemini API usage limits.",
+    
+    getUserMessage: function(code, defaultMsg) {
+        switch(code) {
+            case 400: return this.INVALID_API_KEY;
+            case 401: return this.INVALID_API_KEY;
+            case 403: return this.INVALID_API_KEY;
+            case 429: return this.RATE_LIMITED;
+            case 500: return "AI service error. Please try again.";
+            case 503: return this.RATE_LIMITED;
+            default: return defaultMsg || "An unexpected error occurred.";
+        }
     }
 };
+
+/**
+ * Shows a toast notification for API errors
+ */
+function showAPIError(message) {
+    try {
+        SpreadsheetApp.getActiveSpreadsheet().toast(message, "⚠️ AI Error", 10);
+    } catch(e) {
+        console.error("Could not show toast:", message);
+    }
+}
+
+/**
+ * Validates API key before making requests
+ */
+function validateAPIKey(key) {
+    if (!key || key.includes("YOUR_") || key.length < 20) {
+        showAPIError(APIErrors.NO_API_KEY);
+        return false;
+    }
+    return true;
+}
 
 /**
  * Base function for fetching Gemini API responses.
  */
 function fetchGeminiResponse(payload, model, key) {
-    const safeModel = model || "gemini-2.0-flash"; // 🟢 STABLE FALLBACK
+    const safeModel = model || "gemini-2.5-pro";
     
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${key}`;
     const options = {
@@ -33,7 +80,13 @@ function fetchGeminiResponse(payload, model, key) {
         muteHttpExceptions: true
     };
 
-    const response = UrlFetchApp.fetch(url, options);
+    let response;
+    try {
+        response = UrlFetchApp.fetch(url, options);
+    } catch (e) {
+        return { error: true, isRetryable: true, code: 0, message: APIErrors.NETWORK_ERROR };
+    }
+    
     const statusCode = response.getResponseCode();
     const contentText = response.getContentText();
 
@@ -41,21 +94,30 @@ function fetchGeminiResponse(payload, model, key) {
     try {
         json = JSON.parse(contentText);
     } catch (e) {
-        throw new Error(`Invalid JSON response: ${statusCode}`);
+        return { error: true, isRetryable: false, code: statusCode, message: `Invalid response from AI (${statusCode})` };
     }
 
     if (json.error || statusCode >= 400) {
         const errorCode = json.error ? json.error.code : statusCode;
         const errorMessage = json.error ? json.error.message : contentText;
-        if (errorCode === 503 || errorCode === 429) {
-             return { error: true, isRetryable: true, code: errorCode, message: errorMessage };
-        }
-        return { error: true, isRetryable: false, code: errorCode, message: errorMessage };
+        const isRetryable = (errorCode === 503 || errorCode === 429 || errorCode === 500);
+        
+        return { 
+            error: true, 
+            isRetryable: isRetryable, 
+            code: errorCode, 
+            message: errorMessage,
+            userMessage: APIErrors.getUserMessage(errorCode, errorMessage)
+        };
     }
     
     const result = json.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!result) {
-        return { error: true, message: "Content blocked or no response from AI." };
+        const blockReason = json.candidates?.[0]?.finishReason;
+        const message = blockReason === "SAFETY" 
+            ? "Content was blocked by safety filters." 
+            : APIErrors.CONTENT_BLOCKED;
+        return { error: true, isRetryable: false, message: message, userMessage: message };
     }
     
     return { error: false, text: result };
@@ -65,13 +127,16 @@ function fetchGeminiResponse(payload, model, key) {
 // 1. JSON BATCH API (Generic & Prompt-Agnostic)
 // ==========================================
 /**
- * Now accepts a promptFn argument so it doesn't rely on a global 'Prompts' object.
+ * Main batch API function with improved error handling
  */
 function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
     if (!data || (Array.isArray(data) && data.length === 0)) return [];
-    if (!key) throw new Error("API Key is missing.");
+    
+    // Validate API key before proceeding
+    if (!validateAPIKey(key)) {
+        return [];
+    }
 
-    // Generate prompt using the passed-in function
     const prompt = (typeof promptFn === 'function') ? promptFn(data) : promptFn;
     
     const payload = {
@@ -88,18 +153,61 @@ function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
         
         if (result.error) {
             if (result.isRetryable && retryCount < 3) {
-                console.warn(`Gemini Busy (${result.code}). Retrying...`);
+                console.warn(`Gemini Busy (${result.code}). Retry ${retryCount + 1}/3...`);
                 Utilities.sleep(Math.pow(2, retryCount) * 1000);
                 return callGeminiJsonBatch(data, model, key, promptFn, retryCount + 1);
             }
-            throw new Error(`API Error: ${result.message}`);
+            
+            // Show user-friendly error on final failure
+            showAPIError(result.userMessage || result.message);
+            console.error("API Error:", result.message);
+            return [];
         }
 
         // Clean JSON formatting
         let rawText = result.text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(rawText);
         
-        return parsed;
+        // 🟢 HARDENED EXTRACTOR: Look for the JSON array boundaries
+        const startIndex = rawText.indexOf('[');
+        const endIndex = rawText.lastIndexOf(']');
+        
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            rawText = rawText.substring(startIndex, endIndex + 1);
+        } else {
+            // Fallback: maybe it returned a single object wrapped in an array or just an object
+            const objStart = rawText.indexOf('{');
+            const objEnd = rawText.lastIndexOf('}');
+            if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+                rawText = "[" + rawText.substring(objStart, objEnd + 1) + "]";
+            }
+        }
+
+        try {
+            return JSON.parse(rawText);
+        } catch (parseError) {
+            console.warn("Initial JSON Parse Failed, attempting fallback extraction:", parseError, "Raw Length:", rawText.length, "Raw Preview:", rawText.substring(0, 500));
+            
+            // Fallback: Try to extract individual JSON objects using regex
+            const jsonObjects = [];
+            const regex = /{[^{}]*?}/g; // Matches objects without nested braces at first
+            let match;
+            while ((match = regex.exec(rawText)) !== null) {
+                try {
+                    const obj = JSON.parse(match[0]);
+                    jsonObjects.push(obj);
+                } catch (innerParseError) {
+                    console.warn("Fallback JSON object parse failed for:", match[0].substring(0, 100), innerParseError);
+                }
+            }
+            
+            if (jsonObjects.length > 0) {
+                console.log(`Successfully extracted ${jsonObjects.length} objects from malformed response.`);
+                return jsonObjects;
+            }
+
+            showAPIError("AI returned invalid data format. Please try again.");
+            return [];
+        }
 
     } catch (e) {
         console.error("JSON Batch Failed:", e);
@@ -107,6 +215,7 @@ function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
             Utilities.sleep(1000);
             return callGeminiJsonBatch(data, model, key, promptFn, retryCount + 1);
         }
+        showAPIError("Failed to get AI response after multiple attempts.");
         return []; 
     }
 }

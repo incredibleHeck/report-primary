@@ -2,88 +2,380 @@
 <html>
   <head>
     <base target="_top">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-      body { font-family: 'Roboto', sans-serif; padding: 0; margin: 0; background-color: #f8f9fa; }
-      
-      /* Dynamic Header */
-      .header-banner {
-        background-color: #1a73e8;
-        color: white;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #a5b4fc;
+        --primary-bg: rgba(99, 102, 241, 0.08);
+        --success: #10b981;
+        --success-bg: rgba(16, 185, 129, 0.1);
+        --warning: #f59e0b;
+        --error: #ef4444;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --text: #1e293b;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --border: #e2e8f0;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --radius: 12px;
+        --radius-sm: 8px;
       }
-      .subject-title {
-        font-size: 18px;
-        font-weight: 700;
+
+      * {
+        box-sizing: border-box;
         margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(180deg, var(--bg) 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        color: var(--text);
+      }
+
+      .header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 24px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+        pointer-events: none;
+      }
+
+      .header-icon {
+        width: 56px;
+        height: 56px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        backdrop-filter: blur(10px);
+      }
+
+      .header-icon .material-icons-round {
+        font-size: 28px;
+      }
+
+      .subject-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0 0 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        opacity: 0.85;
+        font-weight: 500;
+      }
+
+      .container {
+        padding: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+
+      .form-group {
+        margin-bottom: 24px;
+      }
+
+      .form-group:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .form-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 10px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
-      .sub-label { font-size: 11px; opacity: 0.9; margin-top: 4px; }
 
-      .container { padding: 15px; }
+      .form-label .material-icons-round {
+        font-size: 18px;
+        color: var(--primary);
+      }
 
-      .card {
-        background: white; padding: 15px; border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px;
-        border: 1px solid #e0e0e0;
+      .form-select {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 14px;
+        color: var(--text);
+        background: var(--bg);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 20px;
       }
-      
-      label { font-weight: bold; font-size: 12px; color: #5f6368; display: block; margin-bottom: 6px; }
-      
-      select, textarea {
-        width: 100%; padding: 10px; border: 1px solid #dadce0;
-        border-radius: 4px; box-sizing: border-box; font-family: inherit;
-        margin-bottom: 15px; font-size: 13px;
-      }
-      
-      textarea { height: 120px; resize: vertical; border-left: 3px solid #1a73e8; }
-      select { background: #f1f3f4; }
 
-      button {
-        background-color: #1a73e8; color: white; border: none;
-        padding: 12px 20px; border-radius: 4px; font-weight: bold;
-        width: 100%; cursor: pointer; transition: background 0.2s;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
+      .form-select:hover {
+        border-color: var(--primary-light);
       }
-      button:hover { background-color: #1557b0; }
-      
-      .status { font-size: 12px; margin-top: 10px; text-align: center; color: #1e8e3e; font-weight: bold; }
+
+      .form-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-bg);
+      }
+
+      .form-textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 14px;
+        color: var(--text);
+        background: var(--surface);
+        resize: vertical;
+        min-height: 140px;
+        line-height: 1.6;
+        transition: all 0.2s ease;
+      }
+
+      .form-textarea::placeholder {
+        color: var(--text-muted);
+      }
+
+      .form-textarea:hover {
+        border-color: var(--primary-light);
+      }
+
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-bg);
+      }
+
+      .helper-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .helper-text .material-icons-round {
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 16px 24px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        margin-top: 24px;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+      }
+
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .btn-primary .material-icons-round {
+        font-size: 20px;
+      }
+
+      .status-message {
+        text-align: center;
+        padding: 14px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        margin-top: 16px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .status-message.show {
+        display: flex;
+      }
+
+      .status-message.success {
+        background: var(--success-bg);
+        color: var(--success);
+      }
+
+      .status-message.error {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+      }
+
+      .status-message.loading {
+        background: var(--primary-bg);
+        color: var(--primary);
+      }
+
+      .tips-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.1));
+        border: 1px dashed var(--primary-light);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+      }
+
+      .tips-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .tips-list {
+        list-style: none;
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+      }
+
+      .tips-list li {
+        padding-left: 18px;
+        position: relative;
+        margin-bottom: 4px;
+      }
+
+      .tips-list li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: var(--success);
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
     
-    <div class="header-banner">
+    <div class="header">
+      <div class="header-icon">
+        <span class="material-icons-round">tune</span>
+      </div>
       <h2 id="displaySubject" class="subject-title">Loading...</h2>
-      <div class="sub-label">Active Sheet Context</div>
+      <div class="header-subtitle">Subject Context Configuration</div>
     </div>
 
     <div class="container">
       <div class="card">
-        <label><span class="material-icons" style="font-size:14px; vertical-align:text-bottom">school</span> Grade Level</label>
-        <select id="grade">
-          <option value="" disabled selected>Select Grade...</option>
-          <option value="Grade 1">Grade 1</option>
-          <option value="Grade 2">Grade 2</option>
-          <option value="Grade 3">Grade 3</option>
-          <option value="Grade 4">Grade 4</option>
-          <option value="Grade 5">Grade 5</option>
-          <option value="Grade 6">Grade 6</option>
-          <option value="JHS 1">JHS 1</option>
-          <option value="JHS 2">JHS 2</option>
-          <option value="JHS 3">JHS 3</option>
-        </select>
+        <div class="form-group">
+          <label class="form-label">
+            <span class="material-icons-round">school</span>
+            Grade Level
+          </label>
+          <select id="grade" class="form-select">
+            <option value="" disabled selected>Select grade level...</option>
+            <option value="Grade 1">Grade 1 (Primary)</option>
+            <option value="Grade 2">Grade 2 (Primary)</option>
+            <option value="Grade 3">Grade 3 (Primary)</option>
+            <option value="Grade 4">Grade 4 (Primary)</option>
+            <option value="Grade 5">Grade 5 (Primary)</option>
+            <option value="Grade 6">Grade 6 (Primary)</option>
+            <option value="JHS 1">JHS 1 (Junior High)</option>
+            <option value="JHS 2">JHS 2 (Junior High)</option>
+            <option value="JHS 3">JHS 3 (Junior High)</option>
+          </select>
+        </div>
 
-        <label><span class="material-icons" style="font-size:14px; vertical-align:text-bottom">list_alt</span> Topics Treated</label>
-        <textarea id="topics" placeholder="Example: Fractions, Water Cycle, Creative Writing, Ancient Egypt..."></textarea>
-        
-        <button onclick="saveData()">
-          <span class="material-icons">save</span> Save Context
+        <div class="form-group">
+          <label class="form-label">
+            <span class="material-icons-round">menu_book</span>
+            Topics Covered
+          </label>
+          <textarea id="topics" class="form-textarea" placeholder="Enter topics separated by commas...
+
+Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
+          <div class="helper-text">
+            <span class="material-icons-round">info</span>
+            These topics will be referenced in AI-generated comments
+          </div>
+        </div>
+
+        <button onclick="saveData()" class="btn-primary">
+          <span class="material-icons-round">save</span>
+          Save Configuration
         </button>
-        <div id="status" class="status"></div>
+
+        <div id="status" class="status-message">
+          <span class="material-icons-round status-icon">check_circle</span>
+          <span class="status-text"></span>
+        </div>
+      </div>
+
+      <div class="tips-card">
+        <div class="tips-title">
+          <span class="material-icons-round" style="font-size: 16px;">lightbulb</span>
+          Pro Tips
+        </div>
+        <ul class="tips-list">
+          <li>Be specific with topic names for better comments</li>
+          <li>Include 3-6 main topics covered this term</li>
+          <li>Save once per subject sheet for best results</li>
+        </ul>
       </div>
     </div>
 
@@ -95,39 +387,55 @@
       };
 
       function populate(data) {
-        // 1. Update Header with Active Sheet Name
-        document.getElementById('displaySubject').innerText = data.currentSheetName;
-        currentSheetName = data.currentSheetName; // Store for saving
+        document.getElementById('displaySubject').innerText = data.currentSheetName || "Unknown";
+        currentSheetName = data.currentSheetName;
 
-        // 2. Fill inputs if data exists for THIS sheet
-        if(data.grade) document.getElementById('grade').value = data.grade;
-        if(data.topics) document.getElementById('topics').value = data.topics;
+        if (data.grade) document.getElementById('grade').value = data.grade;
+        if (data.topics) document.getElementById('topics').value = data.topics;
+      }
+
+      function showStatus(message, type) {
+        const status = document.getElementById('status');
+        const icon = status.querySelector('.status-icon');
+        const text = status.querySelector('.status-text');
+        
+        status.className = 'status-message show ' + type;
+        text.textContent = message;
+        
+        if (type === 'success') icon.textContent = 'check_circle';
+        else if (type === 'error') icon.textContent = 'error';
+        else if (type === 'loading') icon.textContent = 'hourglass_empty';
       }
 
       function saveData() {
-        const data = {
-          subjectName: currentSheetName, // Send the sheet name back
-          grade: document.getElementById('grade').value,
-          topics: document.getElementById('topics').value
-        };
+        const gradeVal = document.getElementById('grade').value;
+        const topicsVal = document.getElementById('topics').value.trim();
 
-        if(!data.grade || !data.topics) {
-           document.getElementById('status').innerText = "⚠️ Please fill all fields.";
-           document.getElementById('status').style.color = "red";
-           return;
+        if (!gradeVal || !topicsVal) {
+          showStatus("Please fill in all fields", "error");
+          return;
         }
 
-        document.getElementById('status').style.color = "#1a73e8";
-        document.getElementById('status').innerText = "Saving...";
+        const data = {
+          subjectName: currentSheetName,
+          grade: gradeVal,
+          topics: topicsVal
+        };
+
+        showStatus("Saving configuration...", "loading");
         
-        google.script.run.withSuccessHandler(onSaved).saveSubjectContext(data);
+        google.script.run
+          .withSuccessHandler(onSaved)
+          .withFailureHandler(onError)
+          .saveSubjectContext(data);
       }
 
       function onSaved(msg) {
-        document.getElementById('status').style.color = "#1e8e3e";
-        document.getElementById('status').innerText = msg;
-        // Optional: Close sidebar automatically after 2s
-        // setTimeout(() => google.script.host.close(), 2000);
+        showStatus(msg || "Configuration saved successfully!", "success");
+      }
+
+      function onError(err) {
+        showStatus("Failed to save: " + err.message, "error");
       }
     </script>
   </body>

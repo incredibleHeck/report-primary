@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK DynamicConfig.ts (Cleaned & Optimized)
+// HECTECH DynamicConfig.js (Cleaned & Optimized)
 // ==========================================
 
 const DynamicConfig = {
@@ -7,28 +7,61 @@ const DynamicConfig = {
     _cache: {},
     
     _get: function(key) {
-        if (this._cache[key]) return this._cache[key];
-        const val = PropertiesService.getScriptProperties().getProperty(key);
-        this._cache[key] = val; // Store for this execution
+        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const clientKey = `${key}_${ssId}`;
+        
+        if (this._cache[clientKey]) return this._cache[clientKey];
+        
+        const props = PropertiesService.getScriptProperties();
+        
+        // Try client-specific key first
+        let val = props.getProperty(clientKey);
+        
+        // Fallback to global key (for things like API_KEY)
+        if (!val) {
+            val = props.getProperty(key);
+        }
+        
+        this._cache[clientKey] = val;
         return val;
+    },
+    
+    _getInt: function(key, defaultVal) {
+        const val = this._get(key);
+        return val ? parseInt(val, 10) : defaultVal;
     },
 
     // --- AI & CORE ---
     get API_KEY() { return this._get("GEMINI_API_KEY") || ""; },
-    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.0-flash"; },
+    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.5-pro"; },
     
-    // --- SHEET NAMES ---
-    get CLASSLIST_SHEET_NAME() { return "CLASSLIST"; },
-    get REPORT_SHEET_NAME() { return "PRIMARY EOT 1 REPORT"; },
-    get CONTACT_SHEET_NAME() { return "CONTACT LIST"; },
+    // --- SHEET NAMES (Configurable via Script Properties with defaults) ---
+    get CLASSLIST_SHEET_NAME() { return this._get("CLASSLIST_SHEET_NAME") || "CLASSLIST"; },
+    get REPORT_SHEET_NAME() { return this._get("REPORT_SHEET_NAME") || "REPORT DATA"; },
+    get CONTACT_SHEET_NAME() { return this._get("CONTACT_SHEET_NAME") || "CONTACT LIST"; },
+    get TEMPLATE_SHEET_NAME() { return this._get("TEMPLATE_SHEET_NAME") || "REPORT TEMPLATE"; },
+    get MIDTERM_SHEET_NAME() { return this._get("MIDTERM_SHEET_NAME") || "MIDTERM DATA"; },
+    get MIDTERM_TEMPLATE_NAME() { return this._get("MIDTERM_TEMPLATE_NAME") || "MIDTERM TEMPLATE"; },
+    
+    // --- CLASSLIST CONFIGURATION ---
+    get CLASSLIST_NAME_COL() { return this._getInt("CLASSLIST_NAME_COL", 2); },
+    get CLASSLIST_GENDER_COL() { return this._getInt("CLASSLIST_GENDER_COL", 5); },
     
     // --- ARCHITECTURE ---
-    // Note: Reports have headers on Row 2. Contact List usually has headers on Row 1.
     get HEADER_ROW() { return 2; },     
-    get DATA_START_ROW() { return 3; }, 
+    get DATA_START_ROW() { return this._getInt("DATA_START_ROW", 3); }, 
+    get ATTENDANCE_TOTAL() { return this._getInt("ATTENDANCE_TOTAL", 64); },
+
+    // --- TEMPLATE STRINGS ---
+    get CLASS_NAME() { return this._get("CLASS_NAME") || "YEAR FIVE (A)"; },
+    get ROLL_COUNT() { return this._get("ROLL_COUNT") || "25"; },
+    get TERM_YEAR_INFO() { return this._get("TERM_YEAR_INFO") || "Year: 2025 / 2026 Term: ONE (1)"; },
+    get REPORT_DATE() { return this._get("REPORT_DATE") || "11TH DECEMBER 2025."; },
+    get NEXT_TERM_BEGINS() { return this._get("NEXT_TERM_BEGINS") || "6TH JANUARY 2026."; },
+    get SCHOOL_BREAKS() { return this._get("SCHOOL_BREAKS") || "11TH DECEMBER 2025"; },
+    get SCHOOL_RESUMES() { return this._get("SCHOOL_RESUMES") || "6TH JANUARY 2026"; },
 
     // --- AUTOMATED RESOURCES ---
-    // 🗑️ REMOVED: get TEMPLATE_ID() (We use the Sheet Tab now, not a Google Doc)
     get DESTINATION_FOLDER_ID() { return FolderManager.getAutoReportFolderId(); },
 
     // --- SECURE WHATSAPP CONFIGS ---
@@ -53,6 +86,7 @@ const DynamicConfig = {
             const headerRow = (sheetName === "CONTACT LIST") ? 1 : this.HEADER_ROW;
             
             const lastCol = sheet.getLastColumn();
+            // getRange(row, column, numRows, numColumns). 1 row, lastCol columns.
             const headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
             
             // Normalize for matching
@@ -76,7 +110,87 @@ const DynamicConfig = {
     get COL_EMAIL() { return this.getColByName(this.CONTACT_SHEET_NAME, "EMAILS", 3); },
     get COL_PDF_ID() { return this.getColByName(this.CONTACT_SHEET_NAME, "PDF ID", 4); },
     get COL_WHATSAPP_STATUS() { return this.getColByName(this.CONTACT_SHEET_NAME, "WHATSAP", 5); }, 
-    get COL_EMAIL_STATUS() { return this.getColByName(this.CONTACT_SHEET_NAME, "EMAIL STATUS", 6); }
+    get COL_EMAIL_STATUS() { return this.getColByName(this.CONTACT_SHEET_NAME, "EMAIL STATUS", 6); },
+
+    // 🟢 REPORT DATA COLUMN INDICES (0-based for array access)
+    // Based on YEAR 5A - REPORT DATA.csv structure
+    // Headers: INDEX,STUDENT ID,STUDENT NAME,ENG CW 20,...,CLASS TEACHER'S NAME
+    REPORT_COLUMNS: {
+        INDEX: 0,
+        STUDENT_ID: 1,
+        STUDENT_NAME: 2,
+        // Music columns (no CW/MT/EOT breakdown)
+        MUSIC_TOTAL: 52,      // MUSIC EOT 100
+        MUSIC_GRADE: 53,
+        MUSIC_REMARK: 54,     // MUSIC COMMENT
+        MUSIC_AVG: 55,
+        // Summary columns
+        RAW_SCORE: 56,
+        AVG_MARK: 57,         // AVERAGE SCORE
+        AVG_GRADE: 58,
+        BEST_MARK: 59,
+        BEST_GRADE: 60,
+        WORST_MARK: 61,       // LEAST MARK
+        WORST_GRADE: 62,      // LEAST GRADE
+        ATTENDANCE: 63,
+        RANK: 64,
+        GENERAL_REMARK: 65,   // CLASS TEACHER'S COMMENT
+        PE_REMARK: 66,        // PE COMMENT
+        CLUB_REMARK: 67,      // CLUB COMMENT
+        TEACHER_NAME: 68      // CLASS TEACHER'S NAME
+    },
+    
+    // 🟢 SUBJECT CONFIGURATIONS FOR END OF TERM REPORT
+    // Maps subject names to template row and REPORT DATA starting column
+    // Each subject block: CW 20, MT 20, EOT 60, EOT 100, GRADE, COMMENT, AVE (7 cols)
+    // Template mapping: B=CW, C=MT, E=EOT60, F=Total, G=Ave, H=Grade, I=Comment
+    SUBJECT_CONFIG: {
+        "English":         { row: 10, startIdx: 3 },   // Cols D-J in sheet
+        "Mathematics":     { row: 11, startIdx: 10 },  // Cols K-Q
+        "Science":         { row: 12, startIdx: 31 },  // Cols AF-AL
+        "Bible Knowledge": { row: 13, startIdx: 38 },  // Cols AM-AS
+        "French":          { row: 14, startIdx: 17 },  // Cols R-X
+        "Humanities":      { row: 15, startIdx: 45 },  // Cols AT-AZ
+        "Computing":       { row: 16, startIdx: 24 }   // Cols Y-AE (ICT in sheet)
+    },
+    
+    // 🟢 MIDTERM DATA COLUMN INDICES (0-based)
+    // Simpler structure: No CW/MT/EOT breakdown, just total score
+    // Headers: INDEX NUMBER,INDEX NUMBER,NAME,ENG 100,ENG GRADE,ENG COMMENT,ENG AVE,...
+    MIDTERM_COLUMNS: {
+        INDEX: 0,
+        STUDENT_ID: 1,
+        STUDENT_NAME: 2,
+        // Summary columns at end
+        RAW_SCORE: 31,
+        AVG_MARK: 32,
+        AVG_GRADE: 33,
+        BEST_MARK: 34,
+        BEST_GRADE: 35,
+        WORST_MARK: 36,
+        WORST_GRADE: 37,
+        GENERAL_REMARK: 38
+    },
+    
+    // 🟢 MIDTERM SUBJECT CONFIG
+    // Each subject block: 100, GRADE, COMMENT, AVE (4 cols)
+    MIDTERM_SUBJECT_CONFIG: {
+        "English":         { row: 10, startIdx: 3 },
+        "Mathematics":     { row: 11, startIdx: 7 },
+        "Science":         { row: 12, startIdx: 15 },
+        "Bible Knowledge": { row: 13, startIdx: 27 },
+        "French":          { row: 14, startIdx: 11 },
+        "Humanities":      { row: 15, startIdx: 23 },
+        "Computing":       { row: 16, startIdx: 19 }
+    },
+    
+    /**
+     * Helper to normalize student names for matching
+     */
+    normalizeName: function(name) {
+        if (!name) return "";
+        return String(name).trim().toLowerCase().replace(/\s+/g, ' ');
+    }
 };
 
 const Config = DynamicConfig;

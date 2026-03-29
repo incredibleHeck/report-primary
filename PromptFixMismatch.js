@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PromptFixMismatch.ts
+// HECTECH PromptFixMismatch.js
 // ==========================================
 
 const PromptFixMismatch = {

@@ -1,17 +1,17 @@
 // ==========================================
-// HECKTECK GeneralCommentsManager.ts (Fixed)
+// HECTECH GeneralCommentsManager.js
 // ==========================================
 
 const GeneralCommentsManager = {
 
     // 🟢 STRICT CONFIG: Only these sheets are checked for "Areas of Improvement"
-    SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES"],
+    SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES", "BIBLE KNOWLEDGE"],
 
     openSidebar: function() {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
         const html = template.evaluate()
             .setTitle('Class Teacher General Comment')
-            .setWidth(350)
+            .setWidth(300)
             .addMetaTag('viewport', 'width=device-width, initial-scale=1');
         SpreadsheetApp.getUi().showSidebar(html);
     },
@@ -23,7 +23,7 @@ const GeneralCommentsManager = {
 
         const row = range.getRow();
         // 🛡️ Safety: Ensure Config is loaded, default to 3 if not
-        const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3; 
+        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
         
         if (row < minRow) return { valid: false, rowIndex: row }; 
         return { valid: true, rowIndex: row };
@@ -36,7 +36,7 @@ const GeneralCommentsManager = {
             if (!activeRange) return { error: "Please click on a student row." };
             
             const row = activeRange.getRow();
-            const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3; 
+            const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
 
             if (row < minRow) return { error: `Please select a valid student (Row ${minRow}+).` };
 
@@ -120,7 +120,7 @@ const GeneralCommentsManager = {
         const classlist = ss.getSheetByName(classSheetName);
         
         // Alignment
-        const minRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3;
+        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2
         const rowOffset = minRow - 2;
         const classlistRow = row - rowOffset;
 
@@ -152,14 +152,13 @@ const GeneralCommentsManager = {
                     // 🛡️ Safety: Ensure Column is Number
                     let scoreCol = -1;
                     if (typeof Config !== 'undefined') {
-                        scoreCol = Config.getColByName(sheetName, "100 MKS", -1);
+                        // Primary: Look for "TOTAL SCORE" column (header: "TOTAL SCORE (100)")
+                        scoreCol = Config.getColByName(sheetName, "TOTAL SCORE", -1);
                     }
                     
-                    // If Smart Discovery fails, try Manual Fallbacks based on typical sheet layout
+                    // If Smart Discovery fails, skip this subject
                     if (scoreCol === -1) {
-                         // Default logic: Usually 'TOTAL' or '100 MKS' is around Col 27-40 depending on subject
-                         // But we can't guess blindly. We skip if not found.
-                         console.warn(`Could not find score column for ${sheetName}`);
+                         console.warn(`Could not find TOTAL SCORE column for ${sheetName}`);
                          return;
                     }
                     

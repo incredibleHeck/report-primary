@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PolishManager.ts (Hardened Architecture)
+// HECTECH PolishManager.js
 // ==========================================
 
 const PolishManager = {
@@ -28,7 +28,7 @@ const PolishManager = {
             if (result.changes > 0) {
                  SpreadsheetApp.getActiveSpreadsheet().toast(`✨ Polished ${result.changes} comments!`, "Success");
             } else {
-                 SpreadsheetApp.getActiveSpreadsheet().toast("✨ No changes needed.", "HeckTeck");
+                 SpreadsheetApp.getActiveSpreadsheet().toast("✨ No changes needed.", "HecTech");
             }
         }
     },

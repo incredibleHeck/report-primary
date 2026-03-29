@@ -1,10 +1,25 @@
 // ==========================================
-// HECKTECK main.ts (Final Master - With Pro Dashboard)
+// HECTECH Main.js (Final Master - With Pro Dashboard)
 // ==========================================
+
+function DEBUG_LOG(msg) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("DEBUG_LOGS");
+    if (!sheet) {
+      sheet = ss.insertSheet("DEBUG_LOGS");
+    }
+    sheet.appendRow([new Date(), msg]);
+  } catch(e) {}
+}
 
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
-    ui.createMenu('HeckTeck AI 🎓')
+    ui.createMenu('HecTech AI 🎓')
+        // --- SETTINGS ---
+        .addItem(' ⚙️ Class Settings', 'openSettingsSidebar')
+        .addSeparator()
+
         // --- PHASE 1: DRAFTING ---
         .addItem(' 📝 1a. Set Subject Context (Topics)', 'openSubjectContextSidebar')
         .addItem(' ⚡ 1b. Auto-Generate Subject Comments', 'runCommentGenerator')
@@ -26,10 +41,14 @@ function onOpen() {
         .addItem(' 🏥 Run System Health Check', 'RUN_SYSTEM_READINESS_CHECK') 
         .addSeparator()
 
-        // --- PHASE 5: REPORT CARD GENERATION (NEW) ---
-        // Teachers should always run Preview first to check alignment/merged cells.
-        .addItem(' 📄 Step A: Preview (Check 1st Two Students)', 'runReportPreview')
-        .addItem(' 🚀 Step B: Generate Full Batch (PDFs)', 'runFullReportBatch')
+        // --- PHASE 5: END OF TERM REPORT GENERATION ---
+        .addItem(' 📄 EOT Preview (Check 1st Five Students)', 'runReportPreview')
+        .addItem(' 🚀 EOT Generate Full Batch (PDFs)', 'runFullReportBatch')
+        .addSeparator()
+        
+        // --- PHASE 5b: MIDTERM REPORT GENERATION ---
+        .addItem(' 📋 Midterm Preview', 'runMidtermPreview')
+        .addItem(' 📊 Midterm Generate Full Batch', 'runMidtermBatch')
         .addSeparator()
 
         
@@ -126,23 +145,53 @@ function RUN_SYSTEM_READINESS_CHECK() {
   // 3. DRIVE & WHATSAPP RESOURCES
   try {
     const fid = Config.DESTINATION_FOLDER_ID;
-    const folder = DriveApp.getFolderById(fid);
-    checks.push({ category: "DRIVE", item: "Report Folder", status: "OK", msg: "Connected" }); // Shortened msg for UI
+    if (fid) {
+      const folder = DriveApp.getFolderById(fid);
+      checks.push({ category: "DRIVE", item: "Report Folder", status: "OK", msg: "Connected" });
+    } else {
+      checks.push({ category: "DRIVE", item: "Report Folder", status: "WARNING", msg: "Will auto-create on first use" });
+    }
 
-    const tid = Config.TEMPLATE_ID;
-    const template = DriveApp.getFileById(tid);
-    checks.push({ category: "DRIVE", item: "Doc Template", status: "OK", msg: "Connected" });
+    // Template Sheet Check
+    const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
+    checks.push({ 
+      category: "TEMPLATE", 
+      item: "Report Template Sheet", 
+      status: templateSheet ? "OK" : "ERROR", 
+      msg: templateSheet ? `Found: "${Config.TEMPLATE_SHEET_NAME}"` : `Missing: Create "${Config.TEMPLATE_SHEET_NAME}"`
+    });
 
     // WhatsApp Credentials
     const phoneId = Config.WHATSAPP_PHONE_ID;
-    checks.push({ category: "WHATSAPP", item: "Phone ID", status: phoneId ? "OK" : "ERROR", msg: phoneId ? "Configured" : "Missing in Script Props" });
+    const waToken = Config.WHATSAPP_ACCESS_TOKEN;
+    checks.push({ 
+      category: "WHATSAPP", 
+      item: "Phone ID", 
+      status: (phoneId && !phoneId.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (phoneId && !phoneId.includes("YOUR_")) ? "Configured" : "Missing in Script Props" 
+    });
+    checks.push({ 
+      category: "WHATSAPP", 
+      item: "Access Token", 
+      status: (waToken && !waToken.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (waToken && !waToken.includes("YOUR_")) ? "Configured" : "Missing in Script Props" 
+    });
+
+    // Gemini API Key Check
+    const apiKey = Config.API_KEY;
+    checks.push({ 
+      category: "AI", 
+      item: "Gemini API Key", 
+      status: (apiKey && !apiKey.includes("YOUR_")) ? "OK" : "ERROR", 
+      msg: (apiKey && !apiKey.includes("YOUR_")) ? "Configured" : "Missing - Run Setup" 
+    });
 
     // Email Quota
     const quota = MailApp.getRemainingDailyQuota();
     checks.push({ category: "EMAIL", item: "Daily Quota", status: quota > 10 ? "OK" : "WARNING", msg: `${quota} remaining` });
 
   } catch(e) {
-    checks.push({ category: "RESOURCES", item: "Drive/Config", status: "ERROR", msg: "Check IDs in Script Properties" });
+    checks.push({ category: "RESOURCES", item: "Drive/Config", status: "ERROR", msg: e.message });
   }
 
   // 4. GENERATE DASHBOARD HTML
@@ -166,7 +215,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
       button:hover { background: #1557b0; }
     </style>
     <div class="container">
-      <h3>🚀 HeckTeck System Health</h3>
+      <h3>🚀 HecTech System Health</h3>
       <table>
         <tr><th>Category</th><th>Check Item</th><th>Status</th><th>Details</th></tr>
   `;
@@ -180,7 +229,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
       <div><button onclick='google.script.host.close()'>Done</button></div>
     </div>`;
 
-  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(600).setHeight(650);
+  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(800).setHeight(650);
   ui.showModalDialog(htmlOutput, 'System Readiness Check');
 }
 
@@ -190,6 +239,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
 
 // 1. Report Card Preview (Safety Step)
 function runReportPreview() {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runReportPreview called directly in Master`);
     if (typeof ReportCardGenerator !== 'undefined') {
         ReportCardGenerator.runPreview();
     } else {
@@ -197,31 +247,66 @@ function runReportPreview() {
     }
 }
 
-// 2. Full Report Batch
-function runFullReportBatch() {
+function runReportPreview_Client(clientToken) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runReportPreview_Client called. token type=${typeof clientToken}`);
     if (typeof ReportCardGenerator !== 'undefined') {
-        ReportCardGenerator.process();
+        ReportCardGenerator.runPreview(clientToken);
     } else {
         SpreadsheetApp.getUi().alert("⚠️ ReportCardGenerator not found.");
     }
 }
 
+// 2. Full Report Batch
+function runFullReportBatch() {
+    runAllReportsSafely();
+}
+
+function runFullReportBatch_Client(clientToken) {
+    runAllReportsSafely(clientToken);
+}
+
+// 2b. Midterm Report Preview
+function runMidtermPreview() {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.runPreview();
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
+function runMidtermPreview_Client(clientToken) {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.runPreview(clientToken);
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
+// 2c. Midterm Full Report Batch
+function runMidtermBatch() {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.process(false, 999);
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
+function runMidtermBatch_Client(clientToken) {
+    if (typeof MidtermReportGenerator !== 'undefined') {
+        MidtermReportGenerator.process(false, 999, clientToken);
+    } else {
+        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
+    }
+}
+
 // 3. Subject Comment Generator (Scores + 2)
 function runCommentGenerator() {
-    if (typeof SubjectCommentManager !== 'undefined') {
-        SubjectCommentManager.process();
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ SubjectCommentManager not found.");
-    }
+    initiateBatchAction('Generate Subject Comments', 'generate'); 
 }
 
 // 4. Audit & Name Mismatch Fix
 function runAuditFix() {
-    if (typeof FixMismatchManager !== 'undefined') {
-        FixMismatchManager.run();
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ FixMismatchManager not found.");
-    }
+    initiateBatchAction('Fix Name Mismatches', 'auditfix');
 }
 
 // 5. WhatsApp Integration
@@ -259,17 +344,17 @@ function runResetStatuses() {
     }
 }
 
-// --- STANDARD AI ACTIONS (Generic Dispatcher) ---
-function runPolish() { initiateAction('polish'); }
-function runPronouns() { initiateAction('pronouns'); }
-function runAudit() { initiateAction('audit'); }
+// --- STANDARD AI ACTIONS (With Batch Sidebar) ---
+function runPolish() { 
+    initiateBatchAction('Polish Grammar & Style', 'polish'); 
+}
 
-function initiateAction(type) {
-    if (typeof ActionManager !== 'undefined') {
-        ActionManager.run(type);
-    } else {
-        SpreadsheetApp.getUi().alert(`Manager for ${type} not found.`);
-    }
+function runPronouns() { 
+    initiateBatchAction('Fix Pronouns', 'pronouns'); 
+}
+
+function runAudit() { 
+    initiateBatchAction('Audit Comments', 'audit'); 
 }
 
 // --- SIDEBARS & UTILS ---
@@ -289,11 +374,17 @@ function runUndo() {
     if (typeof StateManager !== 'undefined') StateManager.undo();
 }
 
+function toast(msg, title) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(msg, title || "System");
+}
+
 // --- BATCHING LOGIC ---
-function initiateAction(title, action) {
+// 🟢 FIX: Switched to UserProperties to allow multiple teachers to work in the same sheet simultaneously.
+// Note: Users should avoid running batches in multiple tabs at the exact same time.
+function initiateBatchAction(title, action) {
     const selection = SelectionProcessor.getSmartSelection(); 
     if (!selection) {
-        SpreadsheetApp.getActiveSpreadsheet().toast("Please select a column.", "No Selection");
+        SpreadsheetApp.getActiveSpreadsheet().toast("Please select a column with comments.", "No Selection");
         return;
     }
 
@@ -305,8 +396,10 @@ function initiateAction(title, action) {
         startCol: selection.getColumn(),
         numRows: numRows,
         numCols: selection.getNumColumns(),
-        timestamp: new Date().getTime() // 🟢 Expire old configs
+        timestamp: new Date().getTime()
     };
+    
+    // 🟢 UserProperties isolates memory per-user, preventing collisions in a shared sheet
     PropertiesService.getUserProperties().setProperty('ACTIVE_BATCH_CONFIG', JSON.stringify(rangeConfig));
 
     openSidebar(title, action);
@@ -319,7 +412,7 @@ function openSidebar(title, action) {
 
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
         .setTitle(title)
-        .setWidth(350); 
+        .setWidth(300); 
     SpreadsheetApp.getUi().showSidebar(html);
 }
 
@@ -340,7 +433,7 @@ function getSelectionInfo() {
 
     return {
         numRows: config.numRows,
-        chunkSize: 32, 
+        chunkSize: 6, 
         action: action,
         title: title
     };
@@ -359,14 +452,8 @@ function processChunk(action, relativeStartRow, numRows) {
     const absoluteStartRow = config.startRow + relativeStartRow;
     const chunkRange = sheet.getRange(absoluteStartRow, config.startCol, numRows, config.numCols);
 
-    // 🟢 DYNAMIC DISCOVERY FOR BATCH ACTIONS
     switch (action) {
-        case 'generate': 
-            // Look for "COMMENT" column dynamically
-            let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
-            if (commentColIndex === -1) commentColIndex = chunkRange.getColumn() + 2; // Fallback
-            return SubjectCommentManager.generateBatch(chunkRange, commentColIndex);
-
+        case 'generate': return SubjectCommentManager.processRange(chunkRange);
         case 'polish': return PolishManager.processRange(chunkRange);
         case 'pronouns': return PronounManager.processRange(chunkRange);
         case 'audit': return AuditManager.processRange(chunkRange);

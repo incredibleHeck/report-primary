@@ -1,43 +1,43 @@
 // ==========================================
-// HECKTECK TraitsConfig.ts (Master List - Expanded)
+// HECTECH TraitsConfig.js
 // ==========================================
 
 const TraitsConfig = {
     categories: {
         "Behavior & Attitude": [
-            "Respectful", "Punctual", "Polite", "Obedient", "Cheerful",
-            "Disruptive", "Talkative", "Defiant", "Restless", "Requires Supervision",
-            "Positive influence", "Honest", "Trustworthy"
+            "Cheerful", "Defiant", "Disruptive", "Honest", "Obedient", 
+            "Polite", "Positive influence", "Punctual", "Requires Supervision", 
+            "Respectful", "Restless", "Talkative", "Trustworthy"
         ],
         "Work Habits & Focus": [
-            "Hardworking", "Consistent", "Detail-oriented", "Participates actively",
-            "Distracted", "Rushes work", "Disorganized", "Procrastinates", "Inconsistent effort",
-            "Self-starter", "Resilient", "Needs prompting", "Completes homework"
+            "Completes homework", "Consistent", "Detail-oriented", "Disorganized", 
+            "Distracted", "Hardworking", "Inconsistent effort", "Needs prompting", 
+            "Participates actively", "Procrastinates", "Resilient", "Rushes work", 
+            "Self-starter"
         ],
         "Social & Emotional": [
-            "Leader", "Role Model", "Team player", "Kind-hearted", "Friendly",
-            "Loner", "Shy", "Reserved", "Moody", "Peer influence (Positive)", "Peer influence (Negative)",
-            "Empathetic", "Conflict resolver", "Easily provoked"
+            "Conflict resolver", "Easily provoked", "Empathetic", "Friendly", 
+            "Kind-hearted", "Leader", "Loner", "Moody", "Peer influence (Negative)", 
+            "Peer influence (Positive)", "Reserved", "Role Model", "Shy", "Team player"
         ],
         "Mindset & Cognitive": [
-            "Growth mindset", "Curious", "Creative", "Logical", "Enthusiastic",
-            "Gives up easily", "Lacks confidence", "Anxious", "Passive learner",
-            "Critical thinker", "Problem solver", "Analytic"
+            "Analytic", "Anxious", "Creative", "Critical thinker", "Curious", 
+            "Enthusiastic", "Gives up easily", "Growth mindset", "Lacks confidence", 
+            "Logical", "Passive learner", "Problem solver"
         ],
         "Communication Skills": [
-            "Articulate", "Confident speaker", "Good listener", "Expressive",
-            "Struggles to express ideas", "Interrupts others", "Quiet in class",
-            "Strong vocabulary", "Ask insightful questions"
+            "Articulate", "Ask insightful questions", "Confident speaker", "Expressive", 
+            "Good listener", "Interrupts others", "Quiet in class", "Strong vocabulary", 
+            "Struggles to express ideas"
         ],
         "Conduct & Appearance": [
-            "Neat & Tidy", "Smartly Dressed", "Comported", 
-            "Untidy work", "Lacks distinctive drive", "Maintains belongings",
-            "Proper uniform"
+            "Comported", "Lacks distinctive drive", "Maintains belongings", "Neat & Tidy", 
+            "Proper uniform", "Smartly Dressed", "Untidy work"
         ],
         "🎯 Recommendations / Goals": [
-            "Read more widely", "Improve handwriting", "Participate more in class",
-            "Ask for help when stuck", "Check work for errors", "Focus on time management",
-            "Improve attendance", "Develop self-confidence", "Reduce chatter"
+            "Ask for help when stuck", "Check work for errors", "Develop self-confidence", 
+            "Focus on time management", "Improve attendance", "Improve handwriting", 
+            "Participate more in class", "Read more widely", "Reduce chatter"
         ]
     }
 };

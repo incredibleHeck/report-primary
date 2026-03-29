@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK StyleManager.ts
+// HECTECH StyleManager.js
 // ==========================================
 const StyleManager = {
     // Config: Bright Cyan for high visibility on dark/brown backgrounds
@@ -10,7 +10,7 @@ const StyleManager = {
     DEFAULT_WEIGHT: "normal",
     DEFAULT_BG: "#ffffff",
     /**
-     * Applies the HeckTeck active style (Cyan/Bold) to the given range.
+     * Applies the HecTech active style (Cyan/Bold) to the given range.
      */
     applyActiveStyle: function (range) {
         range.setFontColor(this.ACTIVE_COLOR);

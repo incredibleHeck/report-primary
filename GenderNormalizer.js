@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GenderNormalizer.ts (Hardened Architecture)
+// HECTECH GenderNormalizer.js
 // ==========================================
 
 const GenderNormalizer = {
@@ -15,10 +15,13 @@ const GenderNormalizer = {
      * NOW CACHED: Only reads the spreadsheet once every 20 minutes.
      * Drastically speeds up batch processing.
      */
+    _cacheKey: function() {
+        return "GENDER_MAP_" + SpreadsheetApp.getActiveSpreadsheet().getId();
+    },
+
     buildGenderMap: function () {
-        // 1. Try to get from Cache first
         const cache = CacheService.getUserCache();
-        const cacheKey = "HECKTECK_GENDER_MAP_V3"; // Bumped version
+        const cacheKey = this._cacheKey();
         const cachedJson = cache.get(cacheKey);
 
         if (cachedJson) {
@@ -91,6 +94,6 @@ const GenderNormalizer = {
      * Force refresh if user changes the Classlist
      */
     clearCache: function() {
-        CacheService.getUserCache().remove("HECKTECK_GENDER_MAP_V3");
+        CacheService.getUserCache().remove(this._cacheKey());
     }
 };

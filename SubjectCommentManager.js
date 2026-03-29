@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK SubjectCommentManager.ts (Hardened Architecture)
+// HECTECH SubjectCommentManager.js
 // ==========================================
 
 const SubjectCommentManager = {
@@ -15,9 +15,8 @@ const SubjectCommentManager = {
         let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
         
         if (commentColIndex === -1) {
-            // Fallback for sheets that might not match the standard template exactly
             commentColIndex = scoreCol + 2;
-            console.warn("Could not find 'COMMENT' header. Defaulting to +3.");
+            console.warn("Could not find 'COMMENT' header. Defaulting to scoreCol + 2.");
         }
 
         // Save State for Undo
@@ -33,6 +32,26 @@ const SubjectCommentManager = {
         }
     },
 
+    // 🟢 NEW: Process a specific chunk range from the sidebar
+    processRange: function (chunkRange) {
+        const sheet = chunkRange.getSheet();
+        let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
+        
+        if (commentColIndex === -1) {
+            // Default to 2 columns to the right of the score column
+            commentColIndex = chunkRange.getColumn() + 2;
+        }
+
+        // Save State for Undo
+        if (typeof StateManager !== 'undefined') {
+            const undoRange = sheet.getRange(chunkRange.getRow(), commentColIndex, chunkRange.getNumRows(), 1);
+            StateManager.saveForUndo(undoRange);
+        }
+
+        const result = this.generateBatch(chunkRange, commentColIndex);
+        return result ? "Done" : "Failed";
+    },
+
     generateBatch: function (scoreRange, commentColIndex) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sheet = scoreRange.getSheet();
@@ -42,10 +61,10 @@ const SubjectCommentManager = {
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
-        // 2. FETCH CONTEXT (Immutable ID)
-        // 🟢 FIX: Use Sheet ID so renaming doesn't kill context
-        const props = PropertiesService.getUserProperties();
-        const storageKey = `CTX_${sheet.getSheetId()}`; 
+        // 2. FETCH CONTEXT
+        const ssId = ss.getId();
+        const props = PropertiesService.getScriptProperties();
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`; 
         const storedJson = props.getProperty(storageKey);
         
         let contextData = { grade: "", topics: "" };

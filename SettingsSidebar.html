@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --radius: 8px;
+    }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      padding: 16px; 
+      background: var(--bg); 
+      color: var(--text); 
+      margin: 0;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: var(--text);
+      text-align: center;
+    }
+    .form-group { 
+      margin-bottom: 12px; 
+    }
+    label { 
+      display: block; 
+      font-size: 12px; 
+      font-weight: 600; 
+      margin-bottom: 4px; 
+      color: #64748b; 
+    }
+    input { 
+      width: 100%; 
+      padding: 8px 12px; 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius); 
+      box-sizing: border-box; 
+      font-size: 13px; 
+      font-family: inherit; 
+      background: var(--surface);
+      transition: all 0.2s;
+    }
+    input:focus { 
+      outline: none; 
+      border-color: var(--primary); 
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
+    }
+    button { 
+      width: 100%; 
+      padding: 12px; 
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+      color: white; 
+      border: none; 
+      border-radius: var(--radius); 
+      font-weight: 600; 
+      cursor: pointer; 
+      margin-top: 12px; 
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    button:hover { 
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    #status { 
+      margin-top: 12px; 
+      font-size: 12px; 
+      text-align: center; 
+      color: #10b981; 
+      font-weight: 600; 
+      height: 16px; 
+    }
+    .teacher-section {
+      margin-top: 24px; 
+      border-top: 2px dashed var(--border); 
+      padding-top: 16px;
+    }
+    .teacher-section label {
+      color: var(--primary-dark);
+      font-size: 13px;
+    }
+    .hint {
+      font-size: 11px; 
+      color: #94a3b8; 
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h2>⚙️ Class Settings</h2>
+  
+  <div id="loading" style="text-align: center; padding: 40px 20px; color: #64748b;">
+    <div style="margin-bottom: 12px;">Loading settings...</div>
+  </div>
+  
+  <div id="form-content" style="display: none;">
+    <div class="form-group">
+      <label>Class Name</label>
+      <input type="text" id="CLASS_NAME" placeholder="e.g. YEAR FIVE (A)">
+    </div>
+    <div class="form-group">
+      <label>Roll Count</label>
+      <input type="number" id="ROLL_COUNT" placeholder="e.g. 25">
+    </div>
+    <div class="form-group">
+      <label>Term & Year Info</label>
+      <input type="text" id="TERM_YEAR_INFO" placeholder="e.g. Year: 2025 / 2026 Term: ONE (1)">
+    </div>
+    <div class="form-group">
+      <label>Report Date</label>
+      <input type="text" id="REPORT_DATE" placeholder="e.g. 11TH DECEMBER 2025.">
+    </div>
+    <div class="form-group">
+      <label>Next Term Begins</label>
+      <input type="text" id="NEXT_TERM_BEGINS" placeholder="e.g. 6TH JANUARY 2026.">
+    </div>
+    <div class="form-group">
+      <label>School Breaks</label>
+      <input type="text" id="SCHOOL_BREAKS" placeholder="e.g. 11TH DECEMBER 2025">
+    </div>
+    <div class="form-group">
+      <label>School Resumes</label>
+      <input type="text" id="SCHOOL_RESUMES" placeholder="e.g. 6TH JANUARY 2026">
+    </div>
+    <div class="form-group">
+      <label>Attendance Total</label>
+      <input type="number" id="ATTENDANCE_TOTAL" placeholder="e.g. 64">
+    </div>
+    
+    <div class="form-group teacher-section">
+      <label>👨‍🏫 Class Teacher Name</label>
+      <input type="text" id="TEACHER_NAME" placeholder="e.g. Mr. John Doe">
+      <div class="hint">This name will be automatically populated into the Report Sheet for all students.</div>
+    </div>
+    
+    <button id="saveBtn" onclick="save()">Save Settings</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      google.script.run
+        .withSuccessHandler(populateForm)
+        .withFailureHandler(e => {
+            document.getElementById('loading').innerHTML = `<span style="color: #ef4444;">Error loading settings: ${e.message}</span>`;
+        })
+        .getSettingsData();
+    };
+
+    function populateForm(data) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form-content').style.display = 'block';
+      for (const key in data) {
+        if (document.getElementById(key)) {
+          document.getElementById(key).value = data[key];
+        }
+      }
+    }
+
+    function save() {
+      const btn = document.getElementById('saveBtn');
+      btn.innerHTML = '<div class="spinner"></div> Saving...';
+      btn.disabled = true;
+      document.getElementById('status').innerText = '';
+
+      const settings = {
+        CLASS_NAME: document.getElementById('CLASS_NAME').value,
+        ROLL_COUNT: document.getElementById('ROLL_COUNT').value,
+        TERM_YEAR_INFO: document.getElementById('TERM_YEAR_INFO').value,
+        REPORT_DATE: document.getElementById('REPORT_DATE').value,
+        NEXT_TERM_BEGINS: document.getElementById('NEXT_TERM_BEGINS').value,
+        SCHOOL_BREAKS: document.getElementById('SCHOOL_BREAKS').value,
+        SCHOOL_RESUMES: document.getElementById('SCHOOL_RESUMES').value,
+        ATTENDANCE_TOTAL: document.getElementById('ATTENDANCE_TOTAL').value,
+        TEACHER_NAME: document.getElementById('TEACHER_NAME').value
+      };
+
+      google.script.run
+        .withSuccessHandler(() => {
+          btn.innerHTML = 'Save Settings';
+          btn.disabled = false;
+          const status = document.getElementById('status');
+          status.style.color = '#10b981';
+          status.innerText = 'Settings saved successfully!';
+          setTimeout(() => status.innerText = '', 4000);
+        })
+        .withFailureHandler((e) => {
+          btn.innerHTML = 'Save Settings';
+          btn.disabled = false;
+          const status = document.getElementById('status');
+          status.style.color = '#ef4444';
+          status.innerText = 'Error: ' + e.message;
+        })
+        .saveSettingsData(settings);
+    }
+  </script>
+</body>
+</html>

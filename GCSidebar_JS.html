@@ -3,32 +3,38 @@
     let currentStudentName = "";
     let pollingInterval = null;
 
-    // 1. START POLLING ON LOAD
-    window.onload = function() { 
-      loadStudentData(); 
-      startPolling(); 
+    const categoryIcons = {
+      "Positive Traits": "😊",
+      "Work Habits": "📚",
+      "Social Skills": "🤝",
+      "Areas for Growth": "🌱",
+      "Character": "⭐",
+      "Learning Style": "🧠",
+      "Behavior": "👤",
+      "Communication": "💬"
+    };
+
+    window.onload = function() {
+      loadStudentData();
+      startPolling();
     };
 
     function startPolling() {
-      // Check every 1 second (1000ms) if the user moved to a new row
       pollingInterval = setInterval(function() {
         google.script.run
           .withSuccessHandler(checkSelectionChange)
-          .pollCurrentStudent(); 
-      }, 1000);
+          .pollCurrentStudent();
+      }, 1200);
     }
 
-    // 2. CHECK IF SELECTION CHANGED
     function checkSelectionChange(result) {
-      // If row index is different, we reload the data
       if (result && result.valid && result.rowIndex !== currentRowIndex) {
-        console.log("New student detected at row " + result.rowIndex);
-        loadStudentData(); 
+        loadStudentData();
       }
     }
 
     function loadStudentData() {
-      disableUI(true);
+      setLoading(true);
       google.script.run
         .withSuccessHandler(renderSidebar)
         .withFailureHandler(showError)
@@ -37,71 +43,72 @@
 
     function renderSidebar(data) {
       if (data.error) {
-        document.getElementById('studentNameDisplay').innerHTML = `<span style="color:red; font-size:12px;">${data.error}</span>`;
-        disableUI(false); 
+        document.getElementById('studentNameDisplay').innerHTML = `<span style="color: var(--error); font-size: 13px;">${data.error}</span>`;
+        document.getElementById('studentAvatar').textContent = "!";
+        document.getElementById('studentAvatar').style.background = "linear-gradient(135deg, #ef4444, #f87171)";
+        setLoading(false);
         return;
       }
 
-      // ---------------------------------------------------------
-      // 🛡️ THE FIX: DETECT STUDENT CHANGE & CLEAR TRAITS
-      // ---------------------------------------------------------
-      // If we have a previous name, and the new name is different...
       if (currentStudentName !== "" && currentStudentName !== data.studentName) {
-          clearTraits(); // Uncheck all boxes
-          console.log("Student changed. Traits reset.");
+        clearTraits();
       }
-      // ---------------------------------------------------------
 
-      // Update State
       currentRowIndex = data.rowIndex;
       currentStudentName = data.studentName;
 
       document.getElementById('studentNameDisplay').textContent = data.studentName;
+      document.getElementById('studentAvatar').textContent = data.studentName.charAt(0).toUpperCase();
+      document.getElementById('studentAvatar').style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark))";
 
-      // Only build the Accordion DOM if it's empty (First Load) 
       const container = document.getElementById('accordionContainer');
       if (container.innerHTML.trim() === "" || container.innerText.includes("Loading")) {
-          renderAccordionContent(data.traits);
+        renderAccordionContent(data.traits);
       }
-      
-      disableUI(false);
+
+      setLoading(false);
+      updateSelectionCount();
     }
 
-    /**
-     * Helper to uncheck all boxes (The Clean Slate)
-     */
     function clearTraits() {
       const checkboxes = document.querySelectorAll('input[name="traitCheckbox"]');
-      checkboxes.forEach(cb => {
-        cb.checked = false;
-      });
+      checkboxes.forEach(cb => cb.checked = false);
+      updateSelectionCount();
     }
 
     function renderAccordionContent(traitsData) {
       const container = document.getElementById('accordionContainer');
-      container.innerHTML = ''; 
+      container.innerHTML = '';
 
       let first = true;
+      let delay = 0;
+
       for (const [category, traits] of Object.entries(traitsData)) {
-        
         const itemDiv = document.createElement('div');
         itemDiv.className = 'accordion-item';
+        itemDiv.style.animationDelay = `${delay}ms`;
+        delay += 50;
+
+        const icon = categoryIcons[category] || "📋";
 
         const header = document.createElement('div');
         header.className = 'accordion-header';
-        header.innerHTML = `${category} <span class="arrow">▼</span>`;
+        header.innerHTML = `
+          <span><span class="category-icon">${icon}</span>${category}</span>
+          <span class="material-icons-round arrow">expand_more</span>
+        `;
         header.onclick = function() { toggleAccordion(this); };
-        
+
         const content = document.createElement('div');
         content.className = 'accordion-content';
-        
+
         const grid = document.createElement('div');
         grid.className = 'checkbox-grid';
 
         traits.forEach(trait => {
           const label = document.createElement('label');
           label.className = 'checkbox-item';
-          label.innerHTML = `<input type="checkbox" name="traitCheckbox" value="${trait}"><span>${trait}</span>`;
+          label.innerHTML = `<input type="checkbox" name="traitCheckbox" value="${trait}" onchange="updateSelectionCount()"><span>${trait}</span>`;
           grid.appendChild(label);
         });
 
@@ -112,7 +119,9 @@
 
         if (first) {
           header.classList.add('active');
-          content.style.maxHeight = content.scrollHeight + "px";
+          setTimeout(() => {
+            content.style.maxHeight = content.scrollHeight + "px";
+          }, 10);
           first = false;
         }
       }
@@ -122,8 +131,6 @@
       const content = header.nextElementSibling;
       const isActive = header.classList.contains('active');
 
-      // Optional: Close others when opening one (Accordion style)
-      // Remove this block if you want multiple sections open at once
       document.querySelectorAll('.accordion-header').forEach(h => {
         h.classList.remove('active');
         h.nextElementSibling.style.maxHeight = null;
@@ -135,8 +142,14 @@
       }
     }
 
+    function updateSelectionCount() {
+      const count = document.querySelectorAll('input[name="traitCheckbox"]:checked').length;
+      document.getElementById('selectedCount').textContent = count;
+      document.getElementById('generateBtn').disabled = count === 0;
+    }
+
     document.getElementById('searchTraits').addEventListener('input', function(e) {
-      const term = e.target.value.toLowerCase();
+      const term = e.target.value.toLowerCase().trim();
       const items = document.querySelectorAll('.accordion-item');
 
       items.forEach(item => {
@@ -157,65 +170,97 @@
           item.style.display = 'block';
           item.querySelector('.accordion-content').style.maxHeight = null;
           item.querySelector('.accordion-header').classList.remove('active');
+          checkboxes.forEach(box => box.style.display = 'flex');
         } else if (hasMatch) {
           item.style.display = 'block';
           item.querySelector('.accordion-header').classList.add('active');
-          item.querySelector('.accordion-content').style.maxHeight = "1000px"; // Force open
+          item.querySelector('.accordion-content').style.maxHeight = "1000px";
         } else {
           item.style.display = 'none';
         }
       });
+
+      if (term === "" && items.length > 0) {
+        const firstHeader = items[0].querySelector('.accordion-header');
+        firstHeader.classList.add('active');
+        firstHeader.nextElementSibling.style.maxHeight = firstHeader.nextElementSibling.scrollHeight + "px";
+      }
     });
 
     document.getElementById('generateBtn').addEventListener('click', function() {
       const selected = [];
-      document.querySelectorAll('input[name="traitCheckbox"]:checked').forEach(cb => { selected.push(cb.value); });
+      document.querySelectorAll('input[name="traitCheckbox"]:checked').forEach(cb => {
+        selected.push(cb.value);
+      });
 
       if (selected.length === 0) {
-        showToast("Please select at least one trait.", "orange");
+        showToast("Please select at least one trait", "warning");
         return;
       }
 
       const btn = document.getElementById('generateBtn');
       const text = document.getElementById('btnText');
       const spinner = document.getElementById('loadingSpinner');
-      
+      const icon = document.getElementById('btnIcon');
+
       btn.disabled = true;
-      text.textContent = "WRITING...";
+      text.textContent = "Generating...";
       spinner.style.display = "inline-block";
+      icon.style.display = "none";
 
       google.script.run
         .withSuccessHandler(function() {
-          text.textContent = "DONE! ✨";
+          text.textContent = "Done!";
           spinner.style.display = "none";
+          icon.style.display = "inline-block";
+          icon.textContent = "check_circle";
+          btn.classList.add('success');
+          
+          showToast("Comment generated successfully!", "success");
+          
           setTimeout(() => {
             btn.disabled = false;
-            text.textContent = "REGENERATE"; 
-          }, 2000);
+            btn.classList.remove('success');
+            text.textContent = "Regenerate";
+            icon.textContent = "refresh";
+          }, 2500);
         })
         .withFailureHandler(function(err) {
-          text.textContent = "RETRY";
+          text.textContent = "Try Again";
           spinner.style.display = "none";
+          icon.style.display = "inline-block";
+          icon.textContent = "refresh";
           btn.disabled = false;
-          showError(err);
+          showToast("Generation failed: " + err.message, "error");
         })
         .processGeneralCommentWithTraits(selected, currentRowIndex);
     });
 
-    function showToast(msg, color) {
-      const originalText = document.getElementById('studentNameDisplay').innerHTML;
-      document.getElementById('studentNameDisplay').innerHTML = `<span style="color:${color}">${msg}</span>`;
-      setTimeout(() => { document.getElementById('studentNameDisplay').innerHTML = originalText; }, 3000);
+    function showToast(msg, type = "info") {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast-message ' + type;
+      
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 3500);
     }
 
-    function disableUI(loading) {
-      document.getElementById('generateBtn').disabled = loading;
-      if(loading) document.getElementById('btnText').innerText = "LOADING...";
-      else document.getElementById('btnText').innerText = "GENERATE COMMENT";
+    function setLoading(loading) {
+      const btn = document.getElementById('generateBtn');
+      const text = document.getElementById('btnText');
+      
+      if (loading) {
+        btn.disabled = true;
+        text.textContent = "Loading...";
+      } else {
+        text.textContent = "Generate Comment";
+        document.getElementById('btnIcon').textContent = "auto_awesome";
+        updateSelectionCount();
+      }
     }
 
     function showError(e) {
-      document.getElementById('studentNameDisplay').innerText = "Error";
-      alert(e);
+      document.getElementById('studentNameDisplay').innerHTML = '<span style="color: var(--error);">Error loading data</span>';
+      showToast("Error: " + e.message, "error");
     }
 </script>

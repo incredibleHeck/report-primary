@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK PronounManager.ts (Hardened Architecture)
+// HECTECH PronounManager.js
 // ==========================================
 
 const PronounManager = {
@@ -24,7 +24,7 @@ const PronounManager = {
             if (result.changes > 0) {
                 SpreadsheetApp.getActiveSpreadsheet().toast(`✅ Fixed pronouns for ${result.changes} students.`, "Success");
             } else {
-                SpreadsheetApp.getActiveSpreadsheet().toast("✨ No pronoun errors found.", "HeckTeck");
+                SpreadsheetApp.getActiveSpreadsheet().toast("✨ No pronoun errors found.", "HecTech");
             }
         }
     },

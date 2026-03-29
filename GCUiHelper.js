@@ -1,5 +1,5 @@
 // ==========================================
-// HECKTECK GCUiHelper.ts
+// HECTECH GCUiHelper.js
 // ==========================================
 
 function include(filename) {
@@ -11,6 +11,5 @@ function openGeneralSidebar() {
   const template = HtmlService.createTemplateFromFile('GCSidebar_Main'); // We will create this file next
   const html = template.evaluate()
       .setTitle('Class Teacher General Comment')
-      .setWidth(350);
-  SpreadsheetApp.getUi().showSidebar(html);
+      .setWidth(300);  SpreadsheetApp.getUi().showSidebar(html);
 }

@@ -15,7 +15,7 @@ function testWhatsAppConnection() {
     messaging_product: "whatsapp",
     to: phone,
     type: "text",
-    text: { body: "🔔 HeckTeck Connection Test: Success!" }
+    text: { body: "🔔 HecTech Connection Test: Success!" }
   };
 
   try {
