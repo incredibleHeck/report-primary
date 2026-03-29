@@ -59,6 +59,7 @@ function onOpen() {
 
         // --- UTILS ---
         .addItem(' 🔄 Reset Sent Statuses (New Term)', 'runResetStatuses') 
+        .addItem(' 📁 Reset Folder Configuration', 'runResetFolderConfig')
         .addItem(' ↩ Undo Last Action', 'runUndo')
         .addToUi();
 }
@@ -241,7 +242,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
 function runReportPreview() {
     if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runReportPreview called directly in Master`);
     if (typeof ReportCardGenerator !== 'undefined') {
-        ReportCardGenerator.runPreview();
+        ReportCardGenerator.runPreview(ScriptApp.getOAuthToken());
     } else {
         SpreadsheetApp.getUi().alert("⚠️ ReportCardGenerator not found.");
     }
@@ -258,7 +259,7 @@ function runReportPreview_Client(clientToken) {
 
 // 2. Full Report Batch
 function runFullReportBatch() {
-    runAllReportsSafely();
+    runAllReportsSafely(ScriptApp.getOAuthToken());
 }
 
 function runFullReportBatch_Client(clientToken) {
@@ -268,7 +269,7 @@ function runFullReportBatch_Client(clientToken) {
 // 2b. Midterm Report Preview
 function runMidtermPreview() {
     if (typeof MidtermReportGenerator !== 'undefined') {
-        MidtermReportGenerator.runPreview();
+        MidtermReportGenerator.runPreview(ScriptApp.getOAuthToken());
     } else {
         SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
     }
@@ -285,7 +286,7 @@ function runMidtermPreview_Client(clientToken) {
 // 2c. Midterm Full Report Batch
 function runMidtermBatch() {
     if (typeof MidtermReportGenerator !== 'undefined') {
-        MidtermReportGenerator.process(false, 999);
+        MidtermReportGenerator.process(false, 999, ScriptApp.getOAuthToken());
     } else {
         SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
     }
@@ -340,6 +341,25 @@ function runResetStatuses() {
             const lastRow = Math.max(sheet.getLastRow(), 2);
             sheet.getRange(2, 5, lastRow - 1, 2).clearContent().setBackground(null);
             SpreadsheetApp.getActiveSpreadsheet().toast("Delivery status reset!", "System");
+        }
+    }
+}
+
+// 8. Reset Folder Configuration
+function runResetFolderConfig() {
+    const ui = SpreadsheetApp.getUi();
+    const result = ui.alert(
+        "Reset Folder Configuration?",
+        "This will force the system to create a NEW report folder next time you generate reports.\nUse this if reports are saving to the wrong place or failing to save.",
+        ui.ButtonSet.YES_NO
+    );
+    
+    if (result === ui.Button.YES) {
+        if (typeof FolderManager !== 'undefined') {
+            FolderManager.resetCache();
+            SpreadsheetApp.getActiveSpreadsheet().toast("Folder configuration reset!", "System");
+        } else {
+            ui.alert("❌ FolderManager not found.");
         }
     }
 }
