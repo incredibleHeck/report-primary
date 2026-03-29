@@ -55,19 +55,13 @@ const FolderManager = {
             }
         }
 
-        // 3. BUILD FOLDER NAME
-        const fileName = ss.getName(); 
-        const currentYear = new Date().getFullYear(); 
-        
-        const rptSheetName = (typeof Config !== 'undefined') 
-            ? Config.REPORT_SHEET_NAME.toUpperCase() 
-            : "REPORT";
-            
-        let term = "TERM 1";
-        if (rptSheetName.includes("2") || rptSheetName.includes("TWO") || rptSheetName.includes("SECOND")) term = "TERM 2";
-        else if (rptSheetName.includes("3") || rptSheetName.includes("THREE") || rptSheetName.includes("THIRD")) term = "TERM 3";
-
-        const targetFolderName = `${fileName} - ${term} ${currentYear} - REPORTS`;
+        // 3. BUILD FOLDER NAME — spreadsheet title only. We no longer append a guessed
+        //    "TERM X YYYY - REPORTS" suffix: term was inferred from REPORT_SHEET_NAME (e.g.
+        //    "REPORT DATA"), which does not reflect the real term and often defaulted to TERM 1,
+        //    while many file names already include TERM … and REPORTS (duplicate / wrong names).
+        const fileName = ss.getName().trim();
+        const titleImpliesReports = /\breports?\b/i.test(fileName);
+        const targetFolderName = titleImpliesReports ? fileName : `${fileName} - REPORTS`;
         if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("getAutoReportFolderId: creating: " + targetFolderName);
 
         // 4. TRY DriveApp FIRST, FALL BACK TO REST API
