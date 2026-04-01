@@ -18,6 +18,7 @@ const PromptFixMismatch = {
         2. Replace the wrong name with the correct name.
         3. Switch all pronouns to match the correct gender.
         4. Keep the sentiment exactly the same.
+        5. Use simple, natural English. Change only what is needed for name and pronouns—do not rephrase the whole comment or swap words for fancier vocabulary.
 
         Input Data:
         ${JSON.stringify(data)}

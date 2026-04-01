@@ -34,6 +34,7 @@ const PromptPronouns = {
         3. PRESERVATION (CRITICAL):
            - DO NOT change the sentence structure, vocabulary, or punctuation.
            - ONLY change the pronouns and the name.
+           - Do not rephrase or replace words with fancier synonyms—only fix identity (pronouns and name).
            - If the comment is already correct, return it EXACTLY as is.
 
         4. INTEGRITY:

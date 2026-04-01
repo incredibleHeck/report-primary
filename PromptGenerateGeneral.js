@@ -7,15 +7,15 @@ const PromptGenerateGeneral = {
     /**
      * PROMPT: Generate General Class Comment
      * Merges "Smart Context Logic", "Few-Shot Training", and "Trait Synthesis"
-     * 
+     *
      * @param {Array} data - List containing student object with { name, gender, traits, lowestSubjects, etc. }
      */
     getGeneralCommentPrompt: (data) => {
         const student = data[0];
-        
+
         // 1. ANALYZE ACADEMIC CONTEXT
         const isAllExcellent = (student.lowestSubjects === "ALL_EXCELLENT");
-        
+
         let contextSection = "";
         let adviceRule = "";
 
@@ -31,15 +31,15 @@ const PromptGenerateGeneral = {
         }
 
         return `
-        You are an experienced Class Teacher writing the FINAL General Comment for the term.
-        
+        You are a Class Teacher writing the FINAL General Comment for the term. Use simple, natural English—short common words only. Avoid fancy or formal vocabulary; write the way you would speak to a parent face to face.
+
         // ==================================================
         // 1. STRUCTURAL VARIETY (CRITICAL)
         // ==================================================
         You MUST randomly select ONE of the following opening strategies to ensure no two reports sound identical:
         - Strategy A (Time-based): "Throughout this term, [Name]..." or "Since the beginning of the term..."
-        - Strategy B (Trait-first): "With a [Trait] and [Trait] nature, [Name]..." or "Characterized by his/her [Trait] approach..."
-        - Strategy C (Observation): "It has been a pleasure to observe..." or "A standout aspect of [Name]'s term has been..."
+        - Strategy B (Trait-first): "With a [Trait] and [Trait] nature, [Name]..." or "[Name] has a [Trait] way of working..."
+        - Strategy C (Observation): "It has been good to see..." or "One thing that stood out this term is..."
 
         // ==================================================
         // 2. TRAIT SYNTHESIS LOGIC (HANDLING MIXED TRAITS)
@@ -56,12 +56,12 @@ const PromptGenerateGeneral = {
         [SCENARIO 1: MIXED TRAITS]
         TRAITS: ["Friendly", "Inconsistent effort", "Ask for help when stuck"]
         IMPROVEMENT: "Math"
-        OUTPUT: "With a friendly nature, Kojo is a joy to have in class. However, his effort can be inconsistent. He needs to dedicate more time to Math to bridge the gaps in his learning. Moving forward, he is highly encouraged to ask for help when stuck."
+        OUTPUT: "Kojo is friendly and good to have in class. His effort goes up and down. He should spend more time on Math to close the gaps. Next term he should ask for help when he gets stuck."
 
         [SCENARIO 2: THE QUIET ACHIEVER]
         TRAITS: ["Shy", "Detail-oriented", "Participate more in class"]
         STATUS: "ALL_EXCELLENT"
-        OUTPUT: "It has been a pleasure observing Ama's steady progress. She is a detail-oriented student whose academic performance has been outstanding across the board. To elevate her presence next term, she is encouraged to overcome her shy nature and participate more in class."
+        OUTPUT: "It has been good to see Ama's steady progress. She pays attention to detail and has done very well in all her subjects. She is shy; next term she should try to speak up and join class discussion more."
 
         // ==================================================
         // 4. YOUR TASK
@@ -72,13 +72,13 @@ const PromptGenerateGeneral = {
         Gender: ${student.gender}
         Selected Traits: ${JSON.stringify(student.traits)}
         ${contextSection}
-        
+
         STRICT GUIDELINES:
         1. **TRAITS:** Weave the selected traits into the narrative using the Trait Synthesis Logic. DO NOT just list them separated by commas.
         ${adviceRule}
         3. **LENGTH CONSTRAINTS:** Exactly 3 to 4 sentences. Total length must be between 50 and 70 words.
         4. **PRONOUNS:** Use ${student.gender === "Male" ? "He/Him/His" : "She/Her/Hers"} strictly.
-        
+
         OUTPUT FORMAT:
         Return ONLY a raw JSON Array containing the object. NO MARKDOWN FORMATTING (do not use \`\`\`json).
         [

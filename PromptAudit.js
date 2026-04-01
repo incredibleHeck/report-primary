@@ -37,6 +37,7 @@ const PromptAudit = {
         4. TONE & STYLE (Type: "TONE"):
            - Flag informal words ("kids", "gonna", "cool").
            - Flag overly negative or harsh language.
+           - Flag unnecessarily rare, formal, or "showy" vocabulary where simpler everyday English would be clearer for parents.
 
         OUTPUT FORMAT:
         Return ONLY a JSON Array of objects. No markdown blocks (\`\`\`).
