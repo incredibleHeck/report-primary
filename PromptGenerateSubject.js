@@ -28,7 +28,12 @@ const PromptGenerateSubject = {
     // ==================================================
     To prevent repetitive comments, you MUST adopt a different "Teacher/Coach Persona" for each student in the batch. Cycle through the personas relevant to the subject type (Academic vs. Practical).
 
-    // LANGUAGE (CRITICAL): Write in simple, everyday English that any parent can read easily. Use short, common words. Avoid rare, formal, or "fancy" vocabulary—do not sound like a textbook or a thesaurus. Sound like a real teacher speaking naturally in plain language.
+    // GHANA REPORT TONE (CRITICAL): Write the way a real class teacher in a standard Ghanaian school would write to a parent. Use short, warm, conversational sentences. Simple, natural English only—no robotic AI phrasing, no overly complex vocabulary, no flowery or dramatic tone. Sound human and easy for any parent to understand.
+
+    // NO PEER TUTORING (CRITICAL): For students in score bands [90-100] and [80-89] (high achievers, A / strong A level), you must NEVER suggest, imply, or recommend that the pupil should teach, tutor, coach, or explain work to classmates. High achievers get ONLY direct praise and encouragement about their own performance (e.g. excellent work, keep it up, outstanding, maintain this standard). This rule overrides any persona or band wording below.
+
+    // PRIMARY AND SECONDARY (JHS/SHS): The same Ghana report tone and NO PEER TUTORING rules apply for primary grades and for secondary cycle (JHS and SHS). Match vocabulary and tone to the stated grade level, but never relax the simplicity or peer-tutoring ban.
+
     // VARIETY MANDATE: For any group of students you are commenting on, you are STRICTLY FORBIDDEN from using the same primary opening verb or sentence structure twice in a row.
     // LENGTH CONSTRAINT: Strictly 20 - 30 words. Do not write more than 3 sentences.
     // GENDER RULE: Use the provided Gender field as absolute truth (Male = He/Him/His, Female = She/Her).
@@ -37,7 +42,7 @@ const PromptGenerateSubject = {
 
     if (isPractical) {
       return `
-        You are a Coach/Instructor writing short performance comments for ${subject} in ${grade}. Keep the wording simple and natural.
+        You are a Coach/Instructor writing short performance comments for ${subject} in ${grade} (primary, JHS, or SHS as applicable). Keep the wording simple and natural.
         ${coreInstructions}
         
         CONTEXT:
@@ -51,7 +56,7 @@ const PromptGenerateSubject = {
             - The Motivator: effort, enthusiasm, positive attitude—simple words only.
             - The Technician: skills, technique, body control, steady improvement.
             - The Strategist/Artist: reads the game or activity well, tries creative ideas, thinks ahead.
-            - The Team Player: works well with others, fair play, encourages classmates.
+            - The Group Member: fair play, joins in with the group, listens to the coach—do not cast the pupil as teaching or tutoring others, especially in bands [90-100] and [80-89].
         */
         
         // TIRED PHRASES TO AVOID: "puts in good effort", "participates well", "shows improvement"
@@ -63,14 +68,14 @@ const PromptGenerateSubject = {
         CRITICAL: Do not copy a fixed template. Vary your wording, but never use stiff or fancy vocabulary.
 
         [90-100] EXCEPTIONAL / LEADER:
-        - Persona Goal: Strong skills, leads by example, great energy.
-        - Simple phrase ideas (mix; do not repeat): leads others well, strong control, picks things up quickly, sets a good example for the class.
-        - Advice: help peers, try harder drills, show others how it is done.
+        - Persona Goal: Strong skills, great energy, sets a high standard for themselves.
+        - Simple phrase ideas (mix; do not repeat): strong control, picks things up quickly, works with real focus, excellent standard—praise their own performance only; no peer teaching.
+        - Advice (own progress only): try harder drills, keep challenging yourself, maintain this level.
 
         [80-89] STRONG / DEPENDABLE:
         - Persona Goal: Reliable skills and good attitude in the group.
-        - Simple phrase ideas: steady and reliable, good technique, helps the team mood, keeps working at it.
-        - Advice: polish one or two skills, keep supporting others.
+        - Simple phrase ideas: steady and reliable, good technique, positive in the group, keeps working at it.
+        - Advice: polish one or two skills, keep building on what you do well.
 
         [70-79] GOOD / DEVELOPING:
         - Persona Goal: Skills growing; encourage confidence and teamwork.
@@ -104,7 +109,7 @@ const PromptGenerateSubject = {
 
     // ACADEMIC SUBJECTS
     return `
-        You are a Teacher writing short academic report comments for ${subject} in ${grade}. Use simple, clear English—no fancy words.
+        You are a Teacher writing short academic report comments for ${subject} in ${grade} (primary, JHS, or SHS as applicable). Use simple, clear English—no fancy words.
         ${coreInstructions}
 
         CONTEXT:
@@ -116,9 +121,9 @@ const PromptGenerateSubject = {
         /*
             PERSONA GUIDE (keep language plain in all of them):
             - The Encourager: interest, effort, good attitude—everyday praise.
-            - The Challenger: one clear next step, "could try...", "would help to..."
-            - The Detail mentor: neat work, clear explanations, careful thinking—said simply.
-            - The Collaborator: helps classmates, good example in class, works well with others.
+            - The Challenger: one clear next step for this pupil, "could try...", "would help to..."—about their own work, not helping classmates learn.
+            - The Detail mentor: neat work, shows their own thinking clearly, careful with tasks—said simply.
+            - The Classmate: works sensibly when the class works together—do not use this to suggest high scorers should teach or tutor others (see NO PEER TUTORING above).
         */
 
         // TIRED PHRASES TO AVOID: "demonstrates exceptional understanding", "work is of a high standard", "is making steady progress"
@@ -130,12 +135,12 @@ const PromptGenerateSubject = {
         CRITICAL: Do not copy a fixed template. Vary your wording, but never use stiff or fancy vocabulary.
 
         [90-100] MASTERY / EXCEPTIONAL:
-        - Persona Goal: Strong grasp of work; often helps others in class.
-        - Simple phrase ideas (mix; do not repeat): understands hard topics well, explains clearly, lifts class discussion, links ideas together.
-        - Advice: try extension work, help classmates who are stuck.
+        - Persona Goal: Strong grasp of the work in this subject; commend their own learning only.
+        - Simple phrase ideas (mix; do not repeat): understands hard topics well, work stands out, joins their own ideas together, answers with confidence—never "helps others learn" or "explains to classmates".
+        - Advice (extension for this pupil only): try extension tasks, read a bit wider, keep pushing yourself—never suggest teaching or tutoring peers.
 
         [80-89] STRONG / DEPENDABLE:
-        - Persona Goal: Solid understanding; nudge toward careful checking or deeper answers.
+        - Persona Goal: Solid understanding; nudge toward careful checking or deeper answers for themselves.
         - Simple phrase ideas: applies ideas well, steady grasp of topics, works carefully most of the time.
         - Advice: double-check small mistakes, add a bit more detail in written work.
 

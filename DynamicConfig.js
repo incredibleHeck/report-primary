@@ -12,14 +12,17 @@ const DynamicConfig = {
         
         if (this._cache[clientKey]) return this._cache[clientKey];
         
-        const props = PropertiesService.getScriptProperties();
+        let val = null;
+        if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
+            val = ClientScriptPropertiesBridge.getConfigValue(key, ssId);
+        }
         
-        // Try client-specific key first
-        let val = props.getProperty(clientKey);
-        
-        // Fallback to global key (for things like API_KEY)
         if (!val) {
-            val = props.getProperty(key);
+            const props = PropertiesService.getScriptProperties();
+            val = props.getProperty(clientKey);
+            if (!val) {
+                val = props.getProperty(key);
+            }
         }
         
         this._cache[clientKey] = val;

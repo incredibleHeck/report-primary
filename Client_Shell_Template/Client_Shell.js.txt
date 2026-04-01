@@ -1,20 +1,26 @@
 // =========================================================================
-// HECTECH CLIENT SHELL
+// HECTECH CLIENT SHELL (this vault project only)
 // =========================================================================
-// This script acts as a bridge between the Google Sheet and the secure 
-// HecTechVault library. It contains no proprietary logic.
-// 
+// Bridge between the Google Sheet and this repo’s vault library.
+// Add exactly one library; identifier must be HecTechVault.
+//
+// Class settings, subject context (CTX_*), and other per-user keys live in
+// THIS project’s Script Properties — not the library’s. The library is
+// hydrated from these properties before each menu action.
+//
 // INSTRUCTIONS:
-// 1. In the Apps Script editor, go to "Libraries" (left sidebar, + icon).
-// 2. Paste your HecTechVault Script ID.
-// 3. Select the latest version.
-// 4. Set the Identifier to exactly: HecTechVault
+// 1. Libraries (+) → paste this vault’s Script ID → latest version.
+// 2. Set Identifier to exactly: HecTechVault
 // =========================================================================
+
+function _hydrateClientScriptProperties() {
+  if (typeof HecTechVault !== 'undefined' && HecTechVault.hydrateClientScriptProperties) {
+    HecTechVault.hydrateClientScriptProperties(PropertiesService.getScriptProperties().getProperties());
+  }
+}
 
 /**
  * 🟢 REQUIRED PERMISSIONS (DO NOT DELETE)
- * This dummy function ensures Google asks the user for all the necessary 
- * permissions (Drive, Email, External APIs) when they first run the script.
  */
 function _forcePermissions() {
   if (false) {
@@ -27,12 +33,9 @@ function _forcePermissions() {
   }
 }
 
-/**
- * Creates the custom menu when the spreadsheet opens.
- * We delegate this to the library so the menu structure is managed centrally.
- */
 function onOpen() {
   if (typeof HecTechVault !== 'undefined') {
+    _hydrateClientScriptProperties();
     HecTechVault.onOpen();
   } else {
     SpreadsheetApp.getUi().createMenu('HecTech AI 🎓 (Error)')
@@ -43,59 +46,61 @@ function onOpen() {
 
 function showLibraryError() {
   SpreadsheetApp.getUi().alert(
-    "Library Connection Error", 
-    "The HecTechVault library is not connected. Please check your Apps Script Libraries settings.", 
+    "Library Connection Error",
+    "Add this vault under Libraries with identifier HecTechVault (exactly one library).",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
 
-// =========================================================================
-// MENU ACTION WRAPPERS
-// These functions are called by the custom menu items.
-// =========================================================================
-function openSettingsSidebar() { HecTechVault.openSettingsSidebar(); }
-function openSubjectContextSidebar() { HecTechVault.openSubjectContextSidebar(); }
-function runCommentGenerator() { HecTechVault.runCommentGenerator(); }
-function openGeneralSidebar() { HecTechVault.openGeneralSidebar(); }
-function runPolish() { HecTechVault.runPolish(); }
-function runPronouns() { HecTechVault.runPronouns(); }
-function runAuditFix() { HecTechVault.runAuditFix(); }
-function runAudit() { HecTechVault.runAudit(); }
-function runFinalize() { HecTechVault.runFinalize(); }
-function RUN_SYSTEM_READINESS_CHECK() { HecTechVault.RUN_SYSTEM_READINESS_CHECK(); }
+function openSettingsSidebar() { _hydrateClientScriptProperties(); HecTechVault.openSettingsSidebar(); }
+function openSubjectContextSidebar() { _hydrateClientScriptProperties(); HecTechVault.openSubjectContextSidebar(); }
+function runCommentGenerator() { _hydrateClientScriptProperties(); HecTechVault.runCommentGenerator(); }
+function openGeneralSidebar() { _hydrateClientScriptProperties(); HecTechVault.openGeneralSidebar(); }
+function runPolish() { _hydrateClientScriptProperties(); HecTechVault.runPolish(); }
+function runPronouns() { _hydrateClientScriptProperties(); HecTechVault.runPronouns(); }
+function runAuditFix() { _hydrateClientScriptProperties(); HecTechVault.runAuditFix(); }
+function runAudit() { _hydrateClientScriptProperties(); HecTechVault.runAudit(); }
+function runFinalize() { _hydrateClientScriptProperties(); HecTechVault.runFinalize(); }
+function RUN_SYSTEM_READINESS_CHECK() { _hydrateClientScriptProperties(); HecTechVault.RUN_SYSTEM_READINESS_CHECK(); }
 
-// 🟢 CRITICAL FIX: Pass the client's OAuth token to the Vault for PDF generation
-function runReportPreview() { HecTechVault.runReportPreview_Client(ScriptApp.getOAuthToken()); }
-function runFullReportBatch() { HecTechVault.runFullReportBatch_Client(ScriptApp.getOAuthToken()); }
-function runMidtermPreview() { HecTechVault.runMidtermPreview_Client(ScriptApp.getOAuthToken()); }
-function runMidtermBatch() { HecTechVault.runMidtermBatch_Client(ScriptApp.getOAuthToken()); }
+function runReportPreview() { _hydrateClientScriptProperties(); HecTechVault.runReportPreview_Client(ScriptApp.getOAuthToken()); }
+function runFullReportBatch() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Client(ScriptApp.getOAuthToken()); }
+function runMidtermPreview() { _hydrateClientScriptProperties(); HecTechVault.runMidtermPreview_Client(ScriptApp.getOAuthToken()); }
+function runMidtermBatch() { _hydrateClientScriptProperties(); HecTechVault.runMidtermBatch_Client(ScriptApp.getOAuthToken()); }
 
-function runEmailBatch() { HecTechVault.runEmailBatch(); }
-function runWhatsAppBlaster() { HecTechVault.runWhatsAppBlaster(); }
-function runResetStatuses() { HecTechVault.runResetStatuses(); }
-function runUndo() { HecTechVault.runUndo(); }
+function runEmailBatch() { _hydrateClientScriptProperties(); HecTechVault.runEmailBatch(); }
+function runWhatsAppBlaster() { _hydrateClientScriptProperties(); HecTechVault.runWhatsAppBlaster(); }
+function runResetStatuses() { _hydrateClientScriptProperties(); HecTechVault.runResetStatuses(); }
+function runUndo() { _hydrateClientScriptProperties(); HecTechVault.runUndo(); }
 
-// =========================================================================
-// HTML SIDEBAR CALLBACK WRAPPERS (google.script.run)
-// These functions are called by the JavaScript inside the HTML sidebars.
-// Because the HTML is rendered in the context of THIS client script, 
-// google.script.run looks for these functions here.
-// =========================================================================
-
-// From Sidebar.html (Batch Processing)
-function getSelectionInfo() { return HecTechVault.getSelectionInfo(); }
-function processChunk(action, start, count) { return HecTechVault.processChunk(action, start, count); }
+function getSelectionInfo() { _hydrateClientScriptProperties(); return HecTechVault.getSelectionInfo(); }
+function processChunk(action, start, count) { _hydrateClientScriptProperties(); return HecTechVault.processChunk(action, start, count); }
 function toast(msg, title) { return HecTechVault.toast(msg, title); }
 
-// From SettingsSidebar.html
-function getSettingsData() { return HecTechVault.getSettingsData(); }
-function saveSettingsData(settings) { return HecTechVault.saveSettingsData(settings); }
+function getSettingsData() {
+  var map = PropertiesService.getScriptProperties().getProperties();
+  var ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  return HecTechVault.getSettingsFromPropertyMap(map, ssId);
+}
 
-// From SubjectContextSidebar.html
-function getSubjectContext() { return HecTechVault.getSubjectContext(); }
-function saveSubjectContext(data) { return HecTechVault.saveSubjectContext(data); }
+function saveSettingsData(settings) {
+  var ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var payload = HecTechVault.buildSettingsSaveProperties(settings, ssId);
+  PropertiesService.getScriptProperties().setProperties(payload);
+  return HecTechVault.afterClientSettingsSaved(settings);
+}
 
-// From GCSidebar_JS.html (General Comments)
-function getSidebarData() { return HecTechVault.getSidebarData(); }
-function pollCurrentStudent() { return HecTechVault.pollCurrentStudent(); }
-function processGeneralCommentWithTraits(traits, rowIndex) { return HecTechVault.processGeneralCommentWithTraits(traits, rowIndex); }
+function getSubjectContext() {
+  var map = PropertiesService.getScriptProperties().getProperties();
+  return HecTechVault.getSubjectContextFromPropertyMap(map);
+}
+
+function saveSubjectContext(data) {
+  var entry = HecTechVault.buildSubjectContextSaveEntry(data);
+  PropertiesService.getScriptProperties().setProperty(entry.key, entry.value);
+  return entry.message;
+}
+
+function getSidebarData() { _hydrateClientScriptProperties(); return HecTechVault.getSidebarData(); }
+function pollCurrentStudent() { _hydrateClientScriptProperties(); return HecTechVault.pollCurrentStudent(); }
+function processGeneralCommentWithTraits(traits, rowIndex) { _hydrateClientScriptProperties(); return HecTechVault.processGeneralCommentWithTraits(traits, rowIndex); }

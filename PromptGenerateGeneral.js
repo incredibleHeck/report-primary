@@ -21,17 +21,17 @@ const PromptGenerateGeneral = {
 
         if (isAllExcellent) {
             contextSection = `ACADEMIC STATUS: SUPERIOR. This student scored 80+ (Grade A) in ALL academic subjects.`;
-            adviceRule = `2. ACADEMIC ADVICE: Do NOT list any weak subjects. Praise their consistent high performance across all disciplines and encourage them to keep it up.`;
+            adviceRule = `2. **ACADEMIC ADVICE:** Do NOT list any weak subjects. Praise their consistent high performance across all disciplines and encourage them to keep it up (e.g. excellent work, maintain this standard). For this top-performing profile you must NEVER suggest, imply, or recommend that they should teach, tutor, or help classmates with schoolwork—only commendation and encouragement about their own achievement.`;
         } else if (student.lowestSubjects && student.lowestSubjects.length > 0) {
             contextSection = `AREAS FOR IMPROVEMENT: The student had lower scores in: ${student.lowestSubjects}.`;
-            adviceRule = `2. ACADEMIC ADVICE: You MUST mention that improvement is needed in **${student.lowestSubjects}**. Frame this constructively (e.g., "needs to dedicate more time to...").`;
+            adviceRule = `2. **ACADEMIC ADVICE:** You MUST mention that improvement is needed in **${student.lowestSubjects}**. Frame this constructively (e.g., "needs to dedicate more time to...").`;
         } else {
             contextSection = `ACADEMIC STATUS: General / Average.`;
-            adviceRule = `2. ACADEMIC ADVICE: Encourage general academic focus, consistency, and preparation for the next term.`;
+            adviceRule = `2. **ACADEMIC ADVICE:** Encourage general academic focus, consistency, and preparation for the next term.`;
         }
 
         return `
-        You are a Class Teacher writing the FINAL General Comment for the term. Use simple, natural English—short common words only. Avoid fancy or formal vocabulary; write the way you would speak to a parent face to face.
+        You are a Class Teacher in a standard Ghanaian school writing the FINAL General Comment for the term. This applies to primary pupils and to secondary cycle (JHS/SHS) alike: keep wording age-appropriate for the student while following every rule below. Write in simple, natural English—short, warm sentences, the way a real teacher would speak to a parent. No robotic or AI-like phrasing, no overly complex vocabulary, no flowery or dramatic tone.
 
         // ==================================================
         // 1. STRUCTURAL VARIETY (CRITICAL)
@@ -76,8 +76,10 @@ const PromptGenerateGeneral = {
         STRICT GUIDELINES:
         1. **TRAITS:** Weave the selected traits into the narrative using the Trait Synthesis Logic. DO NOT just list them separated by commas.
         ${adviceRule}
-        3. **LENGTH CONSTRAINTS:** Exactly 3 to 4 sentences. Total length must be between 50 and 70 words.
-        4. **PRONOUNS:** Use ${student.gender === "Male" ? "He/Him/His" : "She/Her/Hers"} strictly.
+        3. **GHANA REPORT TONE:** Keep language plain, conversational, and parent-friendly—standard Ghanaian school report style. Short sentences, warm and clear; ban stiff, showy, or "AI-sounding" wording.
+        4. **NO PEER TUTORING:** Under no circumstances suggest that a high-performing pupil (including anyone described as doing very well or excelling) should teach, tutor, or help classmates with their work. High achievers receive only praise and encouragement about their own performance.
+        5. **LENGTH CONSTRAINTS:** Exactly 3 to 4 sentences. Total length must be between 50 and 70 words.
+        6. **PRONOUNS:** Use ${student.gender === "Male" ? "He/Him/His" : "She/Her/Hers"} strictly.
 
         OUTPUT FORMAT:
         Return ONLY a raw JSON Array containing the object. NO MARKDOWN FORMATTING (do not use \`\`\`json).

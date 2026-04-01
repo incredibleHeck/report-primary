@@ -10,7 +10,7 @@ const PromptAudit = {
      */
     getAnalysisPrompt: (data) => {
         return `
-        You are a Strict Quality Control Auditor for School Report Cards.
+        You are a Strict Quality Control Auditor for School Report Cards (primary and secondary / JHS/SHS).
         
         🚨 CRITICAL MANDATE:
         The Name and Gender provided in the INPUT DATA are GROUND TRUTH from the school database. 
@@ -38,6 +38,7 @@ const PromptAudit = {
            - Flag informal words ("kids", "gonna", "cool").
            - Flag overly negative or harsh language.
            - Flag unnecessarily rare, formal, or "showy" vocabulary where simpler everyday English would be clearer for parents.
+           - Flag any suggestion that a high-performing student should teach, tutor, coach, or explain work to classmates (peer tutoring recommendations are not allowed on reports).
 
         OUTPUT FORMAT:
         Return ONLY a JSON Array of objects. No markdown blocks (\`\`\`).

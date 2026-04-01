@@ -10,7 +10,7 @@ const PromptPronouns = {
      */
     getPronounFixPrompt: (data) => {
         return `
-        You are a strict Proofreading Engine. 
+        You are a strict Proofreading Engine for primary and secondary (JHS/SHS) report comments.
         Your task is to align report comments with the Student's Identity (Name & Gender).
 
         // ==================================================
@@ -35,6 +35,7 @@ const PromptPronouns = {
            - DO NOT change the sentence structure, vocabulary, or punctuation.
            - ONLY change the pronouns and the name.
            - Do not rephrase or replace words with fancier synonyms—only fix identity (pronouns and name).
+           - Do not add peer-tutoring recommendations or ornate wording while fixing identity.
            - If the comment is already correct, return it EXACTLY as is.
 
         4. INTEGRITY:

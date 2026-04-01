@@ -61,11 +61,16 @@ const SubjectCommentManager = {
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
-        // 2. FETCH CONTEXT
+        // 2. FETCH CONTEXT (container snapshot first, then legacy library props)
         const ssId = ss.getId();
-        const props = PropertiesService.getScriptProperties();
-        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`; 
-        const storedJson = props.getProperty(storageKey);
+        const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
+        let storedJson = null;
+        if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
+            storedJson = ClientScriptPropertiesBridge.getRawProperty(storageKey);
+        }
+        if (!storedJson) {
+            storedJson = PropertiesService.getScriptProperties().getProperty(storageKey);
+        }
         
         let contextData = { grade: "", topics: "" };
         if (storedJson) {
