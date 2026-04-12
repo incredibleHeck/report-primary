@@ -2,6 +2,9 @@
 // HECTECH WhatsAppManager.js
 // ==========================================
 
+/** Graph API version for /media and /messages (keep in sync with Meta docs / your curl tests). */
+const WHATSAPP_GRAPH_API_VERSION = 'v25.0';
+
 const WhatsAppManager = {
     
     /**
@@ -107,7 +110,7 @@ const WhatsAppManager = {
 
     uploadPdfToMeta: function(fileId) {
         const file = DriveApp.getFileById(fileId);
-        const url = `https://graph.facebook.com/v17.0/${Config.WHATSAPP_PHONE_ID}/media`;
+        const url = `https://graph.facebook.com/${WHATSAPP_GRAPH_API_VERSION}/${Config.WHATSAPP_PHONE_ID}/media`;
         
         const options = {
             "method": "post",
@@ -144,7 +147,7 @@ const WhatsAppManager = {
     },
 
     sendTemplateMessage: function(phone, studentName, mediaId) {
-        const url = `https://graph.facebook.com/v17.0/${Config.WHATSAPP_PHONE_ID}/messages`;
+        const url = `https://graph.facebook.com/${WHATSAPP_GRAPH_API_VERSION}/${Config.WHATSAPP_PHONE_ID}/messages`;
         
         const payload = {
             "messaging_product": "whatsapp",
@@ -152,7 +155,7 @@ const WhatsAppManager = {
             "type": "template",
             "template": {
                 "name": Config.WHATSAPP_TEMPLATE_NAME,
-                "language": { "code": "en_US" }, // 🟢 STANDARD: Use en_US (Change if your template is 'en_GB')
+                "language": { "code": Config.WHATSAPP_TEMPLATE_LANGUAGE },
                 "components": [
                     {
                         "type": "header",
@@ -190,8 +193,15 @@ const WhatsAppManager = {
         const json = JSON.parse(response.getContentText());
         
         if (resCode !== 200 && resCode !== 201) {
-             const errorMsg = json.error ? json.error.message : "Unknown API Error";
-             throw new Error(`${resCode}: ${errorMsg}`); 
+            const err = json.error;
+            let errorMsg = err ? err.message : "Unknown API Error";
+            const sub = err && err.error_subcode;
+            if (sub === 132001 || /132001|does not exist in the translation/i.test(String(errorMsg))) {
+                errorMsg +=
+                    " — Template+language must exist for THIS Phone Number ID in Meta (text test messages skip templates). " +
+                    "Set Script Properties WHATSAPP_TEMPLATE_NAME and WHATSAPP_TEMPLATE_LANGUAGE (e.g. en_GB) to match WhatsApp Manager exactly.";
+            }
+            throw new Error(`${resCode}: ${errorMsg}`);
         }
         
         return true;

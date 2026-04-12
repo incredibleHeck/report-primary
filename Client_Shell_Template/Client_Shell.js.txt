@@ -11,6 +11,9 @@
 // INSTRUCTIONS:
 // 1. Libraries (+) → paste this vault’s Script ID → latest version.
 // 2. Set Identifier to exactly: HecTechVault
+//
+// Bundled defaults: the library can ship non-secret default Script Property keys. On open,
+// missing/blank keys are filled from the library version (secrets still set per school).
 // =========================================================================
 
 function _hydrateClientScriptProperties() {
@@ -33,8 +36,36 @@ function _forcePermissions() {
   }
 }
 
+/**
+ * Fills container Script Properties from library-bundled defaults only where a key is
+ * missing or empty. Does not overwrite tokens or any non-empty value.
+ */
+function _applyBundledVaultDefaultsIfMissing() {
+  if (typeof HecTechVault === 'undefined' || !HecTechVault.getBundledContainerPropertyDefaults) return;
+  var patch = HecTechVault.getBundledContainerPropertyDefaults();
+  if (!patch || typeof patch !== 'object') return;
+  var props = PropertiesService.getScriptProperties();
+  var cur = props.getProperties();
+  var n = 0;
+  Object.keys(patch).forEach(function (k) {
+    var v = patch[k];
+    if (v == null || v === '') return;
+    var existing = cur[k];
+    if (existing != null && String(existing).trim() !== '') return;
+    props.setProperty(k, String(v));
+    n++;
+  });
+  if (n > 0) {
+    var ver = HecTechVault.getBundledContainerDefaultsVersion
+      ? HecTechVault.getBundledContainerDefaultsVersion()
+      : '?';
+    console.log('HecTech: merged ' + n + ' bundled script property default(s) (defaults bundle v' + ver + ').');
+  }
+}
+
 function onOpen() {
   if (typeof HecTechVault !== 'undefined') {
+    _applyBundledVaultDefaultsIfMissing();
     _hydrateClientScriptProperties();
     HecTechVault.onOpen();
   } else {

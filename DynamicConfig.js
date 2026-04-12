@@ -73,6 +73,8 @@ const DynamicConfig = {
     get WHATSAPP_ACCESS_TOKEN() { return this._get("WHATSAPP_TOKEN") || ""; },
     get WHATSAPP_PHONE_ID() { return this._get("WHATSAPP_PHONE_ID") || ""; },
     get WHATSAPP_TEMPLATE_NAME() { return this._get("WHATSAPP_TEMPLATE_NAME") || "student_report_pdf"; },
+    /** Must match the approved template language in Meta (often en_US or en_GB). */
+    get WHATSAPP_TEMPLATE_LANGUAGE() { return this._get("WHATSAPP_TEMPLATE_LANGUAGE") || "en_US"; },
 
     /**
      * 🟢 SMART DISCOVERY HELPER

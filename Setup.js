@@ -51,8 +51,9 @@ const SetupManager = {
       // 4. WHATSAPP INTEGRATION
       // Get credentials from: https://developers.facebook.com/apps/
       "WHATSAPP_TOKEN": "YOUR_WHATSAPP_TOKEN_HERE",
-      "WHATSAPP_PHONE_ID": "YOUR_WHATSAPP_PHONE_ID_HERE", 
-      "WHATSAPP_TEMPLATE_NAME": "student_report_pdf"
+      "WHATSAPP_PHONE_ID": "YOUR_WHATSAPP_PHONE_ID_HERE",
+      "WHATSAPP_TEMPLATE_NAME": "student_report_pdf",
+      "WHATSAPP_TEMPLATE_LANGUAGE": "en_US"
     };
 
     // 🟢 VALIDATION: Check for placeholder values

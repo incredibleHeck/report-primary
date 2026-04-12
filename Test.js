@@ -9,7 +9,7 @@ function testWhatsAppConnection() {
   console.log("Testing with ID:", config.id);
   console.log("Testing with Token:", config.token ? config.token.substring(0, 10) + "..." : "MISSING");
 
-  const url = `https://graph.facebook.com/v17.0/${config.id}/messages`;
+  const url = `https://graph.facebook.com/v25.0/${config.id}/messages`;
   
   const payload = {
     messaging_product: "whatsapp",
