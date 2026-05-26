@@ -54,10 +54,11 @@ const EmailManager = {
     if (response !== ui.Button.OK) return;
 
     // 4. SENDING LOOP
-    ss.toast("🚀 Sending Emails...", "HecTech", -1);
+    ss.toast("Sending Emails (" + pendingCount + " pending)...", "HecTech", -1);
     
     let sentCount = 0;
     let failCount = 0;
+    let processed = 0;
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -68,10 +69,12 @@ const EmailManager = {
 
       if (!email || !pdfId || String(currentStatus).trim() === "SENT") continue;
 
+      processed++;
+      ss.toast(`Emailing ${processed}/${pendingCount}: ${name}...`, "Email", -1);
+
       const result = this.sendSingleReport(name, email, pdfId);
       const realRow = i + 2;
       
-      // WRITE TO COL F (Email Status)
       const statusCell = sheet.getRange(realRow, Config.COL_EMAIL_STATUS);
 
       if (result.success) {
@@ -81,7 +84,7 @@ const EmailManager = {
         statusCell.setValue(`ERROR: ${result.error}`).setBackground("#F4CCCC");
         failCount++;
       }
-      Utilities.sleep(200); // Slight delay for stability
+      Utilities.sleep(200);
     }
 
     ui.alert(`📧 Email Batch Complete\nSent: ${sentCount}\nFailed: ${failCount}`);

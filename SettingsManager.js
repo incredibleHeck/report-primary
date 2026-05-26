@@ -27,17 +27,26 @@ const SettingsManager = {
             SCHOOL_BREAKS: getProp("SCHOOL_BREAKS", "11TH DECEMBER 2025"),
             SCHOOL_RESUMES: getProp("SCHOOL_RESUMES", "6TH JANUARY 2026"),
             ATTENDANCE_TOTAL: getProp("ATTENDANCE_TOTAL", "64"),
-            TEACHER_NAME: getProp("TEACHER_NAME", "")
+            TEACHER_NAME: getProp("TEACHER_NAME", ""),
+            WHATSAPP_TEMPLATE_NAME: getProp("WHATSAPP_TEMPLATE_NAME", "student_report_pdf"),
+            WHATSAPP_TEMPLATE_LANGUAGE: getProp("WHATSAPP_TEMPLATE_LANGUAGE", "en")
         };
     },
 
     /**
      * Build the property object for setProperties (KEY_<ssId> per field).
      */
+    /** Keys that should be saved globally (bare key) rather than per-spreadsheet. */
+    GLOBAL_KEYS: ['WHATSAPP_TEMPLATE_NAME', 'WHATSAPP_TEMPLATE_LANGUAGE'],
+
     buildSettingsSaveProperties: function (settings, ssId) {
         const clientSettings = {};
         for (const key in settings) {
-            clientSettings[`${key}_${ssId}`] = settings[key];
+            if (this.GLOBAL_KEYS.indexOf(key) !== -1) {
+                clientSettings[key] = settings[key];
+            } else {
+                clientSettings[`${key}_${ssId}`] = settings[key];
+            }
         }
         return clientSettings;
     },

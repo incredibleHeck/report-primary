@@ -57,6 +57,11 @@ function onOpen() {
         .addItem(' 📱 Send via WhatsApp', 'runWhatsAppBlaster')     
         .addSeparator()
 
+        // --- CONNECTIVITY TESTS ---
+        .addItem(' 🔌 Test WhatsApp Connection', 'runTestWhatsAppTemplate')
+        .addItem(' 🤖 Test Gemini Connection', 'runTestGemini')
+        .addSeparator()
+
         // --- UTILS ---
         .addItem(' 🔄 Reset Sent Statuses (New Term)', 'runResetStatuses') 
         .addItem(' 📁 Reset Folder Configuration', 'runResetFolderConfig')
@@ -351,7 +356,100 @@ function runEmailBatch() {
     } catch (e) { SpreadsheetApp.getUi().alert("Email Error: " + e.message); }
 }
 
-// 7. Status Reset Utility (Contact List)
+// 7. Connectivity Tests (Menu-accessible)
+function runTestWhatsAppTemplate() {
+    const ui = SpreadsheetApp.getUi();
+    const templateName = Config.WHATSAPP_TEMPLATE_NAME;
+    const templateLang = Config.WHATSAPP_TEMPLATE_LANGUAGE;
+    const phoneId = Config.WHATSAPP_PHONE_ID;
+    const token = Config.WHATSAPP_ACCESS_TOKEN;
+
+    if (!phoneId || !token) {
+        ui.alert("WhatsApp not configured.\nSet WHATSAPP_PHONE_ID and WHATSAPP_TOKEN in Script Properties or Class Settings.");
+        return;
+    }
+
+    const testPhone = ui.prompt(
+        "Test WhatsApp Template",
+        "Enter a phone number to send a test template message to (digits only, with country code):",
+        ui.ButtonSet.OK_CANCEL
+    );
+    if (testPhone.getSelectedButton() !== ui.Button.OK) return;
+    const phone = testPhone.getResponseText().replace(/\D/g, '');
+    if (!phone) { ui.alert("No phone number entered."); return; }
+
+    try {
+        const url = 'https://graph.facebook.com/' + WHATSAPP_GRAPH_API_VERSION + '/' + phoneId + '/messages';
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: phone,
+            type: 'template',
+            template: {
+                name: templateName,
+                language: { code: templateLang },
+                components: [{
+                    type: 'body',
+                    parameters: [{ type: 'text', parameter_name: 'student_name', text: 'Test Student' }]
+                }]
+            }
+        };
+        const res = UrlFetchApp.fetch(url, {
+            method: 'post',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            payload: JSON.stringify(payload),
+            muteHttpExceptions: true
+        });
+        const code = res.getResponseCode();
+        if (code === 200 || code === 201) {
+            ui.alert("Template test SUCCESS!\n\nTemplate: " + templateName + "\nLanguage: " + templateLang +
+                     "\n\nWhatsApp batch sending should work.");
+        } else {
+            const json = JSON.parse(res.getContentText());
+            const errMsg = json.error ? json.error.message : res.getContentText();
+            ui.alert("Template test FAILED (" + code + ")\n\n" + errMsg +
+                     "\n\nCheck WHATSAPP_TEMPLATE_NAME and WHATSAPP_TEMPLATE_LANGUAGE in Class Settings.");
+        }
+    } catch (e) {
+        ui.alert("Error: " + e.message);
+    }
+}
+
+function runTestGemini() {
+    const ui = SpreadsheetApp.getUi();
+    const apiKey = Config.API_KEY;
+    const model = Config.MODEL_NAME;
+
+    if (!apiKey) {
+        ui.alert("Gemini API Key not configured.\nRun Setup or set GEMINI_API_KEY in Script Properties.");
+        return;
+    }
+
+    try {
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+        const res = UrlFetchApp.fetch(url, {
+            method: 'post',
+            contentType: 'application/json',
+            payload: JSON.stringify({
+                contents: [{ parts: [{ text: 'Reply with only the word OK' }] }],
+                generationConfig: { maxOutputTokens: 10 }
+            }),
+            muteHttpExceptions: true
+        });
+        const code = res.getResponseCode();
+        if (code === 200) {
+            const json = JSON.parse(res.getContentText());
+            let reply = '';
+            try { reply = json.candidates[0].content.parts[0].text; } catch (e) { reply = '(could not parse)'; }
+            ui.alert("Gemini connection SUCCESS!\n\nModel: " + model + "\nReply: " + reply.trim());
+        } else {
+            ui.alert("Gemini test FAILED (" + code + ")\n\n" + res.getContentText());
+        }
+    } catch (e) {
+        ui.alert("Error: " + e.message);
+    }
+}
+
+// 8. Status Reset Utility (Contact List)
 function runResetStatuses() {
     const ui = SpreadsheetApp.getUi();
     const result = ui.alert(

@@ -101,6 +101,8 @@ function runMidtermBatch() { _hydrateClientScriptProperties(); HecTechVault.runM
 
 function runEmailBatch() { _hydrateClientScriptProperties(); HecTechVault.runEmailBatch(); }
 function runWhatsAppBlaster() { _hydrateClientScriptProperties(); HecTechVault.runWhatsAppBlaster(); }
+function runTestWhatsAppTemplate() { _hydrateClientScriptProperties(); HecTechVault.runTestWhatsAppTemplate(); }
+function runTestGemini() { _hydrateClientScriptProperties(); HecTechVault.runTestGemini(); }
 function runResetStatuses() { _hydrateClientScriptProperties(); HecTechVault.runResetStatuses(); }
 function runUndo() { _hydrateClientScriptProperties(); HecTechVault.runUndo(); }
 

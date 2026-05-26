@@ -160,6 +160,17 @@
       <input type="text" id="TEACHER_NAME" placeholder="e.g. Mr. John Doe">
       <div class="hint">This name will be automatically populated into the Report Sheet for all students.</div>
     </div>
+
+    <div class="form-group" style="margin-top: 24px; border-top: 2px dashed var(--border); padding-top: 16px;">
+      <label style="color: var(--primary-dark); font-size: 13px;">📱 WhatsApp Template Name</label>
+      <input type="text" id="WHATSAPP_TEMPLATE_NAME" placeholder="e.g. student_report_pdf">
+      <div class="hint">Exact name from Meta WhatsApp Manager.</div>
+    </div>
+    <div class="form-group">
+      <label>WhatsApp Template Language</label>
+      <input type="text" id="WHATSAPP_TEMPLATE_LANGUAGE" placeholder="e.g. en, en_US, or en_GB">
+      <div class="hint">Must match the language code in Meta exactly.</div>
+    </div>
     
     <button id="saveBtn" onclick="save()">Save Settings</button>
     <div id="status"></div>
@@ -200,7 +211,9 @@
         SCHOOL_BREAKS: document.getElementById('SCHOOL_BREAKS').value,
         SCHOOL_RESUMES: document.getElementById('SCHOOL_RESUMES').value,
         ATTENDANCE_TOTAL: document.getElementById('ATTENDANCE_TOTAL').value,
-        TEACHER_NAME: document.getElementById('TEACHER_NAME').value
+        TEACHER_NAME: document.getElementById('TEACHER_NAME').value,
+        WHATSAPP_TEMPLATE_NAME: document.getElementById('WHATSAPP_TEMPLATE_NAME').value,
+        WHATSAPP_TEMPLATE_LANGUAGE: document.getElementById('WHATSAPP_TEMPLATE_LANGUAGE').value
       };
 
       google.script.run

@@ -17,13 +17,31 @@ const WhatsAppManager = {
     batchSendWhatsApp: function() {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const ui = SpreadsheetApp.getUi();
+
+        // PRE-FLIGHT: verify WhatsApp credentials are configured
+        const waChecks = [];
+        if (!Config.WHATSAPP_PHONE_ID) waChecks.push("WHATSAPP_PHONE_ID");
+        if (!Config.WHATSAPP_ACCESS_TOKEN) waChecks.push("WHATSAPP_TOKEN");
+        if (!Config.WHATSAPP_TEMPLATE_NAME) waChecks.push("WHATSAPP_TEMPLATE_NAME");
+        if (!Config.WHATSAPP_TEMPLATE_LANGUAGE) waChecks.push("WHATSAPP_TEMPLATE_LANGUAGE");
+
+        if (waChecks.length > 0) {
+            ui.alert("WhatsApp Not Configured",
+                "The following are missing in Script Properties:\n\n" + waChecks.join("\n") +
+                "\n\nSet them via Class Settings (sidebar) or Script Properties before sending.",
+                ui.ButtonSet.OK);
+            return;
+        }
+
         const sheet = ss.getSheetByName(Config.CONTACT_SHEET_NAME);
+        if (!sheet) { ui.alert("Contact Sheet missing."); return; }
 
-        if (!sheet) { ui.alert("❌ Contact Sheet missing."); return; }
-
-        // 1. CONFIRMATION
-        const confirm = ui.alert("🚀 Send WhatsApp PDFs?", 
-            "Target: Numbers in 'PHONE' column.\nStatus Update: 'WHATSAPP' column.", 
+        // 1. CONFIRMATION (with template info so teacher sees what will be used)
+        const confirm = ui.alert("Send WhatsApp PDFs?",
+            "Template: " + Config.WHATSAPP_TEMPLATE_NAME +
+            "\nLanguage: " + Config.WHATSAPP_TEMPLATE_LANGUAGE +
+            "\nPhone ID: " + Config.WHATSAPP_PHONE_ID.substring(0, 6) + "..." +
+            "\n\nTarget: Numbers in 'PHONE' column.\nStatus Update: 'WHATSAPP' column.",
             ui.ButtonSet.YES_NO);
         if (confirm !== ui.Button.YES) return;
 
@@ -49,7 +67,15 @@ const WhatsAppManager = {
         let successCount = 0;
         let failCount = 0;
 
-        ss.toast("Starting WhatsApp Batch...", "HecTech", -1);
+        // Count pending sends for progress
+        let pendingCount = 0;
+        for (let j = 0; j < data.length; j++) {
+            const r = data[j];
+            if (r[idxPhone] && r[idxPdf] && String(r[idxStatus]).trim() !== "SENT") pendingCount++;
+        }
+
+        ss.toast("Starting WhatsApp Batch (" + pendingCount + " pending)...", "HecTech", -1);
+        let processed = 0;
 
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
@@ -58,21 +84,19 @@ const WhatsAppManager = {
             const fileId = row[idxPdf];
             const status = row[idxStatus];
 
-            // SKIP IF: No phone, No PDF, or Already Sent
             if (!phoneRaw || !fileId || String(status).trim() === "SENT") continue;
 
-            const phone = String(phoneRaw).replace(/\D/g, ''); // Strip non-digits
+            processed++;
+            ss.toast(`Sending ${processed}/${pendingCount}: ${name}...`, "WhatsApp", -1);
+
+            const phone = String(phoneRaw).replace(/\D/g, '');
 
             try {
-                // A. UPLOAD PDF (With Retry)
                 const mediaId = this.uploadWithRetry(fileId);
 
                 if (mediaId) {
-                    // B. SEND MESSAGE (With Retry)
                     this.sendWithRetry(phone, name, mediaId);
-                    
                     successCount++;
-                    // Update Status (Adjust for 0-based array vs 1-based sheet)
                     sheet.getRange(i + 2, idxStatus + 1).setValue("SENT").setBackground("#D9EAD3");
                 } else {
                     failCount++;
@@ -84,8 +108,7 @@ const WhatsAppManager = {
                 sheet.getRange(i + 2, idxStatus + 1).setValue(`ERR: ${e.message}`).setBackground("#F4CCCC");
             }
 
-            // 🟢 RATE LIMIT PROTECTION: Sleep 1s between students
-            Utilities.sleep(1000); 
+            Utilities.sleep(1000);
         }
 
         ui.alert(`📱 WhatsApp Batch Complete\nSent: ${successCount}\nFailed: ${failCount}`);
