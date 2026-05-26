@@ -2,14 +2,14 @@
 // HECTECH Main.js (Final Master - With Pro Dashboard)
 // ==========================================
 
+/**
+ * Writes to a hidden DEBUG_LOGS sheet. Only logs if the sheet already exists
+ * (create it manually when debugging; delete it to silence logging).
+ */
 function DEBUG_LOG(msg) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName("DEBUG_LOGS");
-    if (!sheet) {
-      sheet = ss.insertSheet("DEBUG_LOGS");
-    }
-    sheet.appendRow([new Date(), msg]);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("DEBUG_LOGS");
+    if (sheet) sheet.appendRow([new Date(), msg]);
   } catch(e) {}
 }
 
@@ -178,6 +178,22 @@ function RUN_SYSTEM_READINESS_CHECK() {
       msg: (waToken && !waToken.includes("YOUR_")) ? "Configured" : "Missing in Script Props" 
     });
 
+    // WhatsApp Template Config
+    const waTemplateName = Config.WHATSAPP_TEMPLATE_NAME;
+    const waTemplateLang = Config.WHATSAPP_TEMPLATE_LANGUAGE;
+    checks.push({
+      category: "WHATSAPP",
+      item: "Template Name",
+      status: waTemplateName ? "OK" : "WARNING",
+      msg: waTemplateName ? waTemplateName : "Not set (default: student_report_pdf)"
+    });
+    checks.push({
+      category: "WHATSAPP",
+      item: "Template Language",
+      status: waTemplateLang ? "OK" : "WARNING",
+      msg: waTemplateLang ? waTemplateLang + ' (must match Meta exactly: en, en_US, or en_GB)' : "Not set (default: en)"
+    });
+
     // Gemini API Key Check
     const apiKey = Config.API_KEY;
     checks.push({ 
@@ -185,6 +201,15 @@ function RUN_SYSTEM_READINESS_CHECK() {
       item: "Gemini API Key", 
       status: (apiKey && !apiKey.includes("YOUR_")) ? "OK" : "ERROR", 
       msg: (apiKey && !apiKey.includes("YOUR_")) ? "Configured" : "Missing - Run Setup" 
+    });
+
+    // Gemini Model
+    const modelName = Config.MODEL_NAME;
+    checks.push({
+      category: "AI",
+      item: "Gemini Model",
+      status: modelName ? "OK" : "WARNING",
+      msg: modelName || "Not set (default: gemini-2.5-flash)"
     });
 
     // Email Quota

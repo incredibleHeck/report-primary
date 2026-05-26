@@ -36,7 +36,7 @@ const DynamicConfig = {
 
     // --- AI & CORE ---
     get API_KEY() { return this._get("GEMINI_API_KEY") || ""; },
-    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.5-pro"; },
+    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.5-flash"; },
     
     // --- SHEET NAMES (Configurable via Script Properties with defaults) ---
     get CLASSLIST_SHEET_NAME() { return this._get("CLASSLIST_SHEET_NAME") || "CLASSLIST"; },
@@ -74,7 +74,7 @@ const DynamicConfig = {
     get WHATSAPP_PHONE_ID() { return this._get("WHATSAPP_PHONE_ID") || ""; },
     get WHATSAPP_TEMPLATE_NAME() { return this._get("WHATSAPP_TEMPLATE_NAME") || "student_report_pdf"; },
     /** Must match the approved template language in Meta (often en_US or en_GB). */
-    get WHATSAPP_TEMPLATE_LANGUAGE() { return this._get("WHATSAPP_TEMPLATE_LANGUAGE") || "en_US"; },
+    get WHATSAPP_TEMPLATE_LANGUAGE() { return this._get("WHATSAPP_TEMPLATE_LANGUAGE") || "en"; },
 
     /**
      * 🟢 SMART DISCOVERY HELPER

@@ -17,7 +17,7 @@ const ClientContainerDefaults = {
   getBundled: function () {
     return {
       WHATSAPP_TEMPLATE_NAME: 'student_report_pdf',
-      WHATSAPP_TEMPLATE_LANGUAGE: 'en_US',
+      WHATSAPP_TEMPLATE_LANGUAGE: 'en',
       GEMINI_MODEL_NAME: 'gemini-2.5-flash',
       CLASSLIST_SHEET_NAME: 'CLASSLIST',
       REPORT_SHEET_NAME: 'REPORT DATA',
