@@ -43,7 +43,7 @@ const MidtermReportGenerator = {
     SpreadsheetApp.flush();
   },
 
-  process: function (isPreview = false, batchLimit = 999, clientToken) {
+  process: function (isPreview = false, batchLimit = 999, clientToken, sharedTempSheet = null) {
     if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: clientToken type=${typeof clientToken}`);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sourceSheet = ss.getSheetByName(Config.MIDTERM_SHEET_NAME);
@@ -76,7 +76,7 @@ const MidtermReportGenerator = {
     // Pre-map Contact List
     const contactData = contactSheet.getDataRange().getValues();
     const contactMap = new Map();
-    for (let r = 1; r < contactData.length; r++) {
+    for (let r = 2; r < contactData.length; r++) {
       const cName = contactData[r][Config.COL_NAME - 1];
       if (cName) {
         contactMap.set(Config.normalizeName(cName), r);
@@ -94,23 +94,72 @@ const MidtermReportGenerator = {
     const data = sourceSheet.getDataRange().getValues();
     let successCount = 0;
     let errorCount = 0;
-    const startRow = 1;
+    let processedInThisBatch = 0;
+    let remainingToProcess = 0;
+    const startRow = 2;
     const limit = isPreview ? Math.min(startRow + 5, data.length) : data.length;
 
+    // Count how many are left overall
+    let missingContacts = 0;
+    for (let r = startRow; r < data.length; r++) {
+      const sName = data[r][cols.STUDENT_NAME];
+      if (!sName) continue;
+      
+      const nName = Config.normalizeName(sName);
+      const tIdx = contactMap.get(nName);
+      if (tIdx !== undefined) {
+        const stat = contactData[tIdx][waStatusCol];
+        if (stat !== "MIDTERM_READY" && stat !== "SENT") {
+          remainingToProcess++;
+        }
+      } else {
+        missingContacts++;
+      }
+    }
+
+    if (remainingToProcess === 0 && !isPreview) {
+      if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: remainingToProcess is 0. All done.`);
+      ss.toast("All midterm reports are already generated! Use 'Reset Sent Statuses' to regenerate.", "HecTech Engine", 5);
+      return 0;
+    }
+
     for (let i = startRow; i < limit; i++) {
+      if (processedInThisBatch >= batchLimit) break;
+
       const row = data[i];
       const studentName = row[cols.STUDENT_NAME];
       if (!studentName) continue;
 
-      let tempSheet = null;
-      try {
-        // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: duplicating template for ${studentName}`);
-        tempSheet = templateSheet.copyTo(ss);
-        tempSheet.hideSheet();
+      const normalizedName = Config.normalizeName(studentName);
+      const targetIndex = contactMap.get(normalizedName);
+      
+      if (targetIndex !== undefined) {
+        const existingStatus = contactData[targetIndex][waStatusCol];
+        if (!isPreview && (existingStatus === "MIDTERM_READY" || existingStatus === "SENT")) {
+          if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: skipping ${studentName}, already ${existingStatus}`);
+          continue; // Skip already generated
+        }
+      } else {
+        console.warn(`⚠️ Skipping ${studentName} - Name missing from Contact Sheet!`);
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: skipping ${studentName}, missing from contact sheet`);
+        if (!isPreview) continue; // Skip to prevent infinite loops in batch mode
+      }
 
-        const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
-        tempSheet.setName(`TEMP_MID_${cleanName}_${new Date().getTime()}`);
+      let tempSheet = null;
+      let ownTempSheetCreated = false;
+      try {
+        if (sharedTempSheet) {
+          tempSheet = sharedTempSheet;
+        } else {
+          // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
+          if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: duplicating template for ${studentName}`);
+          tempSheet = templateSheet.copyTo(ss);
+          tempSheet.hideSheet();
+
+          const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+          tempSheet.setName(`TEMP_MID_${cleanName}_${new Date().getTime()}`);
+          ownTempSheetCreated = true;
+        }
 
         // --- 1. Fill Temp Template Using Batch Operations ---
         this.fillTemplateFast(tempSheet, row, cols, subjects, Object.keys(subjects).length);
@@ -128,8 +177,6 @@ const MidtermReportGenerator = {
         );
         const pdfFile = destinationFolder.createFile(pdfBlob);
 
-        const normalizedName = Config.normalizeName(studentName);
-        const targetIndex = contactMap.get(normalizedName);
         if (targetIndex !== undefined) {
           pdfUpdates[targetIndex][0] = pdfFile.getId();
           pdfUpdates[targetIndex][1] = "MIDTERM_READY";
@@ -138,12 +185,14 @@ const MidtermReportGenerator = {
           console.warn(`⚠️ No contact match for: "${studentName}"`);
         }
         successCount++;
+        processedInThisBatch++;
+        remainingToProcess--;
       } catch (err) {
         console.error(`Midterm PDF Error for ${studentName}: ${err.message}`);
         errorCount++;
       } finally {
-        // Guarantee cleanup of the temporary sheet
-        if (tempSheet) {
+        // Guarantee cleanup of the temporary sheet only if we created it
+        if (tempSheet && ownTempSheetCreated) {
           try {
             ss.deleteSheet(tempSheet);
             SpreadsheetApp.flush();
@@ -160,8 +209,10 @@ const MidtermReportGenerator = {
 
     const msg = isPreview
       ? `Midterm Preview Ready.${errorCount > 0 ? ` (${errorCount} errors, check console)` : ""}`
-      : `Midterm Batch Complete! ${successCount} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`;
+      : `Midterm Batch Complete! ${processedInThisBatch} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`;
     ss.toast(msg, "HecTech Engine", 5);
+
+    return remainingToProcess;
   },
 
   /**

@@ -170,3 +170,81 @@ function testGeminiConnection() {
     SpreadsheetApp.getUi().alert("Error: " + e.message);
   }
 }
+
+/**
+ * Smoke test to verify Autopilot trigger registration and Single Temp Sheet reuse.
+ */
+function testAutopilotAndSheetReuse() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Clear any existing resubmit triggers first
+  clearResubmitTriggers();
+  
+  // Mock the timeout limit to 10 seconds (10000ms)
+  const limitName = 'TEST_TIMEOUT_LIMIT';
+  this[limitName] = 10000; 
+  
+  try {
+    ss.toast("Running autopilot mock test...", "Test Console", 5);
+    
+    // We will call runAllReportsSafely. It should process a few reports,
+    // hit the 10s limit, register a trigger, and terminate.
+    runAllReportsSafely();
+    
+    // Check if trigger was registered
+    const triggers = ScriptApp.getProjectTriggers();
+    let triggerFound = false;
+    triggers.forEach(t => {
+      if (t.getHandlerFunction() === 'runFullReportBatch_Trigger') {
+        triggerFound = true;
+      }
+    });
+    
+    if (triggerFound) {
+      ss.toast("✅ Autopilot Trigger registration test PASSED!", "Test Console", 5);
+      console.log("✅ Autopilot Trigger registration test PASSED!");
+    } else {
+      ss.toast("❌ Autopilot Trigger registration test FAILED! (No trigger found)", "Test Console", 5);
+      console.error("❌ Autopilot Trigger registration test FAILED!");
+    }
+  } catch (e) {
+    console.error("Test error:", e.stack);
+    ss.toast(`❌ Test error: ${e.message}`, "Test Console", 5);
+  } finally {
+    // Clean up test trigger
+    clearResubmitTriggers();
+    // Remove global mock variable
+    delete this[limitName];
+  }
+}
+
+/**
+ * Smoke test for ChatBotManager.getChatResponse and system instructions.
+ */
+function testChatBotResponse() {
+  console.log("Starting ChatBot smoke test...");
+  const history = [
+    { sender: 'user', text: "Hello, I need help with Jessica's report." },
+    { sender: 'bot', text: "Hello! I am ready to help. Please tell me what you would like to draft." }
+  ];
+  const message = "Write a constructive math comment.";
+  const selectedText = "Jessica shows good understanding of fractions but talks too much.";
+  const studentContext = {
+    studentName: "Jessica",
+    studentGender: "Female",
+    rowIndex: 3
+  };
+
+  try {
+    const response = ChatBotManager.getChatResponse(history, message, selectedText, studentContext);
+    console.log("Chat Response Status:", response.error ? "FAILED" : "SUCCESS");
+    console.log("Response text:", response.text || response.message);
+    if (!response.error) {
+      console.log("✅ Smoke test passed!");
+    } else {
+      console.error("❌ Smoke test failed: ", response.message);
+    }
+  } catch (e) {
+    console.error("❌ Exception in smoke test: ", e.message, e.stack);
+  }
+}

@@ -30,6 +30,7 @@ function onOpen() {
         .addItem(' 🎨 Polish Grammar & Style', 'runPolish')
         .addItem(' ⚧ Fix Pronouns', 'runPronouns')
         .addItem(' 🔍 Fix Name Mismatches', 'runAuditFix')
+        .addItem(' 💬 Chat with AI Assistant', 'openChatBotSidebar')
         .addSeparator()
 
         // --- PHASE 3: QUALITY CONTROL ---
@@ -100,12 +101,12 @@ function RUN_SYSTEM_READINESS_CHECK() {
     const contactSheet = ss.getSheetByName(Config.CONTACT_SHEET_NAME);
     if (contactSheet) {
         // Email Check (Col 3 / C)
-        const emailVal = contactSheet.getRange(2, Config.COL_EMAIL).getValue();
+        const emailVal = contactSheet.getRange(3, Config.COL_EMAIL).getValue();
         checks.push({
             category: "DATA",
             item: "Parent Email (Col C)",
             status: emailVal ? "OK" : "WARNING",
-            msg: emailVal ? "Data Detected" : "Row 2 appears empty"
+            msg: emailVal ? "Data Detected" : "Row 3 appears empty"
         });
 
         // PDF ID Check (Col 4 / D)
@@ -135,12 +136,12 @@ function RUN_SYSTEM_READINESS_CHECK() {
     // B. Classlist Name Check
     const classlist = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
     if (classlist) {
-        const nameVal = classlist.getRange(2, Config.CLASSLIST_NAME_COL).getValue();
+        const nameVal = classlist.getRange(3, Config.CLASSLIST_NAME_COL).getValue();
         checks.push({ 
             category: "DATA", 
             item: "Classlist Names", 
             status: nameVal ? "OK" : "WARNING", 
-            msg: nameVal ? "Student Data Found" : "Row 2 is empty" 
+            msg: nameVal ? "Student Data Found" : "Row 3 is empty" 
         });
     }
 
@@ -315,19 +316,11 @@ function runMidtermPreview_Client(clientToken) {
 
 // 2c. Midterm Full Report Batch
 function runMidtermBatch() {
-    if (typeof MidtermReportGenerator !== 'undefined') {
-        MidtermReportGenerator.process(false, 999, ScriptApp.getOAuthToken());
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
-    }
+    runAllMidtermReportsSafely(ScriptApp.getOAuthToken());
 }
 
 function runMidtermBatch_Client(clientToken) {
-    if (typeof MidtermReportGenerator !== 'undefined') {
-        MidtermReportGenerator.process(false, 999, clientToken);
-    } else {
-        SpreadsheetApp.getUi().alert("⚠️ MidtermReportGenerator not found.");
-    }
+    runAllMidtermReportsSafely(clientToken);
 }
 
 // 3. Subject Comment Generator (Scores + 2)
@@ -509,6 +502,10 @@ function openGeneralSidebar() {
     if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar();
 }
 
+function openChatBotSidebar() {
+    if (typeof ChatBotManager !== 'undefined') ChatBotManager.openSidebar();
+}
+
 function runFinalize() {
     if (typeof CleanupManager !== 'undefined') CleanupManager.runFinalize();
 }
@@ -602,5 +599,123 @@ function processChunk(action, relativeStartRow, numRows) {
         case 'audit': return AuditManager.processRange(chunkRange);
         case 'auditfix': return FixMismatchManager.fixRange(chunkRange);
         default: throw new Error("Unknown action: " + action);
+    }
+}
+
+// ==========================================
+// 🚀 AUTOPILOT TRIGGER MANAGEMENT & RUNNERS
+// ==========================================
+
+function setupResubmitTrigger(actionType) {
+    clearResubmitTriggers(); // Clean any stale triggers first
+    
+    const functionName = (actionType === 'EOT') ? 'runFullReportBatch_Trigger' : 'runMidtermBatch_Trigger';
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`setupResubmitTrigger: creating trigger for ${functionName}`);
+    
+    ScriptApp.newTrigger(functionName)
+        .timeBased()
+        .after(60000) // 1 minute delay
+        .create();
+      
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`setupResubmitTrigger: trigger created successfully`);
+}
+
+function clearResubmitTriggers() {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("clearResubmitTriggers: scanning for active triggers");
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+        const name = trigger.getHandlerFunction();
+        if (name === 'runFullReportBatch_Trigger' || name === 'runMidtermBatch_Trigger') {
+            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`clearResubmitTriggers: deleting trigger ${name}`);
+            ScriptApp.deleteTrigger(trigger);
+        }
+    });
+}
+
+function runFullReportBatch_Trigger() {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("runFullReportBatch_Trigger: trigger fired. Resuming EOT run.");
+    clearResubmitTriggers(); // One-shot trigger cleanup
+    runAllReportsSafely();
+}
+
+function runMidtermBatch_Trigger() {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("runMidtermBatch_Trigger: trigger fired. Resuming Midterm run.");
+    clearResubmitTriggers(); // One-shot trigger cleanup
+    runAllMidtermReportsSafely();
+}
+
+function runAllMidtermReportsSafely(clientToken) {
+    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllMidtermReportsSafely called. clientToken type=${typeof clientToken}`);
+    const BATCH_SIZE = 8;
+    const PAUSE_SECONDS = 20; 
+    let remainingStudents = 999;
+    let batchNumber = 1;
+    const startTime = new Date().getTime();
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    ss.toast("Starting midterm batch generation...", "HecTech Engine", 5);
+
+    // Create the temporary sheet ONCE for the entire batch run context
+    const sourceSheet = ss.getSheetByName(Config.MIDTERM_SHEET_NAME);
+    const templateSheet = ss.getSheetByName(Config.MIDTERM_TEMPLATE_NAME);
+    if (!sourceSheet || !templateSheet) {
+        ss.toast("❌ Midterm sheets not found.", "HecTech Engine", 5);
+        return;
+    }
+    
+    // Create one temp sheet for this execution context
+    let tempSheet = null;
+    try {
+        tempSheet = templateSheet.copyTo(ss);
+        tempSheet.setName(`TEMP_MID_BATCH_${new Date().getTime()}`);
+        tempSheet.hideSheet();
+    } catch (e) {
+        console.error("Failed to initialize temp sheet:", e.message);
+        ss.toast("❌ Failed to duplicate template sheet.", "HecTech Engine", 5);
+        return;
+    }
+
+    try {
+        while (remainingStudents > 0) {
+            // Check execution duration (270,000 ms = 4.5 mins limit)
+            const elapsed = new Date().getTime() - startTime;
+            // Support lowering elapsed limit during testing/mocking
+            const limit = (typeof TEST_TIMEOUT_LIMIT !== 'undefined') ? TEST_TIMEOUT_LIMIT : 270000;
+            if (elapsed > limit) {
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllMidtermReportsSafely: elapsed time ${elapsed}ms exceeds safety limit ${limit}ms. Scheduling trigger.`);
+                ss.toast("Approaching Google execution limit. Auto-resuming in 1 minute...", "Autopilot", 10);
+                setupResubmitTrigger('MIDTERM');
+                return;
+            }
+
+            console.log(`Starting Midterm Batch #${batchNumber}...`);
+            
+            // Run the generator for exactly 8 students using the shared tempSheet
+            remainingStudents = MidtermReportGenerator.process(false, BATCH_SIZE, clientToken, tempSheet);
+
+            if (remainingStudents > 0) {
+                console.log(`Midterm Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s...`);
+                ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} midterm reports left.`, "HecTech Engine", PAUSE_SECONDS);
+                
+                Utilities.sleep(PAUSE_SECONDS * 1000); 
+                batchNumber++;
+            }
+        }
+
+        console.log("🎉 All midterm reports generated successfully!");
+        ss.toast("🎉 All midterm reports generated successfully!", "HecTech Engine", -1);
+        
+        // Success complete - clear any scheduled triggers
+        clearResubmitTriggers();
+    } finally {
+        // Always clean up the temp sheet at the end of this execution context
+        if (tempSheet) {
+            try {
+                ss.deleteSheet(tempSheet);
+                SpreadsheetApp.flush();
+            } catch (err) {
+                console.error("Failed to delete midterm batch temp sheet:", err.message);
+            }
+        }
     }
 }

@@ -48,11 +48,11 @@ const WhatsAppManager = {
         // 2. GET DATA (Dynamic Column Discovery)
         const lastRow = sheet.getLastRow();
         const lastCol = sheet.getLastColumn();
-        if (lastRow < 2) return;
+        if (lastRow < 3) return;
         
         // Fetch All Data
-        // Headers are Row 1, Data starts Row 2
-        const dataRange = sheet.getRange(2, 1, lastRow - 1, lastCol);
+        // Headers are Row 2, Data starts Row 3
+        const dataRange = sheet.getRange(3, 1, lastRow - 2, lastCol);
         const data = dataRange.getValues();
 
         // 🟢 HARDENED MAPPING
@@ -77,7 +77,7 @@ const WhatsAppManager = {
         ss.toast("Starting WhatsApp Batch (" + pendingCount + " pending)...", "HecTech", -1);
         let processed = 0;
 
-        const statusRange = sheet.getRange(2, Config.COL_WHATSAPP_STATUS, lastRow - 1, 1);
+        const statusRange = sheet.getRange(3, Config.COL_WHATSAPP_STATUS, lastRow - 2, 1);
         const statusValues = statusRange.getValues();
         const statusBackgrounds = statusRange.getBackgrounds();
 

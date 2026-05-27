@@ -23,7 +23,7 @@ const GeneralCommentsManager = {
 
         const row = range.getRow();
         // 🛡️ Safety: Ensure Config is loaded, default to 3 if not
-        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
+        const minRow = 3; // 🟢 HARDCODED for General Comments Sheet which starts on Row 3 
         
         if (row < minRow) return { valid: false, rowIndex: row }; 
         return { valid: true, rowIndex: row };
@@ -35,8 +35,7 @@ const GeneralCommentsManager = {
             const activeRange = sheet.getActiveRange();
             if (!activeRange) return { error: "Please click on a student row." };
             
-            const row = activeRange.getRow();
-            const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2 
+            const minRow = 3; // 🟢 HARDCODED for General Comments Sheet which starts on Row 3 
 
             if (row < minRow) return { error: `Please select a valid student (Row ${minRow}+).` };
 
@@ -49,7 +48,7 @@ const GeneralCommentsManager = {
             
             // 🟢 HARDENED ROW ALIGNMENT
             const subjectDataStart = minRow; 
-            const classlistDataStart = 2; 
+            const classlistDataStart = 3; 
             const rowOffset = subjectDataStart - classlistDataStart; 
             const classlistRow = row - rowOffset;
 
@@ -62,7 +61,7 @@ const GeneralCommentsManager = {
             if (!fullName || fullName === "") return { error: `No student found at Row ${row} (Classlist Row ${classlistRow}).` };
 
             return {
-                studentName: this.extractFirstName(fullName),
+                studentName: Config.extractFirstName(fullName),
                 rowIndex: row,
                 traits: TraitsConfig.categories 
             };
@@ -119,21 +118,24 @@ const GeneralCommentsManager = {
         const classSheetName = (typeof Config !== 'undefined' && Config.CLASSLIST_SHEET_NAME) ? Config.CLASSLIST_SHEET_NAME : "CLASSLIST";
         const classlist = ss.getSheetByName(classSheetName);
         
-        // Alignment
-        const minRow = 2; // 🟢 HARDCODED for General Comments Sheet which starts on Row 2
-        const rowOffset = minRow - 2;
+        // Dynamic Alignment
+        const reportFirstRow = (typeof Config !== 'undefined' && Config.REPORT_DATA_FIRST_ROW) ? Config.REPORT_DATA_FIRST_ROW : 3;
+        const rowOffset = reportFirstRow - 3;
         const classlistRow = row - rowOffset;
 
-        // 🛡️ Safety: Fallback Columns
+        // Safety: Fallback Columns
         let nameCol = (typeof Config !== 'undefined' && Config.CLASSLIST_NAME_COL) ? Config.CLASSLIST_NAME_COL : 2;
         let genderCol = (typeof Config !== 'undefined' && Config.CLASSLIST_GENDER_COL) ? Config.CLASSLIST_GENDER_COL : 5;
 
         const fullName = classlist.getRange(classlistRow, nameCol).getValue();
         const genderRaw = classlist.getRange(classlistRow, genderCol).getValue();
         
+        const reportSheet = ss.getSheetByName(typeof Config !== 'undefined' ? Config.REPORT_SHEET_NAME : "REPORT DATA");
+        const reportRowData = reportSheet.getRange(row, 1, 1, reportSheet.getLastColumn()).getValues()[0];
+
         let summary = {
             id: row.toString(),
-            name: this.extractFirstName(fullName),
+            name: Config.extractFirstName(fullName),
             gender: (String(genderRaw).toUpperCase().startsWith("F")) ? "Female" : "Male",
             scores: {},
             lowestSubjects: "", 
@@ -141,39 +143,34 @@ const GeneralCommentsManager = {
             averageScore: 0
         };
 
-        // 🟢 DYNAMIC SCORE FETCHING
         let totalScore = 0;
         let count = 0;
+        let weakSubjects = [];
 
-        this.SUBJECT_SHEETS.forEach(sheetName => {
-            const sheet = ss.getSheetByName(sheetName);
-            if (sheet) {
-                try {
-                    // 🛡️ Safety: Ensure Column is Number
-                    let scoreCol = -1;
-                    if (typeof Config !== 'undefined') {
-                        // Primary: Look for "TOTAL SCORE" column (header: "TOTAL SCORE (100)")
-                        scoreCol = Config.getColByName(sheetName, "TOTAL SCORE", -1);
+        const subjects = (typeof Config !== 'undefined') ? Config.SUBJECT_CONFIG : {};
+        for (const subj in subjects) {
+            const startIdx = subjects[subj].startIdx;
+            // Bound check
+            if (reportRowData.length > startIdx + 4) {
+                const scoreVal = reportRowData[startIdx + 3]; // Total 100 (e.g. Col 6 relative to startIdx)
+                const gradeVal = reportRowData[startIdx + 4]; // Grade (e.g. Col 7 relative to startIdx)
+                
+                if (scoreVal !== "" && !isNaN(scoreVal)) {
+                    const numScore = parseFloat(scoreVal);
+                    summary.scores[subj] = numScore;
+                    totalScore += numScore;
+                    count++;
+                }
+
+                if (gradeVal) {
+                    const g = String(gradeVal).trim().toUpperCase();
+                    // Below B means C, D, E, U
+                    if (["C", "D", "E", "U"].indexOf(g) !== -1) {
+                        weakSubjects.push(subj);
                     }
-                    
-                    // If Smart Discovery fails, skip this subject
-                    if (scoreCol === -1) {
-                         console.warn(`Could not find TOTAL SCORE column for ${sheetName}`);
-                         return;
-                    }
-                    
-                    if (scoreCol > 0) {
-                        const score = sheet.getRange(row, scoreCol).getValue(); 
-                        if (score !== "" && !isNaN(score)) {
-                            const numScore = parseFloat(score);
-                            summary.scores[sheetName] = numScore; 
-                            totalScore += numScore;
-                            count++;
-                        }
-                    }
-                } catch(e) { console.warn(`Error fetching ${sheetName}: ${e.message}`); }
+                }
             }
-        });
+        }
 
         if (count > 0) {
             summary.averageScore = Math.round(totalScore / count);
@@ -183,35 +180,20 @@ const GeneralCommentsManager = {
             else summary.performanceBand = "Below Average";
         }
 
-        summary.lowestSubjects = this.getAreasForImprovement(summary.scores);
+        // Determine lowestSubjects using weakSubjects list
+        if (weakSubjects.length === 0) {
+            summary.lowestSubjects = "ALL_EXCELLENT"; 
+        } else {
+            const bottom = weakSubjects;
+            if (bottom.length === 1) {
+                summary.lowestSubjects = bottom[0];
+            } else {
+                const last = bottom.pop();
+                summary.lowestSubjects = `${bottom.join(", ")} and ${last}`;
+            }
+        }
 
         return summary;
-    },
-
-    getAreasForImprovement: function(scoresObj) {
-        const entries = Object.entries(scoresObj);
-        if (entries.length === 0) return null; 
-
-        const candidates = entries.filter(e => e[1] < 80);
-
-        if (candidates.length === 0) return "ALL_EXCELLENT"; 
-
-        candidates.sort((a, b) => a[1] - b[1]);
-
-        const formatName = (name) => name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-        
-        const bottom3 = candidates.slice(0, 3).map(e => formatName(e[0]));
-        
-        if (bottom3.length === 1) return bottom3[0];
-        const last = bottom3.pop();
-        return `${bottom3.join(", ")} and ${last}`;
-    },
-
-    extractFirstName: function(fullName) {
-        if (!fullName) return "Student";
-        const nameStr = fullName.toString().trim();
-        const parts = nameStr.split(/[\s,]+/);
-        return (parts.length > 1) ? parts[1] : parts[0];
     }
 };
 

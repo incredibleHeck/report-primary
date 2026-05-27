@@ -87,10 +87,9 @@ const SubjectCommentManager = {
         const numRows = scoreRange.getNumRows();
 
         const subjectDataStart = Config.DATA_START_ROW; // 3
-        const classlistDataStart = 2; // Classlist data starts at Row 2
+        const classlistDataStart = 3; // Classlist data starts at Row 3
         
-        // Offset = 3 - 2 = 1.
-        // If I am on Row 3 (Subject), I need Row 2 (Classlist).
+        // Offset = 3 - 3 = 0.
         const rowOffset = subjectDataStart - classlistDataStart; 
         const startRowInClasslist = startRow - rowOffset; 
 
@@ -99,7 +98,7 @@ const SubjectCommentManager = {
         const genderColIndex = Config.CLASSLIST_GENDER_COL; 
         const maxColNeeded = Math.max(nameColIndex, genderColIndex);
         
-        if (startRowInClasslist < 1) throw new Error("Selection in header zone. Please select student data (Row 3+).");
+        if (startRowInClasslist < 3) throw new Error("Selection in header zone. Please select student data (Row 3+).");
 
         const masterData = classlistSheet.getRange(startRowInClasslist, 1, numRows, maxColNeeded).getValues();
 
@@ -120,7 +119,7 @@ const SubjectCommentManager = {
 
             batchRequest.push({
                 id: r.toString(), 
-                name: this.extractFirstName(fullName),
+                name: Config.extractFirstName(fullName),
                 gender: gender,
                 score: score,
                 subject: sheetName,
@@ -176,12 +175,5 @@ const SubjectCommentManager = {
             console.error(e);
             throw e;
         }
-    },
-
-    extractFirstName: function(fullName) {
-        if (!fullName) return "Student";
-        const parts = fullName.toString().trim().split(/\s+/);
-        // Region logic: usually second name is the "calling name"
-        return (parts.length > 1) ? parts[1] : parts[0];
     }
 };

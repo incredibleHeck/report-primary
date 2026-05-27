@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #a5b4fc;
+      --primary-bg: rgba(99, 102, 241, 0.06);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --bg: #f8fafc;
+      --surface: rgba(255, 255, 255, 0.95);
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -4px rgba(99, 102, 241, 0.05);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header Styling */
+    .header {
+      background: var(--surface);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    }
+
+    .header-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-title .material-icons-round {
+      color: var(--primary);
+      font-size: 20px;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      background: var(--primary-bg);
+      color: var(--primary);
+    }
+
+    /* Student Card Context */
+    .student-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--primary-bg);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(99, 102, 241, 0.12);
+    }
+
+    .student-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+    }
+
+    .student-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .student-label {
+      font-size: 9px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    .student-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Chat Thread */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: transparent;
+    }
+
+    .message {
+      max-width: 85%;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .message.user {
+      align-self: flex-end;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      position: relative;
+    }
+
+    .message.user .bubble {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-radius: var(--radius);
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+    }
+
+    .message.bot .bubble {
+      background: var(--surface);
+      color: var(--text);
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Bot message comment extraction utility style */
+    .bot-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .action-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--primary-bg);
+      border-color: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .action-btn.success {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .action-btn .material-icons-round {
+      font-size: 14px;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--text-muted);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    /* Quick Prompt Chips */
+    .chips-outer {
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.5);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .chips-outer::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    .chips-outer::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      margin-right: 6px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chip:hover {
+      border-color: var(--primary-light);
+      background: var(--primary-bg);
+      color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .chip .material-icons-round {
+      font-size: 13px;
+    }
+
+    /* Input Footer */
+    .input-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .input-box-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 36px 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: none;
+      max-height: 80px;
+      min-height: 38px;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .chat-input:focus {
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 3px var(--primary-bg);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .clear-input-btn {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      padding: 2px;
+      border-radius: 50%;
+    }
+
+    .clear-input-btn:hover {
+      color: var(--text-secondary);
+      background: var(--border);
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    .send-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* System / Welcome Card */
+    .welcome-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      margin-bottom: 8px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .welcome-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin: 0 auto 12px;
+    }
+
+    .welcome-icon .material-icons-round {
+      font-size: 28px;
+    }
+
+    .welcome-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .welcome-body {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification Overlay */
+    .toast-overlay {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #1e293b;
+      color: white;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 2000;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast-overlay.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-overlay.warning {
+      background: var(--warning);
+    }
+
+    .toast-overlay.success {
+      background: var(--success);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title-bar">
+      <div class="header-title">
+        <span class="material-icons-round">chat</span>
+        <span>HecTech AI Assistant</span>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh selected student context">
+        <span class="material-icons-round">sync</span>
+      </button>
+    </div>
+    <div class="student-card">
+      <div class="student-avatar" id="studentAvatar">🤖</div>
+      <div class="student-details">
+        <div class="student-label" id="studentLabel">Active Student Context</div>
+        <div class="student-name" id="studentNameDisplay">Loading context...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Container -->
+  <div class="chat-container" id="chatContainer">
+    <!-- Welcome Card -->
+    <div class="welcome-card" id="welcomeCard">
+      <div class="welcome-icon">
+        <span class="material-icons-round">assistant</span>
+      </div>
+      <div class="welcome-title">Welcome to HecTech AI Chat</div>
+      <div class="welcome-body">
+        Ask me to brainstorm, polish, or rewrite comments. I'll automatically adapt to your selected student and follow the comment styling rules.
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Chips -->
+  <div class="chips-outer" id="chipsOuter">
+    <button class="chip" onclick="handleChipClick('💡 Brainstorm improvements')">
+      <span class="material-icons-round">lightbulb</span>
+      <span>Brainstorm improvements</span>
+    </button>
+    <button class="chip" onclick="handleChipClick('🔄 Make this warmer & shorter')">
+      <span class="material-icons-round">autorenew</span>
+      <span>Make warmer & shorter</span>
+    </button>
+    <button class="chip" onclick="handleChipClick('📝 Write a positive review')">
+      <span class="material-icons-round">thumb_up</span>
+      <span>Write positive review</span>
+    </button>
+    <button class="chip" onclick="handleChipClick('🛡️ Check comment rules')">
+      <span class="material-icons-round">gpp_good</span>
+      <span>Check comment rules</span>
+    </button>
+  </div>
+
+  <!-- Input Footer -->
+  <div class="input-footer">
+    <div class="input-box-wrapper">
+      <textarea class="chat-input" id="chatInput" placeholder="Type a message or select a chip..." rows="1"></textarea>
+      <button class="clear-input-btn" id="clearInputBtn">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <button class="send-btn" id="sendBtn" disabled>
+      <span class="material-icons-round">send</span>
+    </button>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div class="toast-overlay" id="toastOverlay">
+    <span class="material-icons-round" id="toastIcon">info</span>
+    <span id="toastText">Message</span>
+  </div>
+
+  <script>
+    // State management
+    var chatHistory = [];
+    var currentContext = {
+      selectedText: "",
+      studentName: "",
+      studentGender: "",
+      rowIndex: 0
+    };
+    
+    // DOM elements
+    var chatContainer = document.getElementById('chatContainer');
+    var chatInput = document.getElementById('chatInput');
+    var sendBtn = document.getElementById('sendBtn');
+    var clearInputBtn = document.getElementById('clearInputBtn');
+    var refreshBtn = document.getElementById('refreshBtn');
+    var studentAvatar = document.getElementById('studentAvatar');
+    var studentNameDisplay = document.getElementById('studentNameDisplay');
+    var toastOverlay = document.getElementById('toastOverlay');
+    var toastText = document.getElementById('toastText');
+    var toastIcon = document.getElementById('toastIcon');
+
+    // Auto-grow textarea height
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      
+      if (this.value.trim().length > 0) {
+        clearInputBtn.style.display = 'block';
+        sendBtn.removeAttribute('disabled');
+      } else {
+        clearInputBtn.style.display = 'none';
+        sendBtn.setAttribute('disabled', 'true');
+      }
+    });
+
+    // Clear input handler
+    clearInputBtn.addEventListener('click', function() {
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      clearInputBtn.style.display = 'none';
+      sendBtn.setAttribute('disabled', 'true');
+      chatInput.focus();
+    });
+
+    // Enter to send (Shift+Enter for newline)
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Send Button handler
+    sendBtn.addEventListener('click', sendMessage);
+
+    // Refresh context handler
+    refreshBtn.addEventListener('click', loadContext);
+
+    // Initial load
+    window.addEventListener('load', function() {
+      loadContext();
+    });
+
+    // Toast triggers
+    function showToast(message, type) {
+      toastText.innerText = message;
+      
+      // Select appropriate icon
+      if (type === 'success') {
+        toastIcon.innerText = 'check_circle';
+        toastOverlay.className = 'toast-overlay show success';
+      } else if (type === 'warning') {
+        toastIcon.innerText = 'warning';
+        toastOverlay.className = 'toast-overlay show warning';
+      } else {
+        toastIcon.innerText = 'info';
+        toastOverlay.className = 'toast-overlay show';
+      }
+
+      setTimeout(function() {
+        toastOverlay.classList.remove('show');
+      }, 3000);
+    }
+
+    // Load active cell & row student context from sheet
+    function loadContext() {
+      refreshBtn.style.animation = 'spin 1s linear infinite';
+      refreshBtn.setAttribute('disabled', 'true');
+
+      google.script.run
+        .withSuccessHandler(function(context) {
+          refreshBtn.style.animation = '';
+          refreshBtn.removeAttribute('disabled');
+          
+          currentContext = context;
+          
+          if (context.studentName) {
+            // Set initials
+            var initials = context.studentName.substring(0, 2).toUpperCase();
+            studentAvatar.innerText = initials;
+            studentAvatar.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
+            
+            var details = context.studentName;
+            if (context.studentGender) {
+              details += ' (' + context.studentGender + ')';
+            }
+            if (context.rowIndex) {
+              details += ' • Row ' + context.rowIndex;
+            }
+            studentNameDisplay.innerText = details;
+          } else {
+            studentAvatar.innerText = '🤖';
+            studentAvatar.style.background = 'linear-gradient(135deg, var(--text-muted), var(--text-secondary))';
+            studentNameDisplay.innerText = 'No student row selected';
+          }
+          sendBtn.removeAttribute('disabled');
+        })
+        .withFailureHandler(function(e) {
+          refreshBtn.style.animation = '';
+          refreshBtn.removeAttribute('disabled');
+          showToast('Failed to load sheet context: ' + e.message, 'warning');
+        })
+        .getChatContext();
+    }
+
+    // Send Message flow
+    function sendMessage() {
+      var text = chatInput.value.trim();
+      if (!text) return;
+
+      // Add user message to chat container
+      appendMessage('user', text);
+      
+      // Push to history
+      chatHistory.push({ sender: 'user', text: text });
+      
+      // Clear input
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      clearInputBtn.style.display = 'none';
+      sendBtn.setAttribute('disabled', 'true');
+      
+      // Remove welcome card if present
+      var welcomeCard = document.getElementById('welcomeCard');
+      if (welcomeCard) {
+        welcomeCard.remove();
+      }
+
+      // Show typing indicator
+      var typingId = appendTypingIndicator();
+      scrollToBottom();
+
+      // Disable inputs during network call
+      chatInput.setAttribute('disabled', 'true');
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          removeTypingIndicator(typingId);
+          chatInput.removeAttribute('disabled');
+          chatInput.focus();
+          
+          if (response.error) {
+            appendMessage('bot', '⚠️ Error: ' + response.message);
+          } else {
+            appendMessage('bot', response.text);
+            chatHistory.push({ sender: 'bot', text: response.text });
+          }
+          scrollToBottom();
+        })
+        .withFailureHandler(function(e) {
+          removeTypingIndicator(typingId);
+          chatInput.removeAttribute('disabled');
+          chatInput.focus();
+          appendMessage('bot', '⚠️ Error calling server: ' + e.message);
+          scrollToBottom();
+        })
+        .getChatResponse(chatHistory, text, currentContext.selectedText, currentContext);
+    }
+
+    // Handle Quick Chip click
+    function handleChipClick(chipText) {
+      // Set input text to the chip instruction
+      chatInput.value = chipText;
+      // Trigger textarea height and status change
+      chatInput.dispatchEvent(new Event('input'));
+      chatInput.focus();
+    }
+
+    // DOM Manipulation helpers
+    function appendMessage(sender, text) {
+      var messageDiv = document.createElement('div');
+      messageDiv.className = 'message ' + sender;
+      
+      var bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'bubble';
+      bubbleDiv.innerText = text;
+      
+      messageDiv.appendChild(bubbleDiv);
+
+      // If it is a bot message, add utility buttons
+      if (sender === 'bot' && !text.startsWith('⚠️')) {
+        var actionsDiv = document.createElement('div');
+        actionsDiv.className = 'bot-actions';
+
+        // 1. Insert to Cell Button
+        var insertBtn = document.createElement('button');
+        insertBtn.className = 'action-btn';
+        insertBtn.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+        insertBtn.onclick = function() {
+          insertToCell(text, insertBtn);
+        };
+        actionsDiv.appendChild(insertBtn);
+
+        // 2. Copy to Clipboard Button
+        var copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn';
+        copyBtn.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
+        copyBtn.onclick = function() {
+          copyToClipboard(text, copyBtn);
+        };
+        actionsDiv.appendChild(copyBtn);
+
+        bubbleDiv.appendChild(actionsDiv);
+      }
+      
+      chatContainer.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function appendTypingIndicator() {
+      var id = 'typing_' + Date.now();
+      var messageDiv = document.createElement('div');
+      messageDiv.className = 'message bot';
+      messageDiv.id = id;
+      
+      var bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'bubble';
+      
+      var indicator = document.createElement('div');
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+      
+      bubbleDiv.appendChild(indicator);
+      messageDiv.appendChild(bubbleDiv);
+      chatContainer.appendChild(messageDiv);
+      return id;
+    }
+
+    function removeTypingIndicator(id) {
+      var elem = document.getElementById(id);
+      if (elem) {
+        elem.remove();
+      }
+    }
+
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // Insert text utility
+    function insertToCell(text, buttonElement) {
+      // Find comment text (exclude actions block if any, but innerText is just text)
+      // Since innerText has the button text, we must pass the actual AI text string we saved.
+      buttonElement.setAttribute('disabled', 'true');
+      buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Inserting...</span>';
+
+      google.script.run
+        .withSuccessHandler(function() {
+          buttonElement.className = 'action-btn success';
+          buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Inserted!</span>';
+          showToast('Text inserted into active cell.', 'success');
+          
+          // Re-enable and reset after 2.5 seconds
+          setTimeout(function() {
+            buttonElement.className = 'action-btn';
+            buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+            buttonElement.removeAttribute('disabled');
+          }, 2500);
+        })
+        .withFailureHandler(function(e) {
+          buttonElement.className = 'action-btn';
+          buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+          buttonElement.removeAttribute('disabled');
+          showToast('Insert failed: ' + e.message, 'warning');
+        })
+        .insertTextIntoActiveCell(text);
+    }
+
+    // Copy to clipboard utility
+    function copyToClipboard(text, buttonElement) {
+      // Create temporary textarea
+      var el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+
+      buttonElement.className = 'action-btn success';
+      buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Copied!</span>';
+      showToast('Copied to clipboard.', 'success');
+
+      setTimeout(function() {
+        buttonElement.className = 'action-btn';
+        buttonElement.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

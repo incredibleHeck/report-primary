@@ -24,7 +24,7 @@ const EmailManager = {
 
     // 2. GET DATA (Use dynamic column count based on config)
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return;
+    if (lastRow < 3) return;
 
     // Determine how many columns we need based on config
     const maxCol = Math.max(
@@ -33,7 +33,7 @@ const EmailManager = {
       Config.COL_PDF_ID, 
       Config.COL_EMAIL_STATUS
     );
-    const data = sheet.getRange(2, 1, lastRow - 1, maxCol).getValues();
+    const data = sheet.getRange(3, 1, lastRow - 2, maxCol).getValues();
 
     // 3. MAP COLUMNS (0-based indices)
     const idxName = Config.COL_NAME - 1;
@@ -60,7 +60,7 @@ const EmailManager = {
     let failCount = 0;
     let processed = 0;
 
-    const statusRange = sheet.getRange(2, Config.COL_EMAIL_STATUS, lastRow - 1, 1);
+    const statusRange = sheet.getRange(3, Config.COL_EMAIL_STATUS, lastRow - 2, 1);
     const statusValues = statusRange.getValues();
     const statusBackgrounds = statusRange.getBackgrounds();
 

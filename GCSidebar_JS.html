@@ -91,16 +91,34 @@
 
         const icon = categoryIcons[category] || "📋";
 
+        // Accordion Header with Badge container
         const header = document.createElement('div');
         header.className = 'accordion-header';
         header.innerHTML = `
-          <span><span class="category-icon">${icon}</span>${category}</span>
+          <div class="accordion-header-left">
+            <span class="category-icon">${icon}</span>
+            <span class="accordion-header-title">${category}</span>
+            <span class="category-badge" id="badge-${category.replace(/\s+/g, '')}">0</span>
+          </div>
           <span class="material-icons-round arrow">expand_more</span>
         `;
         header.onclick = function() { toggleAccordion(this); };
 
         const content = document.createElement('div');
         content.className = 'accordion-content';
+
+        // Toolbar for Select All / Clear All
+        const toolbar = document.createElement('div');
+        toolbar.className = 'category-toolbar';
+        toolbar.innerHTML = `
+          <button type="button" class="toolbar-btn" onclick="selectCategoryTraits(this, true); event.stopPropagation();">
+            <span class="material-icons-round">done_all</span>Select All
+          </button>
+          <button type="button" class="toolbar-btn" onclick="selectCategoryTraits(this, false); event.stopPropagation();">
+            <span class="material-icons-round">clear</span>Clear All
+          </button>
+        `;
+        content.appendChild(toolbar);
 
         const grid = document.createElement('div');
         grid.className = 'checkbox-grid';
@@ -142,10 +160,34 @@
       }
     }
 
+    function selectCategoryTraits(btn, selectAll) {
+      const contentPanel = btn.closest('.accordion-content');
+      const checkboxes = contentPanel.querySelectorAll('input[name="traitCheckbox"]');
+      checkboxes.forEach(cb => {
+        const label = cb.closest('.checkbox-item');
+        if (label.style.display !== 'none') {
+          cb.checked = selectAll;
+        }
+      });
+      updateSelectionCount();
+    }
+
     function updateSelectionCount() {
       const count = document.querySelectorAll('input[name="traitCheckbox"]:checked').length;
       document.getElementById('selectedCount').textContent = count;
       document.getElementById('generateBtn').disabled = count === 0;
+
+      // Update category badges in real-time
+      document.querySelectorAll('.accordion-item').forEach(item => {
+        const badge = item.querySelector('.category-badge');
+        const checkedCount = item.querySelectorAll('input[name="traitCheckbox"]:checked').length;
+        if (checkedCount > 0) {
+          badge.textContent = checkedCount;
+          badge.classList.add('active');
+        } else {
+          badge.classList.remove('active');
+        }
+      });
     }
 
     document.getElementById('searchTraits').addEventListener('input', function(e) {
@@ -157,11 +199,26 @@
         let hasMatch = false;
 
         checkboxes.forEach(box => {
-          const text = box.innerText.toLowerCase();
-          if (text.includes(term)) {
+          const span = box.querySelector('span');
+          const originalText = span.getAttribute('data-original') || span.innerText;
+          
+          if (!span.getAttribute('data-original')) {
+            span.setAttribute('data-original', originalText);
+          }
+
+          if (term === "") {
+            span.innerHTML = originalText;
+            box.style.display = 'flex';
+            hasMatch = true;
+          } else if (originalText.toLowerCase().includes(term)) {
+            // High-fidelity highlighting of query characters
+            const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            span.innerHTML = originalText.replace(regex, '<mark>$1</mark>');
             box.style.display = 'flex';
             hasMatch = true;
           } else {
+            span.innerHTML = originalText;
             box.style.display = 'none';
           }
         });
@@ -170,11 +227,11 @@
           item.style.display = 'block';
           item.querySelector('.accordion-content').style.maxHeight = null;
           item.querySelector('.accordion-header').classList.remove('active');
-          checkboxes.forEach(box => box.style.display = 'flex');
         } else if (hasMatch) {
           item.style.display = 'block';
           item.querySelector('.accordion-header').classList.add('active');
-          item.querySelector('.accordion-content').style.maxHeight = "1000px";
+          const content = item.querySelector('.accordion-content');
+          content.style.maxHeight = content.scrollHeight + "px";
         } else {
           item.style.display = 'none';
         }

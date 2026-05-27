@@ -63,7 +63,7 @@ const DynamicConfig = {
     get HEADER_ROW() { return 2; },     
     get DATA_START_ROW() { return this._getInt("DATA_START_ROW", 3); }, 
     /** First row of student rows on REPORT DATA (usually 2: header row 1; set to 3 if you use a second header row). */
-    get REPORT_DATA_FIRST_ROW() { return this._getInt("REPORT_DATA_FIRST_ROW", 2); },
+    get REPORT_DATA_FIRST_ROW() { return this._getInt("REPORT_DATA_FIRST_ROW", 3); },
     get ATTENDANCE_TOTAL() { return this._getInt("ATTENDANCE_TOTAL", 64); },
 
     // --- TEMPLATE STRINGS ---
@@ -99,7 +99,7 @@ const DynamicConfig = {
             if (!sheet) return fallbackIndex;
 
             // Detect Header Row based on sheet type
-            const headerRow = (sheetName === "CONTACT LIST") ? 1 : this.HEADER_ROW;
+            const headerRow = this.HEADER_ROW;
             
             const lastCol = sheet.getLastColumn();
             // getRange(row, column, numRows, numColumns). 1 row, lastCol columns.
@@ -206,6 +206,42 @@ const DynamicConfig = {
     normalizeName: function(name) {
         if (!name) return "";
         return String(name).trim().toLowerCase().replace(/\s+/g, ' ');
+    },
+
+    extractFirstName: function(fullName) {
+        if (!fullName) return "Student";
+        
+        const format = this._get("NAME_FORMAT") || "LAST_FIRST";
+        const nameStr = fullName.toString().trim();
+        
+        // Comma separation implies LAST_FIRST format (e.g., "Abrahams, Jeslyn")
+        if (nameStr.indexOf(",") !== -1) {
+            const parts = nameStr.split(",");
+            return parts[1].trim().split(/\s+/)[0];
+        }
+        
+        const parts = nameStr.split(/\s+/);
+        if (parts.length <= 1) return parts[0];
+        
+        if (format === "FIRST_LAST") {
+            return parts[0];
+        } else {
+            // LAST_FIRST format with compound surname prefixes
+            const compoundPrefixes = ["de", "di", "da", "del", "du", "la", "le", "van", "von", "der", "den", "dos", "el"];
+            let surnameWords = 1;
+            
+            if (compoundPrefixes.indexOf(parts[0].toLowerCase()) !== -1) {
+                surnameWords++;
+                if (parts.length > 2 && compoundPrefixes.indexOf(parts[1].toLowerCase()) !== -1) {
+                    surnameWords++;
+                }
+            }
+            
+            if (parts.length > surnameWords) {
+                return parts[surnameWords];
+            }
+            return parts[0];
+        }
     }
 };
 

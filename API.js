@@ -187,16 +187,27 @@ function callGeminiJsonBatch(data, model, key, promptFn, retryCount = 0) {
         } catch (parseError) {
             console.warn("Initial JSON Parse Failed, attempting fallback extraction:", parseError, "Raw Length:", rawText.length, "Raw Preview:", rawText.substring(0, 500));
             
-            // Fallback: Try to extract individual JSON objects using regex
+            // Fallback: Try to extract individual JSON objects using brace counting (supports nested objects)
             const jsonObjects = [];
-            const regex = /{[^{}]*?}/g; // Matches objects without nested braces at first
-            let match;
-            while ((match = regex.exec(rawText)) !== null) {
-                try {
-                    const obj = JSON.parse(match[0]);
-                    jsonObjects.push(obj);
-                } catch (innerParseError) {
-                    console.warn("Fallback JSON object parse failed for:", match[0].substring(0, 100), innerParseError);
+            let braceCount = 0;
+            let startIdx = -1;
+            
+            for (let i = 0; i < rawText.length; i++) {
+                if (rawText[i] === '{') {
+                    if (braceCount === 0) startIdx = i;
+                    braceCount++;
+                } else if (rawText[i] === '}') {
+                    braceCount--;
+                    if (braceCount === 0 && startIdx !== -1) {
+                        const objStr = rawText.substring(startIdx, i + 1);
+                        try {
+                            const obj = JSON.parse(objStr);
+                            jsonObjects.push(obj);
+                        } catch (innerParseError) {
+                            console.warn("Fallback JSON brace-parse failed for:", objStr.substring(0, 100), innerParseError);
+                        }
+                        startIdx = -1;
+                    }
                 }
             }
             

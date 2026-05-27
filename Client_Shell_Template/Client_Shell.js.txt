@@ -87,6 +87,7 @@ function openSettingsSidebar() { _hydrateClientScriptProperties(); HecTechVault.
 function openSubjectContextSidebar() { _hydrateClientScriptProperties(); HecTechVault.openSubjectContextSidebar(); }
 function runCommentGenerator() { _hydrateClientScriptProperties(); HecTechVault.runCommentGenerator(); }
 function openGeneralSidebar() { _hydrateClientScriptProperties(); HecTechVault.openGeneralSidebar(); }
+function openChatBotSidebar() { _hydrateClientScriptProperties(); HecTechVault.openChatBotSidebar(); }
 function runPolish() { _hydrateClientScriptProperties(); HecTechVault.runPolish(); }
 function runPronouns() { _hydrateClientScriptProperties(); HecTechVault.runPronouns(); }
 function runAuditFix() { _hydrateClientScriptProperties(); HecTechVault.runAuditFix(); }
@@ -96,14 +97,17 @@ function RUN_SYSTEM_READINESS_CHECK() { _hydrateClientScriptProperties(); HecTec
 
 function runReportPreview() { _hydrateClientScriptProperties(); HecTechVault.runReportPreview_Client(ScriptApp.getOAuthToken()); }
 function runFullReportBatch() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Client(ScriptApp.getOAuthToken()); }
+function runFullReportBatch_Trigger() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Trigger(); }
 function runMidtermPreview() { _hydrateClientScriptProperties(); HecTechVault.runMidtermPreview_Client(ScriptApp.getOAuthToken()); }
 function runMidtermBatch() { _hydrateClientScriptProperties(); HecTechVault.runMidtermBatch_Client(ScriptApp.getOAuthToken()); }
+function runMidtermBatch_Trigger() { _hydrateClientScriptProperties(); HecTechVault.runMidtermBatch_Trigger(); }
 
 function runEmailBatch() { _hydrateClientScriptProperties(); HecTechVault.runEmailBatch(); }
 function runWhatsAppBlaster() { _hydrateClientScriptProperties(); HecTechVault.runWhatsAppBlaster(); }
 function runTestWhatsAppTemplate() { _hydrateClientScriptProperties(); HecTechVault.runTestWhatsAppTemplate(); }
 function runTestGemini() { _hydrateClientScriptProperties(); HecTechVault.runTestGemini(); }
 function runResetStatuses() { _hydrateClientScriptProperties(); HecTechVault.runResetStatuses(); }
+function runResetFolderConfig() { _hydrateClientScriptProperties(); HecTechVault.runResetFolderConfig(); }
 function runUndo() { _hydrateClientScriptProperties(); HecTechVault.runUndo(); }
 
 function getSelectionInfo() { _hydrateClientScriptProperties(); return HecTechVault.getSelectionInfo(); }
@@ -137,3 +141,6 @@ function saveSubjectContext(data) {
 function getSidebarData() { _hydrateClientScriptProperties(); return HecTechVault.getSidebarData(); }
 function pollCurrentStudent() { _hydrateClientScriptProperties(); return HecTechVault.pollCurrentStudent(); }
 function processGeneralCommentWithTraits(traits, rowIndex) { _hydrateClientScriptProperties(); return HecTechVault.processGeneralCommentWithTraits(traits, rowIndex); }
+function getChatContext() { _hydrateClientScriptProperties(); return HecTechVault.getChatContext(); }
+function getChatResponse(history, message, selectedText, studentContext) { _hydrateClientScriptProperties(); return HecTechVault.getChatResponse(history, message, selectedText, studentContext); }
+function insertTextIntoActiveCell(text) { _hydrateClientScriptProperties(); return HecTechVault.insertTextIntoActiveCell(text); }

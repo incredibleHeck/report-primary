@@ -12,30 +12,73 @@ function runAllReportsSafely(clientToken) {
     const PAUSE_SECONDS = 20; 
     let remainingStudents = 999;  // Starting high to enter the loop
     let batchNumber = 1;
+    const startTime = new Date().getTime();
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     ss.toast("Starting batch generation...", "HecTech Engine", 5);
 
-    // Keep running until the process function says 0 students are left
-    while (remainingStudents > 0) {
-        console.log(`Starting Batch #${batchNumber}...`);
-        
-        // Run the generator for exactly 8 students
-        remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE, clientToken);
-
-        if (remainingStudents > 0) {
-            console.log(`Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s to avoid rate limits...`);
-            ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} reports left.`, "HecTech Engine", PAUSE_SECONDS);
-            
-            // 🟢 The 20-second pause between batches
-            Utilities.sleep(PAUSE_SECONDS * 1000); 
-            
-            batchNumber++;
-        }
+    const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
+    if (!templateSheet) {
+        ss.toast("❌ Template sheet not found.", "HecTech Engine", 5);
+        return;
     }
 
-    console.log("🎉 All reports generated successfully!");
-    ss.toast("🎉 All reports generated successfully!", "HecTech Engine", -1);
+    // Create a temporary hidden copy of the template sheet to avoid concurrent collisions and reuse it
+    let tempSheet = null;
+    try {
+        tempSheet = templateSheet.copyTo(ss);
+        tempSheet.setName(`TEMP_BATCH_${new Date().getTime()}`);
+        tempSheet.hideSheet();
+    } catch (e) {
+        console.error("Failed to copy template sheet:", e.message);
+        ss.toast("❌ Failed to duplicate template sheet.", "HecTech Engine", 5);
+        return;
+    }
+
+    try {
+        // Keep running until the process function says 0 students are left
+        while (remainingStudents > 0) {
+            // Check execution duration (270,000 ms = 4.5 mins limit)
+            const elapsed = new Date().getTime() - startTime;
+            const limit = (typeof TEST_TIMEOUT_LIMIT !== 'undefined') ? TEST_TIMEOUT_LIMIT : 270000;
+            if (elapsed > limit) {
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllReportsSafely: elapsed time ${elapsed}ms exceeds safety limit ${limit}ms. Scheduling trigger.`);
+                ss.toast("Approaching Google execution limit. Auto-resuming in 1 minute...", "Autopilot", 10);
+                setupResubmitTrigger('EOT');
+                return;
+            }
+
+            console.log(`Starting Batch #${batchNumber}...`);
+            
+            // Run the generator for exactly 8 students using the shared tempSheet
+            remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE, clientToken, tempSheet);
+
+            if (remainingStudents > 0) {
+                console.log(`Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s to avoid rate limits...`);
+                ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} reports left.`, "HecTech Engine", PAUSE_SECONDS);
+                
+                // 🟢 The 20-second pause between batches
+                Utilities.sleep(PAUSE_SECONDS * 1000); 
+                
+                batchNumber++;
+            }
+        }
+
+        console.log("🎉 All reports generated successfully!");
+        ss.toast("🎉 All reports generated successfully!", "HecTech Engine", -1);
+        
+        // Success complete - clear any scheduled triggers
+        clearResubmitTriggers();
+    } finally {
+        if (tempSheet) {
+            try {
+                ss.deleteSheet(tempSheet);
+                SpreadsheetApp.flush();
+            } catch (err) {
+                console.error("Failed to delete batch temp sheet:", err.message);
+            }
+        }
+    }
 }
 
 const ReportCardGenerator = {
@@ -75,8 +118,8 @@ const ReportCardGenerator = {
 
     runPreview: function(clientToken) { this.process(true, 999, clientToken); },
 
-    // Update the parameters to accept a batch limit
-    process: function (isPreview = false, batchLimit = 999, clientToken) {
+    // Update the parameters to accept a batch limit and an optional shared tempSheet
+    process: function (isPreview = false, batchLimit = 999, clientToken, sharedTempSheet = null) {
         if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: clientToken type=${typeof clientToken}`);
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sourceSheet = ss.getSheetByName(Config.REPORT_SHEET_NAME);
@@ -110,7 +153,7 @@ const ReportCardGenerator = {
         // Pre-map Contact List for O(1) Lookup using normalized names
         const contactData = contactSheet.getDataRange().getValues();
         const contactMap = new Map();
-        for (let r = 1; r < contactData.length; r++) {
+        for (let r = 2; r < contactData.length; r++) {
             const cName = contactData[r][Config.COL_NAME - 1];
             if (cName) {
                 contactMap.set(Config.normalizeName(cName), r);
@@ -202,14 +245,20 @@ const ReportCardGenerator = {
             }
 
             let tempSheet = null;
+            let ownTempSheetCreated = false;
             try {
-                // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: duplicating template for ${studentName}`);
-                tempSheet = templateSheet.copyTo(ss);
-                tempSheet.hideSheet();
-                
-                const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
-                tempSheet.setName(`TEMP_${cleanName}_${new Date().getTime()}`);
+                if (sharedTempSheet) {
+                    tempSheet = sharedTempSheet;
+                } else {
+                    // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
+                    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: duplicating template for ${studentName}`);
+                    tempSheet = templateSheet.copyTo(ss);
+                    tempSheet.hideSheet();
+                    
+                    const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+                    tempSheet.setName(`TEMP_${cleanName}_${new Date().getTime()}`);
+                    ownTempSheetCreated = true;
+                }
 
                 // --- 1. Fill Temp Template Using Batch Operations ---
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: filling template for ${studentName}`);
@@ -242,8 +291,8 @@ const ReportCardGenerator = {
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: ERROR for ${studentName}: ${err.message}`);
                 errorCount++;
             } finally {
-                // Guarantee cleanup of the temporary sheet
-                if (tempSheet) {
+                // Guarantee cleanup of the temporary sheet only if we created it in this loop
+                if (tempSheet && ownTempSheetCreated) {
                     try {
                         ss.deleteSheet(tempSheet);
                         SpreadsheetApp.flush();

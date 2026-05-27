@@ -63,7 +63,7 @@ const FixMismatchManager = {
 
             if (!fullName || String(fullName).trim() === "") continue;
             
-            const firstName = this.extractFirstName(fullName);
+            const firstName = Config.extractFirstName(fullName);
 
             for (let c = 0; c < subjectData[0].length; c++) {
                 const comment = subjectData[r][c];
@@ -134,12 +134,5 @@ const FixMismatchManager = {
             console.error("Mismatch Fix Error:", e);
             throw e; 
         }
-    },
-
-    extractFirstName: function(fullName) {
-        if (!fullName) return "Student";
-        const parts = fullName.toString().trim().split(/\s+/);
-        // Returns 2nd part if exists (e.g. "Doe John" -> "John"), else 1st part
-        return (parts.length > 1) ? parts[1] : parts[0];
     }
 };

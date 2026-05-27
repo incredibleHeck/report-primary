@@ -9,15 +9,16 @@
     --warning: #f59e0b;
     --error: #ef4444;
     --bg: #f8fafc;
-    --surface: #ffffff;
+    --surface: rgba(255, 255, 255, 0.9);
     --text: #1e293b;
     --text-secondary: #64748b;
     --text-muted: #94a3b8;
     --border: #e2e8f0;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --radius: 12px;
-    --radius-sm: 8px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -4px rgba(99, 102, 241, 0.05);
+    --radius: 14px;
+    --radius-sm: 10px;
   }
 
   * {
@@ -28,7 +29,7 @@
 
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     color: var(--text);
     padding-bottom: 90px;
     min-height: 100vh;
@@ -39,6 +40,7 @@
     top: 0;
     z-index: 100;
     background: var(--surface);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     padding: 16px;
   }
@@ -49,7 +51,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
+    height: 4px;
     background: linear-gradient(90deg, var(--primary), var(--primary-light));
   }
 
@@ -61,6 +63,7 @@
     padding: 12px 14px;
     border-radius: var(--radius-sm);
     margin-bottom: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
   }
 
   .student-avatar {
@@ -75,6 +78,7 @@
     font-weight: 700;
     font-size: 16px;
     flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
   }
 
   .student-details {
@@ -84,10 +88,10 @@
 
   .student-label {
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 500;
+    font-weight: 700;
   }
 
   #studentNameDisplay {
@@ -136,20 +140,22 @@
   }
 
   #accordionContainer {
-    padding: 8px;
+    padding: 12px 8px;
   }
 
   .accordion-item {
     background: var(--surface);
     border-radius: var(--radius-sm);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     border: 1px solid var(--border);
     overflow: hidden;
-    transition: box-shadow 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
   }
 
   .accordion-item:hover {
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
   }
 
   .accordion-header {
@@ -165,6 +171,43 @@
     user-select: none;
   }
 
+  .accordion-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .accordion-header-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .category-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .category-badge {
+    background: var(--primary);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 999px;
+    min-width: 18px;
+    height: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-badge.active {
+    display: inline-flex;
+  }
+
   .accordion-header:hover {
     background: var(--bg);
   }
@@ -174,16 +217,11 @@
     color: var(--primary-dark);
   }
 
-  .accordion-header .category-icon {
-    margin-right: 10px;
-    font-size: 18px;
-    vertical-align: middle;
-  }
-
   .accordion-header .arrow {
     font-size: 18px;
     color: var(--text-muted);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
   }
 
   .accordion-header.active .arrow {
@@ -198,8 +236,39 @@
     background: var(--surface);
   }
 
+  /* Quick action toolbar inside category */
+  .category-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 8px 16px 0;
+    background: var(--surface);
+    border-top: 1px solid rgba(0,0,0,0.02);
+  }
+
+  .toolbar-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .toolbar-btn:hover {
+    color: var(--primary-dark);
+  }
+
+  .toolbar-btn .material-icons-round {
+    font-size: 13px;
+  }
+
   .checkbox-grid {
-    padding: 12px 16px 16px;
+    padding: 8px 16px 16px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 8px;
@@ -211,7 +280,7 @@
     font-size: 13px;
     cursor: pointer;
     padding: 10px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--bg);
     border: 1px solid transparent;
     transition: all 0.15s ease;
@@ -244,7 +313,16 @@
 
   .checkbox-item:has(input:checked) span {
     color: var(--primary-dark);
-    font-weight: 500;
+    font-weight: 600;
+  }
+
+  /* Search text highlighting */
+  mark {
+    background: rgba(253, 224, 71, 0.4);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+    font-weight: 600;
   }
 
   .footer {
@@ -253,16 +331,17 @@
     left: 0;
     right: 0;
     background: var(--surface);
+    backdrop-filter: blur(8px);
     padding: 16px;
     border-top: 1px solid var(--border);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
     z-index: 100;
   }
 
   .selection-count {
     text-align: center;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin-bottom: 10px;
   }
 
@@ -334,6 +413,7 @@
     font-size: 48px;
     margin-bottom: 12px;
     opacity: 0.5;
+    animation: pulse 2s infinite;
   }
 
   .toast-message {
@@ -347,9 +427,9 @@
     border-radius: var(--radius-sm);
     font-size: 13px;
     font-weight: 500;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-lg);
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index: 1000;
     pointer-events: none;
   }
@@ -374,5 +454,10 @@
 
   .accordion-item {
     animation: fadeIn 0.3s ease forwards;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.05); opacity: 0.7; }
   }
 </style>

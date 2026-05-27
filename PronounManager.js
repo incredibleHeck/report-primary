@@ -70,7 +70,7 @@ const PronounManager = {
                 if (typeof comment === 'string' && comment.trim().length > 10) {
                     batchRequest.push({
                         id: `${r}_${c}`,
-                        name: this.extractFirstName(fullName),
+                        name: Config.extractFirstName(fullName),
                         gender: gender,
                         comment: comment,
                         rowIndex: r,
@@ -141,12 +141,5 @@ const PronounManager = {
             console.error("Pronoun fix failed:", e);
             throw e;
         }
-    },
-
-    extractFirstName: function(fullName) {
-        if (!fullName) return "Student";
-        const parts = fullName.toString().trim().split(/\s+/);
-        // Returns 2nd part if exists (e.g. "Doe John" -> "John"), else 1st part
-        return (parts.length > 1) ? parts[1] : parts[0];
     }
 };
