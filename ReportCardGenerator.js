@@ -201,21 +201,29 @@ const ReportCardGenerator = {
                 if (!isPreview) continue; // Force skip to prevent infinite retry loops
             }
 
-            // --- 1. Fill Template Using Batch Operations ---
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: filling template for ${studentName}`);
-            this.fillTemplateFast(templateSheet, row, cols, subjects, attendanceTotal);
-
-            // --- 2. Generate PDF ---
-            SpreadsheetApp.flush();
-            
-            // 🟢 CRITICAL FIX 2: Moved pause BEFORE the PDF is exported
-            // Increased to 3 seconds to prevent Google's "Server Error" on PDF export
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sleeping 3s for ${studentName}`);
-            Utilities.sleep(3000); 
-            
+            let tempSheet = null;
             try {
+                // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: duplicating template for ${studentName}`);
+                tempSheet = templateSheet.copyTo(ss);
+                tempSheet.hideSheet();
+                
+                const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+                tempSheet.setName(`TEMP_${cleanName}_${new Date().getTime()}`);
+
+                // --- 1. Fill Temp Template Using Batch Operations ---
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: filling template for ${studentName}`);
+                this.fillTemplateFast(tempSheet, row, cols, subjects, attendanceTotal);
+
+                // --- 2. Generate PDF ---
+                SpreadsheetApp.flush();
+                
+                // Pause to prevent Google's "Server Error" on PDF export
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sleeping 3s for ${studentName}`);
+                Utilities.sleep(3000); 
+                
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: creating blob for ${studentName}`);
-                const pdfBlob = this.createBlobFromSheet(templateSheet, studentName, token);
+                const pdfBlob = this.createBlobFromSheet(tempSheet, studentName, token);
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saving file for ${studentName}`);
                 const pdfFile = destinationFolder.createFile(pdfBlob);
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saved file ${pdfFile.getId()}`);
@@ -233,6 +241,16 @@ const ReportCardGenerator = {
                 console.error(`PDF Error for ${studentName}: ${err.message}`);
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: ERROR for ${studentName}: ${err.message}`);
                 errorCount++;
+            } finally {
+                // Guarantee cleanup of the temporary sheet
+                if (tempSheet) {
+                    try {
+                        ss.deleteSheet(tempSheet);
+                        SpreadsheetApp.flush();
+                    } catch (cleanupErr) {
+                        console.error(`Failed to delete temporary sheet for ${studentName}: ${cleanupErr.message}`);
+                    }
+                }
             }
         }
 

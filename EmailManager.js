@@ -60,6 +60,10 @@ const EmailManager = {
     let failCount = 0;
     let processed = 0;
 
+    const statusRange = sheet.getRange(2, Config.COL_EMAIL_STATUS, lastRow - 1, 1);
+    const statusValues = statusRange.getValues();
+    const statusBackgrounds = statusRange.getBackgrounds();
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const name = row[idxName];
@@ -73,18 +77,31 @@ const EmailManager = {
       ss.toast(`Emailing ${processed}/${pendingCount}: ${name}...`, "Email", -1);
 
       const result = this.sendSingleReport(name, email, pdfId);
-      const realRow = i + 2;
-      
-      const statusCell = sheet.getRange(realRow, Config.COL_EMAIL_STATUS);
 
       if (result.success) {
-        statusCell.setValue("SENT").setBackground("#D9EAD3");
+        statusValues[i][0] = "SENT";
+        statusBackgrounds[i][0] = "#D9EAD3";
         sentCount++;
       } else {
-        statusCell.setValue(`ERROR: ${result.error}`).setBackground("#F4CCCC");
+        statusValues[i][0] = `ERROR: ${result.error}`;
+        statusBackgrounds[i][0] = "#F4CCCC";
         failCount++;
       }
+      
+      // Update spreadsheet in chunks of 5 to show real-time progress without excessive slowdown
+      if (processed % 5 === 0) {
+        statusRange.setValues(statusValues);
+        statusRange.setBackgrounds(statusBackgrounds);
+        SpreadsheetApp.flush();
+      }
       Utilities.sleep(200);
+    }
+
+    // Final flush of remaining updates
+    if (processed > 0) {
+      statusRange.setValues(statusValues);
+      statusRange.setBackgrounds(statusBackgrounds);
+      SpreadsheetApp.flush();
     }
 
     ui.alert(`📧 Email Batch Complete\nSent: ${sentCount}\nFailed: ${failCount}`);

@@ -77,6 +77,10 @@ const WhatsAppManager = {
         ss.toast("Starting WhatsApp Batch (" + pendingCount + " pending)...", "HecTech", -1);
         let processed = 0;
 
+        const statusRange = sheet.getRange(2, Config.COL_WHATSAPP_STATUS, lastRow - 1, 1);
+        const statusValues = statusRange.getValues();
+        const statusBackgrounds = statusRange.getBackgrounds();
+
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
             const name = row[idxName];
@@ -97,18 +101,35 @@ const WhatsAppManager = {
                 if (mediaId) {
                     this.sendWithRetry(phone, name, mediaId);
                     successCount++;
-                    sheet.getRange(i + 2, idxStatus + 1).setValue("SENT").setBackground("#D9EAD3");
+                    statusValues[i][0] = "SENT";
+                    statusBackgrounds[i][0] = "#D9EAD3";
                 } else {
                     failCount++;
-                    sheet.getRange(i + 2, idxStatus + 1).setValue("UPLOAD FAIL");
+                    statusValues[i][0] = "UPLOAD FAIL";
+                    statusBackgrounds[i][0] = "";
                 }
             } catch (e) {
                 console.error(`WA Fail: ${name}`, e);
                 failCount++;
-                sheet.getRange(i + 2, idxStatus + 1).setValue(`ERR: ${e.message}`).setBackground("#F4CCCC");
+                statusValues[i][0] = `ERR: ${e.message}`;
+                statusBackgrounds[i][0] = "#F4CCCC";
+            }
+
+            // Update spreadsheet in chunks of 5 to show real-time progress without excessive slowdown
+            if (processed % 5 === 0) {
+                statusRange.setValues(statusValues);
+                statusRange.setBackgrounds(statusBackgrounds);
+                SpreadsheetApp.flush();
             }
 
             Utilities.sleep(1000);
+        }
+
+        // Final flush of remaining updates
+        if (processed > 0) {
+            statusRange.setValues(statusValues);
+            statusRange.setBackgrounds(statusBackgrounds);
+            SpreadsheetApp.flush();
         }
 
         ui.alert(`📱 WhatsApp Batch Complete\nSent: ${successCount}\nFailed: ${failCount}`);

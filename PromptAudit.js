@@ -24,6 +24,7 @@ const PromptAudit = {
         1. NAME INTEGRITY (Type: "NAME_MISMATCH"):
            - Flag if the comment mentions a different name (e.g. input "Jeslyn", comment says "Zoe").
            - Flag spelling errors (e.g. input "Jeslyn", comment says "Jeslin").
+           - Flag if name prefixes like "your child [Name]" or "your ward [Name]" are used (the name should be used on its own, e.g. "Jeslyn").
 
         2. GENDER INTEGRITY (Type: "PRONOUN_MISMATCH"):
            - If Database = "Male": Flag "she, her, hers".
@@ -35,10 +36,10 @@ const PromptAudit = {
            - Flag run-on sentences.
 
         4. TONE & STYLE (Type: "TONE"):
-           - Flag informal words ("kids", "gonna", "cool").
-           - Flag overly negative or harsh language.
-           - Flag unnecessarily rare, formal, or "showy" vocabulary where simpler everyday English would be clearer for parents.
-           - Flag any suggestion that a high-performing student should teach, tutor, coach, or explain work to classmates (peer tutoring recommendations are not allowed on reports).
+           - Flag if the recommendation or advice at the end is NOT parent-facing (i.e. flags "He needs to study" or "She should practice" because it should address parents directly like "Please support him to study" or "Please help her practice").
+           - Flag complex academic jargon or fancy vocabulary (e.g., exhibits, demonstrates, proficiency, mastery, aptitude, pedagogical, cognitive, facilitates, peer-learning, summative, competency, diligent, exemplary).
+           - Flag informal words ("kids", "gonna", "cool") or overly negative language.
+           - Flag any suggestion that a high-performing student should teach, tutor, coach, or explain work to classmates.
 
         OUTPUT FORMAT:
         Return ONLY a JSON Array of objects. No markdown blocks (\`\`\`).
@@ -50,8 +51,8 @@ const PromptAudit = {
           {
             "id": "row_col",
             "hasError": true,
-            "errorType": "PRONOUN_MISMATCH",
-            "feedback": "Database is Male, but 'she' was used."
+            "errorType": "TONE",
+            "feedback": "Detached third-person advice used instead of parent-facing 'Please...'"
           },
           {
             "id": "row_col_2",

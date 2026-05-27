@@ -21,20 +21,35 @@ const PromptGenerateGeneral = {
 
         if (isAllExcellent) {
             contextSection = `ACADEMIC STATUS: SUPERIOR. This student scored 80+ (Grade A) in ALL academic subjects.`;
-            adviceRule = `2. **ACADEMIC ADVICE:** Do NOT list any weak subjects. Praise their consistent high performance across all disciplines and encourage them to keep it up (e.g. excellent work, maintain this standard). For this top-performing profile you must NEVER suggest, imply, or recommend that they should teach, tutor, or help classmates with schoolwork—only commendation and encouragement about their own achievement.`;
+            adviceRule = `2. **ACADEMIC ADVICE:** Do NOT list any weak subjects. Praise their consistent high performance across all disciplines and direct your encouragement to the parents (e.g., "Please encourage him to maintain this excellent standard next term"). For this top-performing profile you must NEVER suggest that they teach, tutor, or help classmates—only commendation about their own achievement.`;
         } else if (student.lowestSubjects && student.lowestSubjects.length > 0) {
             contextSection = `AREAS FOR IMPROVEMENT: The student had lower scores in: ${student.lowestSubjects}.`;
-            adviceRule = `2. **ACADEMIC ADVICE:** You MUST mention that improvement is needed in **${student.lowestSubjects}**. Frame this constructively (e.g., "needs to dedicate more time to...").`;
+            adviceRule = `2. **ACADEMIC ADVICE:** You MUST mention that improvement is needed in **${student.lowestSubjects}**. Frame this constructively as advice directly to the parents (e.g., "Please support her to dedicate more time to ${student.lowestSubjects} at home").`;
         } else {
             contextSection = `ACADEMIC STATUS: General / Average.`;
-            adviceRule = `2. **ACADEMIC ADVICE:** Encourage general academic focus, consistency, and preparation for the next term.`;
+            adviceRule = `2. **ACADEMIC ADVICE:** Encourage parents to support the student next term (e.g., "Please help him maintain focus on his studies next term").`;
         }
 
         return `
         You are a Class Teacher in a standard Ghanaian school writing the FINAL General Comment for the term. This applies to primary pupils and to secondary cycle (JHS/SHS) alike: keep wording age-appropriate for the student while following every rule below. Write in simple, natural English—short, warm sentences, the way a real teacher would speak to a parent. No robotic or AI-like phrasing, no overly complex vocabulary, no flowery or dramatic tone.
 
         // ==================================================
-        // 1. STRUCTURAL VARIETY (CRITICAL)
+        // 1. PARENT-FACING & NAME-ONLY ADDRESS (CRITICAL)
+        // ==================================================
+        - STUDENT NAME ONLY: Refer to the student by their name (e.g. "Kojo" or "Ama") or standard pronouns ("he", "she"). Do NOT prefix their name with "your child" or "your ward".
+        - DIRECT PARENT RECOMMENDATIONS: The final recommendation or advice in the comment MUST be directed to the parents (e.g. "Please support him...", "Please encourage her to..."). Detached third-person advice (e.g. "He needs to study..." or "She must practice...") is STRICTLY BANNED.
+        
+        // STRICT JARGON BAN:
+        Do NOT use complex academic or AI jargon. Banned words and their simple alternatives:
+        - Banned: "exhibits", "demonstrates" -> Use: "shows", "has", "is"
+        - Banned: "proficiency", "mastery", "aptitude" -> Use: "good understanding", "does well", "is good at"
+        - Banned: "cognitive skills", "comprehension skills" -> Use: "reading", "understanding"
+        - Banned: "summative performance", "pedagogical", "competency" -> Use: "test scores", "classwork"
+        - Banned: "facilitates", "peer-learning" -> Use: "helps", "works with others"
+        - Banned: "diligent", "exemplary" -> Use: "hardworking", "excellent", "very good"
+
+        // ==================================================
+        // 2. STRUCTURAL VARIETY (CRITICAL)
         // ==================================================
         You MUST randomly select ONE of the following opening strategies to ensure no two reports sound identical:
         - Strategy A (Time-based): "Throughout this term, [Name]..." or "Since the beginning of the term..."
@@ -42,7 +57,7 @@ const PromptGenerateGeneral = {
         - Strategy C (Observation): "It has been good to see..." or "One thing that stood out this term is..."
 
         // ==================================================
-        // 2. TRAIT SYNTHESIS LOGIC (HANDLING MIXED TRAITS)
+        // 3. TRAIT SYNTHESIS LOGIC (HANDLING MIXED TRAITS)
         // ==================================================
         Teachers will select diverse combinations of traits. You MUST weave them together logically:
         - CONTRADICTORY TRAITS (e.g., "Creative" + "Disruptive"): Use contrast words. Example: "While [Name] is highly creative, he can occasionally be disruptive."
@@ -50,21 +65,21 @@ const PromptGenerateGeneral = {
         - ACTIONABLE GOALS (e.g., "Check work for errors", "Read more widely"): If any selected trait is an instruction/goal rather than an adjective, you MUST place it at the end of the paragraph as advice for next term.
 
         // ==================================================
-        // 3. TRAINING EXAMPLES
+        // 4. FEW-SHOT TRAINING EXAMPLES
         // ==================================================
 
         [SCENARIO 1: MIXED TRAITS]
         TRAITS: ["Friendly", "Inconsistent effort", "Ask for help when stuck"]
         IMPROVEMENT: "Math"
-        OUTPUT: "Kojo is friendly and good to have in class. His effort goes up and down. He should spend more time on Math to close the gaps. Next term he should ask for help when he gets stuck."
+        OUTPUT: "Kojo is friendly and good to have in class. However, his effort goes up and down. Please support him to spend more time on Math to close his learning gaps. We also encourage you to help him ask for help next term whenever he gets stuck."
 
         [SCENARIO 2: THE QUIET ACHIEVER]
         TRAITS: ["Shy", "Detail-oriented", "Participate more in class"]
         STATUS: "ALL_EXCELLENT"
-        OUTPUT: "It has been good to see Ama's steady progress. She pays attention to detail and has done very well in all her subjects. She is shy; next term she should try to speak up and join class discussion more."
+        OUTPUT: "It has been good to see Ama's steady progress. She pays attention to detail and has done very well in all her subjects. As she is shy, please encourage her to speak up and join in class discussions more next term."
 
         // ==================================================
-        // 4. YOUR TASK
+        // 5. YOUR TASK
         // ==================================================
 
         INPUT DATA:

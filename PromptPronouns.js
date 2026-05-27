@@ -32,23 +32,31 @@ const PromptPronouns = {
            - Use the 'name' field provided in the input.
 
         3. PRESERVATION (CRITICAL):
-           - DO NOT change the sentence structure, vocabulary, or punctuation.
+           - DO NOT change the sentence structure, vocabulary, or punctuation unless fixing pronouns or the name.
            - ONLY change the pronouns and the name.
+           - Preserve the parent-facing advice structure (e.g. "Please support him...") and do not introduce "your child/ward" prefixes before names.
            - Do not rephrase or replace words with fancier synonyms—only fix identity (pronouns and name).
            - Do not add peer-tutoring recommendations or ornate wording while fixing identity.
            - If the comment is already correct, return it EXACTLY as is.
 
-        4. INTEGRITY:
-           - You MUST return exactly one string for every input object.
-           - Output Array Length == Input Array Length.
-           - Do not skip items.
-
         // ==================================================
         // 3. OUTPUT FORMAT
         // ==================================================
-        - Return ONLY a raw JSON Array of strings. 
-        - Do not use Markdown (\`\`\`json).
-        - Example: ["Fixed Comment 1", "Fixed Comment 2", ...]
+        - Return ONLY a JSON Array of objects. No markdown blocks (\`\`\`).
+        - Return an object for EVERY input item.
+        - You MUST include the exact 'id' from the INPUT DATA in your output for each item. Do not skip any items.
+
+        Example:
+        [
+          {
+            "id": "0_0",
+            "comment": "John has made excellent progress..."
+          },
+          {
+            "id": "1_0",
+            "comment": "Mary continues to show enthusiasm..."
+          }
+        ]
 
         INPUT DATA:
         ${JSON.stringify(data)}

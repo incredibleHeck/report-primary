@@ -5,9 +5,13 @@
 const DynamicConfig = {
     // 1. LAZY LOADING CACHE (Prevents Quota Errors)
     _cache: {},
+    _ssId: null,
     
     _get: function(key) {
-        const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        if (!this._ssId) {
+            this._ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        }
+        const ssId = this._ssId;
         const clientKey = `${key}_${ssId}`;
         
         if (this._cache[clientKey]) return this._cache[clientKey];
@@ -17,11 +21,16 @@ const DynamicConfig = {
             val = ClientScriptPropertiesBridge.getConfigValue(key, ssId);
         }
         
+        // Standalone fallback (only works when run directly in the vault container, not as a library)
         if (!val) {
-            const props = PropertiesService.getScriptProperties();
-            val = props.getProperty(clientKey);
-            if (!val) {
-                val = props.getProperty(key);
+            try {
+                const props = PropertiesService.getScriptProperties();
+                val = props.getProperty(clientKey);
+                if (!val) {
+                    val = props.getProperty(key);
+                }
+            } catch (e) {
+                console.warn("PropertiesService fallback bypassed/failed:", e.message);
             }
         }
         

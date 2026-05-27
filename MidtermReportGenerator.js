@@ -102,17 +102,27 @@ const MidtermReportGenerator = {
       const studentName = row[cols.STUDENT_NAME];
       if (!studentName) continue;
 
-      this.fillTemplateFast(templateSheet, row, cols, subjects, Object.keys(subjects).length);
-
-      // --- 2. Generate PDF ---
-      SpreadsheetApp.flush();
-      
-      // Add a 3-second pause to prevent Google's "Server Error" on PDF export
-      Utilities.sleep(3000);
-      
+      let tempSheet = null;
       try {
+        // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
+        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Midterm process: duplicating template for ${studentName}`);
+        tempSheet = templateSheet.copyTo(ss);
+        tempSheet.hideSheet();
+
+        const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+        tempSheet.setName(`TEMP_MID_${cleanName}_${new Date().getTime()}`);
+
+        // --- 1. Fill Temp Template Using Batch Operations ---
+        this.fillTemplateFast(tempSheet, row, cols, subjects, Object.keys(subjects).length);
+
+        // --- 2. Generate PDF ---
+        SpreadsheetApp.flush();
+        
+        // Add a 3-second pause to prevent Google's "Server Error" on PDF export
+        Utilities.sleep(3000);
+        
         const pdfBlob = this.createBlobFromSheet(
-          templateSheet,
+          tempSheet,
           studentName + " Midterm",
           token,
         );
@@ -131,6 +141,16 @@ const MidtermReportGenerator = {
       } catch (err) {
         console.error(`Midterm PDF Error for ${studentName}: ${err.message}`);
         errorCount++;
+      } finally {
+        // Guarantee cleanup of the temporary sheet
+        if (tempSheet) {
+          try {
+            ss.deleteSheet(tempSheet);
+            SpreadsheetApp.flush();
+          } catch (cleanupErr) {
+            console.error(`Failed to delete temporary midterm sheet for ${studentName}: ${cleanupErr.message}`);
+          }
+        }
       }
     }
 

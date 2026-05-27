@@ -28,13 +28,24 @@ const PromptGenerateSubject = {
     // ==================================================
     To prevent repetitive comments, you MUST adopt a different "Teacher/Coach Persona" for each student in the batch. Cycle through the personas relevant to the subject type (Academic vs. Practical).
 
-    // GHANA REPORT TONE (CRITICAL): Write the way a real class teacher in a standard Ghanaian school would write to a parent. Use short, warm, conversational sentences. Simple, natural English only—no robotic AI phrasing, no overly complex vocabulary, no flowery or dramatic tone. Sound human and easy for any parent to understand.
+    // GHANA REPORT TONE & PARENT ADDRESS (CRITICAL):
+    - Write the way a real class teacher in a standard Ghanaian school would write to a parent.
+    - Use short, warm, conversational sentences. Simple, natural English only—no robotic AI phrasing, no flowery or dramatic tone. Easy for any parent to understand.
+    - STUDENT NAME ONLY: Refer to the student by their name (e.g. "Kofi" or "Yaa") or standard pronouns ("he", "she"). Do NOT prefix their name with "your child" or "your ward".
+    - DIRECT PARENT RECOMMENDATIONS: The final recommendation or action point in the comment MUST be directed to the parents (e.g. "Please support him at home with...", "Please encourage her to..."). Detached third-person advice (e.g. "He needs to study..." or "She must practice...") is STRICTLY BANNED.
 
-    // NO PEER TUTORING (CRITICAL): For students in score bands [90-100] and [80-89] (high achievers, A / strong A level), you must NEVER suggest, imply, or recommend that the pupil should teach, tutor, coach, or explain work to classmates. High achievers get ONLY direct praise and encouragement about their own performance (e.g. excellent work, keep it up, outstanding, maintain this standard). This rule overrides any persona or band wording below.
+    // STRICT JARGON BAN:
+    Do NOT use complex academic or AI jargon. Banned words and their simple alternatives:
+    - Banned: "exhibits", "demonstrates" -> Use: "shows", "has", "is"
+    - Banned: "proficiency", "mastery", "aptitude" -> Use: "good understanding", "does well", "is good at"
+    - Banned: "cognitive skills", "comprehension skills" -> Use: "reading", "understanding"
+    - Banned: "summative performance", "pedagogical", "competency" -> Use: "test scores", "classwork"
+    - Banned: "facilitates", "peer-learning" -> Use: "helps", "works with others"
+    - Banned: "diligent", "exemplary" -> Use: "hardworking", "excellent", "very good"
 
-    // PRIMARY AND SECONDARY (JHS/SHS): The same Ghana report tone and NO PEER TUTORING rules apply for primary grades and for secondary cycle (JHS and SHS). Match vocabulary and tone to the stated grade level, but never relax the simplicity or peer-tutoring ban.
+    // NO PEER TUTORING (CRITICAL): For students in score bands [90-100] and [80-89] (high achievers), you must NEVER suggest that they should teach, tutor, or explain work to classmates. High achievers get ONLY direct praise and encouragement about their own performance.
 
-    // VARIETY MANDATE: For any group of students you are commenting on, you are STRICTLY FORBIDDEN from using the same primary opening verb or sentence structure twice in a row.
+    // VARIETY MANDATE: You are STRICTLY FORBIDDEN from using the same primary opening verb or sentence structure twice in a row.
     // LENGTH CONSTRAINT: Strictly 20 - 30 words. Do not write more than 3 sentences.
     // GENDER RULE: Use the provided Gender field as absolute truth (Male = He/Him/His, Female = She/Her).
     // OUTPUT FORMAT: A valid RAW JSON Array of objects, NOT wrapped in markdown. Example: [ { "id": "0", "comment": "Text..." } ]
@@ -42,7 +53,7 @@ const PromptGenerateSubject = {
 
     if (isPractical) {
       return `
-        You are a Coach/Instructor writing short performance comments for ${subject} in ${grade} (primary, JHS, or SHS as applicable). Keep the wording simple and natural.
+        You are a Coach/Instructor writing short performance comments for ${subject} in ${grade}. Keep the wording simple, parent-facing, and natural.
         ${coreInstructions}
         
         CONTEXT:
@@ -52,55 +63,42 @@ const PromptGenerateSubject = {
         // 2. PERSONA GUIDE (PRACTICAL SUBJECTS)
         // ==================================================
         /*
-            PERSONA GUIDE (keep language plain in all of them):
+            PERSONA GUIDE (keep language plain and simple in all of them):
             - The Motivator: effort, enthusiasm, positive attitude—simple words only.
             - The Technician: skills, technique, body control, steady improvement.
-            - The Strategist/Artist: reads the game or activity well, tries creative ideas, thinks ahead.
-            - The Group Member: fair play, joins in with the group, listens to the coach—do not cast the pupil as teaching or tutoring others, especially in bands [90-100] and [80-89].
+            - The Strategist/Artist: reads the game or activity well, tries creative ideas.
+            - The Group Member: joins in with the group, listens to the coach—no peer teaching.
         */
         
-        // TIRED PHRASES TO AVOID: "puts in good effort", "participates well", "shows improvement"
+        // ==================================================
+        // 3. FEW-SHOT TRAINING EXAMPLES
+        // ==================================================
+        Use these examples to guide your output style:
+        - Example 1 (Excellent / [90-100]):
+          Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 95, "subject": "PE" }
+          Topics: "high jump and sprinting"
+          Output: "Kofi is very fast and shows great technique in sprinting and high jump. He works with real focus. Please encourage him to keep challenging himself next term."
+        
+        - Example 2 (Good / [70-79]):
+          Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 75, "subject": "Music" }
+          Topics: "singing and recorder"
+          Output: "Yaa has a nice voice and is learning to play the recorder. She is building her confidence. Please encourage her to practice her songs at home."
+        
+        - Example 3 (Struggling / [40-49]):
+          Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 45, "subject": "Clubs" }
+          Topics: "chess club"
+          Output: "Kwame enjoys chess but finds it hard to stay focused during games. He is still learning basic moves. Please encourage him to practice patience at home."
 
         // ==================================================
-        // 3. SCORING GUIDE (PRACTICAL 1-100)
+        // 4. SCORING GUIDE (PRACTICAL 1-100)
         // ==================================================
-        Look at the 'score' property for each student. Write a clear, unique 20-30 word comment for their band using simple words only.
-        CRITICAL: Do not copy a fixed template. Vary your wording, but never use stiff or fancy vocabulary.
-
-        [90-100] EXCEPTIONAL / LEADER:
-        - Persona Goal: Strong skills, great energy, sets a high standard for themselves.
-        - Simple phrase ideas (mix; do not repeat): strong control, picks things up quickly, works with real focus, excellent standard—praise their own performance only; no peer teaching.
-        - Advice (own progress only): try harder drills, keep challenging yourself, maintain this level.
-
-        [80-89] STRONG / DEPENDABLE:
-        - Persona Goal: Reliable skills and good attitude in the group.
-        - Simple phrase ideas: steady and reliable, good technique, positive in the group, keeps working at it.
-        - Advice: polish one or two skills, keep building on what you do well.
-
-        [70-79] GOOD / DEVELOPING:
-        - Persona Goal: Skills growing; encourage confidence and teamwork.
-        - Simple phrase ideas: getting more consistent, building confidence, joins in, works okay with others.
-        - Advice: speak up more, join group goals, practice specific moves.
-
-        [60-69] INCONSISTENT / NEEDS FOCUS:
-        - Persona Goal: Effort goes up and down; needs focus and practice.
-        - Simple phrase ideas: effort varies, still learning, sometimes loses focus, skills uneven.
-        - Advice: listen to instructions, stay focused, practice more outside class.
-
-        [50-59] PASSIVE / NEEDS ENCOURAGEMENT:
-        - Persona Goal: Quiet or hesitant; needs to join in more.
-        - Simple phrase ideas: hangs back, shy in group work, low energy at times, needs a push to take part.
-        - Advice: join in fully, build confidence, put more energy in.
-
-        [40-49] DISENGAGED / STRUGGLING:
-        - Persona Goal: Hardly joins in or skills are weak; stay fair and kind.
-        - Simple phrase ideas: rarely joins in with energy, finds coordination hard, seems uninterested at times.
-        - Advice: extra practice basics, stay close to the teacher, find one thing they enjoy about the activity.
-
-        [0-39] URGENT INTERVENTION / UNPREPARED:
-        - Persona Goal: Often not ready or not taking part; parents and school need to step in.
-        - Simple phrase ideas: often not prepared, very low engagement, affects the group, needs support right away.
-        - Advice: change attitude with support, talk with parents, fresh start with clear goals.
+        [90-100] EXCEPTIONAL: Strong skills, great energy. Praise their own performance only; no peer teaching.
+        [80-89] STRONG: Reliable skills and good attitude in the group. Nudge to polish one or two skills.
+        [70-79] GOOD: Skills growing. Encourage confidence and regular practice.
+        [60-69] INCONSISTENT: Effort goes up and down. Focus and listening practice needed.
+        [50-59] PASSIVE: Quiet or hesitant. Nudge to join in more and build confidence.
+        [40-49] STRUGGLING: Rarely joins in or finds coordination hard. Extra basic practice basics.
+        [0-39] URGENT: Often not prepared or not taking part. Needs a plan with parents.
 
         STUDENT DATA: 
         ${JSON.stringify(data)}
@@ -109,7 +107,7 @@ const PromptGenerateSubject = {
 
     // ACADEMIC SUBJECTS
     return `
-        You are a Teacher writing short academic report comments for ${subject} in ${grade} (primary, JHS, or SHS as applicable). Use simple, clear English—no fancy words.
+        You are an Academic Teacher writing short report comments for ${subject} in ${grade}. Use simple, clear, parent-facing English—no fancy words.
         ${coreInstructions}
 
         CONTEXT:
@@ -121,55 +119,40 @@ const PromptGenerateSubject = {
         /*
             PERSONA GUIDE (keep language plain in all of them):
             - The Encourager: interest, effort, good attitude—everyday praise.
-            - The Challenger: one clear next step for this pupil, "could try...", "would help to..."—about their own work, not helping classmates learn.
-            - The Detail mentor: neat work, shows their own thinking clearly, careful with tasks—said simply.
-            - The Classmate: works sensibly when the class works together—do not use this to suggest high scorers should teach or tutor others (see NO PEER TUTORING above).
+            - The Challenger: one clear next step, "could try...", "would help to..."—about their own work.
+            - The Detail mentor: neat work, shows their own thinking clearly, careful with tasks.
+            - The Classmate: works sensibly when the class works together—no peer teaching.
         */
 
-        // TIRED PHRASES TO AVOID: "demonstrates exceptional understanding", "work is of a high standard", "is making steady progress"
+        // ==================================================
+        // 3. FEW-SHOT TRAINING EXAMPLES
+        // ==================================================
+        Use these examples to guide your output style:
+        - Example 1 (Exceptional / [90-100]):
+          Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 92, "subject": "Mathematics" }
+          Topics: "fractions and decimals"
+          Output: "Kofi has shown an excellent understanding of fractions and decimals in class. He solves problems with ease. Please encourage him to maintain this standard next term."
+        
+        - Example 2 (Inconsistent / [60-69]):
+          Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 65, "subject": "Science" }
+          Topics: "photosynthesis and plants"
+          Output: "Yaa understands the basics of photosynthesis, but her test scores are inconsistent. She sometimes rushes her work. Please help her review plant topics at home."
+        
+        - Example 3 (Struggling / [40-49]):
+          Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 42, "subject": "English" }
+          Topics: "nouns and pronouns"
+          Output: "Kwame finds grammar work like identifying nouns and pronouns quite difficult. He needs steady support. Please help him practice reading and simple grammar exercises daily."
 
         // ==================================================
-        // 3. SCORING GUIDE (ACADEMIC 1-100)
+        // 4. SCORING GUIDE (ACADEMIC 1-100)
         // ==================================================
-        Look at the 'score' property for each student. Write a clear, unique 20-30 word comment for their band using simple words only.
-        CRITICAL: Do not copy a fixed template. Vary your wording, but never use stiff or fancy vocabulary.
-
-        [90-100] MASTERY / EXCEPTIONAL:
-        - Persona Goal: Strong grasp of the work in this subject; commend their own learning only.
-        - Simple phrase ideas (mix; do not repeat): understands hard topics well, work stands out, joins their own ideas together, answers with confidence—never "helps others learn" or "explains to classmates".
-        - Advice (extension for this pupil only): try extension tasks, read a bit wider, keep pushing yourself—never suggest teaching or tutoring peers.
-
-        [80-89] STRONG / DEPENDABLE:
-        - Persona Goal: Solid understanding; nudge toward careful checking or deeper answers for themselves.
-        - Simple phrase ideas: applies ideas well, steady grasp of topics, works carefully most of the time.
-        - Advice: double-check small mistakes, add a bit more detail in written work.
-
-        [70-79] GOOD / STEADY:
-        - Persona Goal: Knows the basics; encourage speaking up and steady habits.
-        - Simple phrase ideas: knows core ideas, progress is okay, can answer when asked.
-        - Advice: join discussions more, read a bit extra, build confidence.
-
-        [60-69] INCONSISTENT / VARIABLE:
-        - Persona Goal: Up-and-down focus; needs steady routines.
-        - Simple phrase ideas: work varies, understands but rushes, loses focus easily.
-        - Advice: check answers slowly, stay on task, set a simple study routine at home.
-
-        [50-59] BELOW AVERAGE / DEVELOPING:
-        - Persona Goal: Some topics hard; needs steady practice to catch up.
-        - Simple phrase ideas: finds parts of the work hard, tries but work uneven, basics still shaky.
-        - Advice: practice key skills, short daily study time, take part more in class.
-
-        [40-49] STRUGGLING / NEEDS SUPPORT:
-        - Persona Goal: Big gaps; stay kind and point to help.
-        - Simple phrase ideas: finds the pace hard, forgets earlier work, needs help to use ideas in tasks.
-        - Advice: review old topics, ask for one-to-one help, come to extra help if offered.
-
-        [0-39] CRITICAL / URGENT INTERVENTION:
-        - Persona Goal: Very far behind; clear, calm plan with school and home.
-        - Simple phrase ideas: working far below level, big gaps in basics, needs strong support now.
-        - Advice: extra support at school, clear plan with parents, go back to foundation skills.
-
-        // EDGE CASE: If a student's score is missing, null, or invalid, default to the [70-79] GOOD / STEADY tone, but add a note suggesting the teacher verify the final grade.
+        [90-100] MASTERY: Strong grasp of the work. Commend their own learning only (no peer teaching).
+        [80-89] STRONG: Solid understanding. Nudge toward careful checking or deeper answers.
+        [70-79] GOOD: Knows the basics. Encourage speaking up and steady habits.
+        [60-69] INCONSISTENT: Up-and-down focus. Needs study routines and careful checking.
+        [50-59] BELOW AVERAGE: Some topics hard. Needs steady practice to catch up.
+        [40-49] STRUGGLING: Big gaps. Review older topics and ask for extra help.
+        [0-39] CRITICAL: Very far behind. Needs a clear support plan with parents at home.
         
         STUDENT DATA: 
         ${JSON.stringify(data)}

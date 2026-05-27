@@ -69,6 +69,7 @@ const FixMismatchManager = {
                 const comment = subjectData[r][c];
                 if (typeof comment === 'string' && comment.trim().length > 10) {
                     batchRequest.push({
+                        id: `${r}_${c}`,
                         name: firstName,
                         gender: gender,
                         comment: comment,
@@ -90,14 +91,25 @@ const FixMismatchManager = {
                 () => PromptFixMismatch.getFixMismatchPrompt(batchRequest)
             );
 
+            // Create ID-based map of fixed comments
+            const resultMap = {};
+            if (Array.isArray(fixedComments)) {
+                fixedComments.forEach(item => {
+                    if (item && item.id !== undefined) {
+                        const text = item.comment || item.text;
+                        if (text) resultMap[item.id] = text;
+                    }
+                });
+            }
+
             let changesCount = 0;
             const fontColors = range.getFontColors();
             const fontWeights = range.getFontWeights();
 
             // 7. APPLY FIXES
-            batchRequest.forEach((item, index) => {
+            batchRequest.forEach((item) => {
                 const original = item.comment;
-                let fixed = fixedComments[index];
+                let fixed = resultMap[item.id];
                 
                 if (typeof fixed === 'object' && fixed !== null) {
                     fixed = fixed.comment || fixed.text || original;

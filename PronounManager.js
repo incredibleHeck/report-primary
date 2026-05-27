@@ -7,18 +7,13 @@ const PronounManager = {
         const selection = SelectionProcessor.getSmartSelection(); 
         if (!selection) return;
 
-        // 🟢 HARDENED: Inline Validation (Removes dependency on missing RangeValidator)
-        const sheet = selection.getSheet();
-        const row = selection.getRow();
-        if (row < Config.DATA_START_ROW) {
-            SpreadsheetApp.getUi().alert(`⚠️ Please select student data starting from Row ${Config.DATA_START_ROW}.`);
-            return;
-        }
+        const range = RangeValidator.getValidDataRange(selection);
+        if (!range) return;
 
         // Save State for Undo
-        if (typeof StateManager !== 'undefined') StateManager.saveForUndo(selection);
+        if (typeof StateManager !== 'undefined') StateManager.saveForUndo(range);
 
-        const result = this.processRange(selection);
+        const result = this.processRange(range);
         
         if (result && result.success) {
             if (result.changes > 0) {
@@ -74,6 +69,7 @@ const PronounManager = {
                 // Only fix strings longer than 10 chars (ignore empty cells or grades)
                 if (typeof comment === 'string' && comment.trim().length > 10) {
                     batchRequest.push({
+                        id: `${r}_${c}`,
                         name: this.extractFirstName(fullName),
                         gender: gender,
                         comment: comment,
@@ -98,14 +94,25 @@ const PronounManager = {
                 () => PromptPronouns.getPronounFixPrompt(batchRequest) 
             );
 
+            // Create ID-based map of fixed comments
+            const resultMap = {};
+            if (Array.isArray(fixedComments)) {
+                fixedComments.forEach(item => {
+                    if (item && item.id !== undefined) {
+                        const text = item.comment || item.text;
+                        if (text) resultMap[item.id] = text;
+                    }
+                });
+            }
+
             let changesCount = 0;
             const fontColors = range.getFontColors();
             const fontWeights = range.getFontWeights();
 
             // 6. APPLY CHANGES
-            batchRequest.forEach((item, index) => {
+            batchRequest.forEach((item) => {
                 const original = item.comment;
-                let fixed = fixedComments[index];
+                let fixed = resultMap[item.id];
 
                 // Handle JSON object wrappers
                 if (typeof fixed === 'object' && fixed !== null) {
