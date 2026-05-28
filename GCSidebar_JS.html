@@ -1,16 +1,7 @@
 <script>
-    // State management
     let currentRowIndex = null;
     let currentStudentName = "";
     let pollingInterval = null;
-    var chatHistory = [];
-    var currentContext = {
-      selectedText: "",
-      studentName: "",
-      studentGender: "",
-      rowIndex: 0
-    };
-    var activeTab = 'traits';
 
     const categoryIcons = {
       "Positive Traits": "😊",
@@ -23,26 +14,9 @@
       "Communication": "💬"
     };
 
-    // DOM elements
-    var chatContainer = document.getElementById('chatContainer');
-    var chatInput = document.getElementById('chatInput');
-    var sendBtn = document.getElementById('sendBtn');
-    var clearInputBtn = document.getElementById('clearInputBtn');
-    var refreshBtn = document.getElementById('refreshBtn');
-    var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-    var studentAvatar = document.getElementById('studentAvatar');
-    var studentNameDisplay = document.getElementById('studentNameDisplay');
-    var draftRulesToggle = document.getElementById('draftRulesToggle');
-    var counterDisplay = document.getElementById('counterDisplay');
-
     window.onload = function() {
       loadStudentData();
       startPolling();
-      // Start with specific tab if defined
-      var initialTab = "<?= startTab ?>";
-      if (initialTab === 'chat') {
-        switchTab('chat');
-      }
     };
 
     function startPolling() {
@@ -61,10 +35,6 @@
 
     function loadStudentData() {
       setLoading(true);
-      if (refreshBtn) {
-        refreshBtn.style.animation = 'spin 1s linear infinite';
-        refreshBtn.setAttribute('disabled', 'true');
-      }
       google.script.run
         .withSuccessHandler(renderSidebar)
         .withFailureHandler(showError)
@@ -72,11 +42,6 @@
     }
 
     function renderSidebar(data) {
-      if (refreshBtn) {
-        refreshBtn.style.animation = '';
-        refreshBtn.removeAttribute('disabled');
-      }
-
       if (data.error) {
         document.getElementById('studentNameDisplay').innerHTML = `<span style="color: var(--error); font-size: 13px;">${data.error}</span>`;
         document.getElementById('studentAvatar').textContent = "!";
@@ -91,12 +56,6 @@
 
       currentRowIndex = data.rowIndex;
       currentStudentName = data.studentName;
-
-      // Update shared AI context
-      currentContext.studentName = data.studentName;
-      currentContext.studentGender = data.studentGender || "Male";
-      currentContext.selectedText = data.selectedText || "";
-      currentContext.rowIndex = data.rowIndex;
 
       document.getElementById('studentNameDisplay').textContent = data.studentName;
       document.getElementById('studentAvatar').textContent = data.studentName.charAt(0).toUpperCase();
@@ -215,14 +174,8 @@
 
     function updateSelectionCount() {
       const count = document.querySelectorAll('input[name="traitCheckbox"]:checked').length;
-      const selectedCountElem = document.getElementById('selectedCount');
-      if (selectedCountElem) {
-        selectedCountElem.textContent = count;
-      }
-      const generateBtn = document.getElementById('generateBtn');
-      if (generateBtn) {
-        generateBtn.disabled = count === 0;
-      }
+      document.getElementById('selectedCount').textContent = count;
+      document.getElementById('generateBtn').disabled = count === 0;
 
       // Update category badges in real-time
       document.querySelectorAll('.accordion-item').forEach(item => {
@@ -237,498 +190,109 @@
       });
     }
 
-    // Search traits event
-    var searchTraitsInput = document.getElementById('searchTraits');
-    if (searchTraitsInput) {
-      searchTraitsInput.addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase().trim();
-        const items = document.querySelectorAll('.accordion-item');
+    document.getElementById('searchTraits').addEventListener('input', function(e) {
+      const term = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll('.accordion-item');
 
-        items.forEach(item => {
-          const checkboxes = item.querySelectorAll('.checkbox-item');
-          let hasMatch = false;
+      items.forEach(item => {
+        const checkboxes = item.querySelectorAll('.checkbox-item');
+        let hasMatch = false;
 
-          checkboxes.forEach(box => {
-            const span = box.querySelector('span');
-            const originalText = span.getAttribute('data-original') || span.innerText;
-            
-            if (!span.getAttribute('data-original')) {
-              span.setAttribute('data-original', originalText);
-            }
-
-            if (term === "") {
-              span.innerHTML = originalText;
-              box.style.display = 'flex';
-              hasMatch = true;
-            } else if (originalText.toLowerCase().includes(term)) {
-              const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-              const regex = new RegExp(`(${escapedTerm})`, 'gi');
-              span.innerHTML = originalText.replace(regex, '<mark>$1</mark>');
-              box.style.display = 'flex';
-              hasMatch = true;
-            } else {
-              span.innerHTML = originalText;
-              box.style.display = 'none';
-            }
-          });
+        checkboxes.forEach(box => {
+          const span = box.querySelector('span');
+          const originalText = span.getAttribute('data-original') || span.innerText;
+          
+          if (!span.getAttribute('data-original')) {
+            span.setAttribute('data-original', originalText);
+          }
 
           if (term === "") {
-            item.style.display = 'block';
-            item.querySelector('.accordion-content').style.maxHeight = null;
-            item.querySelector('.accordion-header').classList.remove('active');
-          } else if (hasMatch) {
-            item.style.display = 'block';
-            item.querySelector('.accordion-header').classList.add('active');
-            const content = item.querySelector('.accordion-content');
-            content.style.maxHeight = content.scrollHeight + "px";
+            span.innerHTML = originalText;
+            box.style.display = 'flex';
+            hasMatch = true;
+          } else if (originalText.toLowerCase().includes(term)) {
+            // High-fidelity highlighting of query characters
+            const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            span.innerHTML = originalText.replace(regex, '<mark>$1</mark>');
+            box.style.display = 'flex';
+            hasMatch = true;
           } else {
-            item.style.display = 'none';
+            span.innerHTML = originalText;
+            box.style.display = 'none';
           }
         });
 
-        if (term === "" && items.length > 0) {
-          const firstHeader = items[0].querySelector('.accordion-header');
-          firstHeader.classList.add('active');
-          firstHeader.nextElementSibling.style.maxHeight = firstHeader.nextElementSibling.scrollHeight + "px";
-        }
-      });
-    }
-
-    // Generate General Comment with traits
-    var generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) {
-      generateBtn.addEventListener('click', function() {
-        const selected = [];
-        document.querySelectorAll('input[name="traitCheckbox"]:checked').forEach(cb => {
-          selected.push(cb.value);
-        });
-
-        if (selected.length === 0) {
-          showToast("Please select at least one trait", "warning");
-          return;
-        }
-
-        const btn = document.getElementById('generateBtn');
-        const text = document.getElementById('btnText');
-        const spinner = document.getElementById('loadingSpinner');
-        const icon = document.getElementById('btnIcon');
-
-        btn.disabled = true;
-        text.textContent = "Generating...";
-        spinner.style.display = "inline-block";
-        icon.style.display = "none";
-
-        google.script.run
-          .withSuccessHandler(function() {
-            text.textContent = "Done!";
-            spinner.style.display = "none";
-            icon.style.display = "inline-block";
-            icon.textContent = "check_circle";
-            btn.classList.add('success');
-            
-            showToast("Comment generated successfully!", "success");
-            
-            setTimeout(() => {
-              btn.disabled = false;
-              btn.classList.remove('success');
-              text.textContent = "Regenerate";
-              icon.textContent = "refresh";
-            }, 2500);
-          })
-          .withFailureHandler(function(err) {
-            text.textContent = "Try Again";
-            spinner.style.display = "none";
-            icon.style.display = "inline-block";
-            icon.textContent = "refresh";
-            btn.disabled = false;
-            showToast("Generation failed: " + err.message, "error");
-          })
-          .processGeneralCommentWithTraits(selected, currentRowIndex);
-      });
-    }
-
-    // ==========================================
-    // 💡 TABS IMPLEMENTATION
-    // ==========================================
-    function switchTab(tabId) {
-      activeTab = tabId;
-      
-      // Toggle active classes on tab headers and contents
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      if (tabId === 'traits') {
-        document.getElementById('traitsTabBtn').classList.add('active');
-        document.getElementById('traitsPanel').classList.add('active');
-        document.getElementById('clearHistoryBtn').style.display = 'none';
-        document.getElementById('studentLabel').textContent = "Generating for";
-      } else {
-        document.getElementById('chatTabBtn').classList.add('active');
-        document.getElementById('chatPanel').classList.add('active');
-        document.getElementById('clearHistoryBtn').style.display = 'flex';
-        document.getElementById('studentLabel').textContent = "Active Student Context";
-        scrollToBottom();
-      }
-    }
-
-    // ==========================================
-    // 💬 CHATBOT SPECIFIC IMPLEMENTATION
-    // ==========================================
-
-    // Auto-grow textarea height and update character/word count
-    chatInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = (this.scrollHeight) + 'px';
-      
-      var text = this.value;
-      var charCount = text.length;
-      var wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-      counterDisplay.innerText = charCount + ' chars • ' + wordCount + ' words';
-      
-      if (charCount > 0) {
-        clearInputBtn.style.display = 'block';
-        sendBtn.removeAttribute('disabled');
-      } else {
-        clearInputBtn.style.display = 'none';
-        sendBtn.setAttribute('disabled', 'true');
-      }
-    });
-
-    // Clear input handler
-    clearInputBtn.addEventListener('click', function() {
-      chatInput.value = '';
-      chatInput.style.height = 'auto';
-      clearInputBtn.style.display = 'none';
-      sendBtn.setAttribute('disabled', 'true');
-      counterDisplay.innerText = '0 chars • 0 words';
-      chatInput.focus();
-    });
-
-    // Enter to send (Shift+Enter for newline)
-    chatInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Send Button handler
-    sendBtn.addEventListener('click', sendMessage);
-
-    // Clear history handler
-    clearHistoryBtn.addEventListener('click', function() {
-      if (confirm('Are you sure you want to clear the conversation history?')) {
-        chatHistory = [];
-        chatContainer.innerHTML = '';
-        
-        var welcomeCard = document.createElement('div');
-        welcomeCard.className = 'welcome-card';
-        welcomeCard.id = 'welcomeCard';
-        welcomeCard.innerHTML = `
-          <div class="welcome-icon">
-            <span class="material-icons-round">assistant</span>
-          </div>
-          <div class="welcome-title">Welcome to HecTech AI Chat</div>
-          <div class="welcome-body">
-            Ask me to brainstorm, polish, or rewrite comments. I'll automatically adapt to your selected student and follow the comment styling rules.
-          </div>
-        `;
-        chatContainer.appendChild(welcomeCard);
-        showToast("Chat history cleared.", "success");
-      }
-    });
-
-    // Simple markdown parser helper
-    function parseMarkdown(text) {
-      if (!text) return "";
-      
-      // Escape HTML to prevent XSS issues while maintaining our generated formatting
-      var html = text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      
-      // Replace headers: ### text or ## text or # text
-      html = html.replace(/^### (.*$)/gim, '<h5 style="margin: 6px 0 4px; font-weight: 700; font-size: 13px; color: var(--primary-dark);">$1</h5>');
-      html = html.replace(/^## (.*$)/gim, '<h4 style="margin: 8px 0 4px; font-weight: 700; font-size: 14px; color: var(--primary-dark);">$1</h4>');
-      html = html.replace(/^# (.*$)/gim, '<h3 style="margin: 10px 0 6px; font-weight: 700; font-size: 15px; color: var(--primary-dark);">$1</h3>');
-      
-      // Bolding: **text**
-      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      
-      // Italics: *text*
-      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-      
-      // Bullet points: lines starting with "- " or "* "
-      var lines = html.split('\n');
-      var inList = false;
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          var itemText = line.substring(2);
-          if (!inList) {
-            lines[i] = '<ul style="margin: 6px 0 6px 16px; padding: 0; list-style-type: disc;"><li style="margin-bottom: 3px;">' + itemText + '</li>';
-            inList = true;
-          } else {
-            lines[i] = '<li style="margin-bottom: 3px;">' + itemText + '</li>';
-          }
+        if (term === "") {
+          item.style.display = 'block';
+          item.querySelector('.accordion-content').style.maxHeight = null;
+          item.querySelector('.accordion-header').classList.remove('active');
+        } else if (hasMatch) {
+          item.style.display = 'block';
+          item.querySelector('.accordion-header').classList.add('active');
+          const content = item.querySelector('.accordion-content');
+          content.style.maxHeight = content.scrollHeight + "px";
         } else {
-          if (inList) {
-            lines[i] = '</ul>' + lines[i];
-            inList = false;
-          }
+          item.style.display = 'none';
         }
-      }
-      if (inList) {
-        lines.push('</ul>');
-      }
-      html = lines.join('\n');
-      
-      // Paragraph breaks and newlines
-      html = html.replace(/\n\n/g, '</p><p style="margin: 6px 0;">');
-      html = html.replace(/\n/g, '<br>');
-      
-      return html;
-    }
+      });
 
-    // Send Message flow
-    function sendMessage() {
-      var text = chatInput.value.trim();
-      if (!text) return;
+      if (term === "" && items.length > 0) {
+        const firstHeader = items[0].querySelector('.accordion-header');
+        firstHeader.classList.add('active');
+        firstHeader.nextElementSibling.style.maxHeight = firstHeader.nextElementSibling.scrollHeight + "px";
+      }
+    });
 
-      // Add user message to chat container
-      appendMessage('user', text);
-      
-      // Push to history
-      chatHistory.push({ sender: 'user', text: text });
-      
-      // Clear input
-      chatInput.value = '';
-      chatInput.style.height = 'auto';
-      clearInputBtn.style.display = 'none';
-      sendBtn.setAttribute('disabled', 'true');
-      counterDisplay.innerText = '0 chars • 0 words';
-      
-      // Remove welcome card if present
-      var welcomeCard = document.getElementById('welcomeCard');
-      if (welcomeCard) {
-        welcomeCard.remove();
+    document.getElementById('generateBtn').addEventListener('click', function() {
+      const selected = [];
+      document.querySelectorAll('input[name="traitCheckbox"]:checked').forEach(cb => {
+        selected.push(cb.value);
+      });
+
+      if (selected.length === 0) {
+        showToast("Please select at least one trait", "warning");
+        return;
       }
 
-      // Show typing indicator
-      var typingId = appendTypingIndicator();
-      scrollToBottom();
+      const btn = document.getElementById('generateBtn');
+      const text = document.getElementById('btnText');
+      const spinner = document.getElementById('loadingSpinner');
+      const icon = document.getElementById('btnIcon');
 
-      // Disable inputs during network call
-      chatInput.setAttribute('disabled', 'true');
-
-      // Check General Mode
-      var isGeneralMode = !draftRulesToggle.checked;
-
-      google.script.run
-        .withSuccessHandler(function(response) {
-          removeTypingIndicator(typingId);
-          chatInput.removeAttribute('disabled');
-          chatInput.focus();
-          
-          if (response.error) {
-            appendMessage('bot', '⚠️ Error: ' + response.message);
-          } else {
-            appendMessage('bot', response.text);
-            chatHistory.push({ sender: 'bot', text: response.text });
-          }
-          scrollToBottom();
-        })
-        .withFailureHandler(function(e) {
-          removeTypingIndicator(typingId);
-          chatInput.removeAttribute('disabled');
-          chatInput.focus();
-          appendMessage('bot', '⚠️ Error calling server: ' + e.message);
-          scrollToBottom();
-        })
-        .getChatResponse(chatHistory, text, currentContext.selectedText, currentContext, isGeneralMode);
-    }
-
-    // Handle Quick Chip click
-    function handleChipClick(chipText) {
-      chatInput.value = chipText;
-      chatInput.dispatchEvent(new Event('input'));
-      chatInput.focus();
-      sendMessage(); // execute immediately
-    }
-
-    // DOM Manipulation helpers for Chat
-    function appendMessage(sender, text) {
-      var messageDiv = document.createElement('div');
-      messageDiv.className = 'message ' + sender;
-      
-      var bubbleDiv = document.createElement('div');
-      bubbleDiv.className = 'bubble';
-      
-      if (sender === 'bot') {
-        bubbleDiv.innerHTML = parseMarkdown(text);
-      } else {
-        bubbleDiv.innerText = text;
-      }
-      
-      messageDiv.appendChild(bubbleDiv);
-
-      // If it is a bot message, add utility buttons
-      if (sender === 'bot' && !text.startsWith('⚠️')) {
-        var actionsDiv = document.createElement('div');
-        actionsDiv.className = 'bot-actions';
-
-        // Word count display
-        var wordCountSpan = document.createElement('span');
-        wordCountSpan.style.fontSize = '10px';
-        wordCountSpan.style.color = 'var(--text-secondary)';
-        wordCountSpan.style.display = 'inline-flex';
-        wordCountSpan.style.alignItems = 'center';
-        wordCountSpan.style.gap = '2px';
-        wordCountSpan.style.marginRight = 'auto';
-        
-        var words = text.split(/\s+/).filter(Boolean).length;
-        wordCountSpan.innerHTML = '<span class="material-icons-round" style="font-size: 12px;">bar_chart</span><span>' + words + ' words</span>';
-        actionsDiv.appendChild(wordCountSpan);
-
-        // 1. Insert to Cell Button
-        var insertBtn = document.createElement('button');
-        insertBtn.className = 'action-btn';
-        insertBtn.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
-        insertBtn.onclick = function() {
-          insertToCell(text, insertBtn);
-        };
-        actionsDiv.appendChild(insertBtn);
-
-        // 2. Append to Cell Button
-        var appendBtn = document.createElement('button');
-        appendBtn.className = 'action-btn';
-        appendBtn.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
-        appendBtn.onclick = function() {
-          appendToCell(text, appendBtn);
-        };
-        actionsDiv.appendChild(appendBtn);
-
-        // 3. Copy to Clipboard Button
-        var copyBtn = document.createElement('button');
-        copyBtn.className = 'action-btn';
-        copyBtn.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
-        copyBtn.onclick = function() {
-          copyToClipboard(text, copyBtn);
-        };
-        actionsDiv.appendChild(copyBtn);
-
-        bubbleDiv.appendChild(actionsDiv);
-      }
-      
-      chatContainer.appendChild(messageDiv);
-      scrollToBottom();
-    }
-
-    function appendTypingIndicator() {
-      var id = 'typing_' + Date.now();
-      var messageDiv = document.createElement('div');
-      messageDiv.className = 'message bot';
-      messageDiv.id = id;
-      
-      var bubbleDiv = document.createElement('div');
-      bubbleDiv.className = 'bubble';
-      
-      var indicator = document.createElement('div');
-      indicator.className = 'typing-indicator';
-      indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-      
-      bubbleDiv.appendChild(indicator);
-      messageDiv.appendChild(bubbleDiv);
-      chatContainer.appendChild(messageDiv);
-      return id;
-    }
-
-    function removeTypingIndicator(id) {
-      var elem = document.getElementById(id);
-      if (elem) {
-        elem.remove();
-      }
-    }
-
-    function scrollToBottom() {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    // Insert text utility
-    function insertToCell(text, buttonElement) {
-      buttonElement.setAttribute('disabled', 'true');
-      buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Inserting...</span>';
+      btn.disabled = true;
+      text.textContent = "Generating...";
+      spinner.style.display = "inline-block";
+      icon.style.display = "none";
 
       google.script.run
         .withSuccessHandler(function() {
-          buttonElement.className = 'action-btn success';
-          buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Inserted!</span>';
-          showToast('Text inserted into active cell.', 'success');
+          text.textContent = "Done!";
+          spinner.style.display = "none";
+          icon.style.display = "inline-block";
+          icon.textContent = "check_circle";
+          btn.classList.add('success');
           
-          setTimeout(function() {
-            buttonElement.className = 'action-btn';
-            buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
-            buttonElement.removeAttribute('disabled');
+          showToast("Comment generated successfully!", "success");
+          
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.classList.remove('success');
+            text.textContent = "Regenerate";
+            icon.textContent = "refresh";
           }, 2500);
         })
-        .withFailureHandler(function(e) {
-          buttonElement.className = 'action-btn';
-          buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
-          buttonElement.removeAttribute('disabled');
-          showToast('Insert failed: ' + e.message, 'warning');
+        .withFailureHandler(function(err) {
+          text.textContent = "Try Again";
+          spinner.style.display = "none";
+          icon.style.display = "inline-block";
+          icon.textContent = "refresh";
+          btn.disabled = false;
+          showToast("Generation failed: " + err.message, "error");
         })
-        .insertTextIntoActiveCell(text);
-    }
+        .processGeneralCommentWithTraits(selected, currentRowIndex);
+    });
 
-    // Append text utility
-    function appendToCell(text, buttonElement) {
-      buttonElement.setAttribute('disabled', 'true');
-      buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Appending...</span>';
-
-      google.script.run
-        .withSuccessHandler(function() {
-          buttonElement.className = 'action-btn success';
-          buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Appended!</span>';
-          showToast('Text appended to active cell.', 'success');
-          
-          setTimeout(function() {
-            buttonElement.className = 'action-btn';
-            buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
-            buttonElement.removeAttribute('disabled');
-          }, 2500);
-        })
-        .withFailureHandler(function(e) {
-          buttonElement.className = 'action-btn';
-          buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
-          buttonElement.removeAttribute('disabled');
-          showToast('Append failed: ' + e.message, 'warning');
-        })
-        .appendTextIntoActiveCell(text);
-    }
-
-    // Copy to clipboard utility
-    function copyToClipboard(text, buttonElement) {
-      var el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-
-      buttonElement.className = 'action-btn success';
-      buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Copied!</span>';
-      showToast('Copied to clipboard.', 'success');
-
-      setTimeout(function() {
-        buttonElement.className = 'action-btn';
-        buttonElement.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
-      }, 2500);
-    }
-
-    // ==========================================
-    // 🛠️ TOAST & LOADERS
-    // ==========================================
     function showToast(msg, type = "info") {
       const toast = document.getElementById('toast');
       toast.textContent = msg;
@@ -743,21 +307,16 @@
       const text = document.getElementById('btnText');
       
       if (loading) {
-        if (btn) btn.disabled = true;
-        if (text) text.textContent = "Loading...";
+        btn.disabled = true;
+        text.textContent = "Loading...";
       } else {
-        if (text) text.textContent = "Generate Comment";
-        var btnIcon = document.getElementById('btnIcon');
-        if (btnIcon) btnIcon.textContent = "auto_awesome";
+        text.textContent = "Generate Comment";
+        document.getElementById('btnIcon').textContent = "auto_awesome";
         updateSelectionCount();
       }
     }
 
     function showError(e) {
-      if (refreshBtn) {
-        refreshBtn.style.animation = '';
-        refreshBtn.removeAttribute('disabled');
-      }
       document.getElementById('studentNameDisplay').innerHTML = '<span style="color: var(--error);">Error loading data</span>';
       showToast("Error: " + e.message, "error");
     }

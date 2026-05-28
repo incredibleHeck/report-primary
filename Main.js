@@ -30,7 +30,6 @@ function onOpen() {
         .addItem(' 🎨 Polish Grammar & Style', 'runPolish')
         .addItem(' ⚧ Fix Pronouns', 'runPronouns')
         .addItem(' 🔍 Fix Name Mismatches', 'runAuditFix')
-        .addItem(' 💬 Chat with AI Assistant', 'openChatBotSidebar')
         .addSeparator()
 
         // --- PHASE 3: QUALITY CONTROL ---
@@ -67,6 +66,10 @@ function onOpen() {
         .addItem(' 🔄 Reset Sent Statuses (New Term)', 'runResetStatuses') 
         .addItem(' 📁 Reset Folder Configuration', 'runResetFolderConfig')
         .addItem(' ↩ Undo Last Action', 'runUndo')
+        .addToUi();
+
+    ui.createMenu('💬 AI Chatbot')
+        .addItem('💬 Open Chatbot', 'openChatBotSidebar')
         .addToUi();
 }
 
@@ -499,11 +502,11 @@ function openSubjectContextSidebar() {
 }
 
 function openGeneralSidebar() {
-    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar('traits');
+    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar();
 }
 
 function openChatBotSidebar() {
-    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar('chat');
+    if (typeof ChatBotManager !== 'undefined') ChatBotManager.openSidebar();
 }
 
 function runFinalize() {

@@ -7,9 +7,8 @@ const GeneralCommentsManager = {
     // 🟢 STRICT CONFIG: Only these sheets are checked for "Areas of Improvement"
     SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES", "BIBLE KNOWLEDGE"],
 
-    openSidebar: function(startTab) {
+    openSidebar: function() {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
-        template.startTab = startTab || 'traits';
         const html = template.evaluate()
             .setTitle('Class Teacher General Comment')
             .setWidth(300)
@@ -62,15 +61,8 @@ const GeneralCommentsManager = {
 
             if (!fullName || fullName === "") return { error: `No student found at Row ${row} (Classlist Row ${classlistRow}).` };
 
-            let genderCol = (typeof Config !== 'undefined' && Config.CLASSLIST_GENDER_COL) ? Config.CLASSLIST_GENDER_COL : 5;
-            if (!genderCol || isNaN(genderCol)) genderCol = 5;
-            const genderRaw = classlist.getRange(classlistRow, genderCol).getValue();
-            const studentGender = (String(genderRaw).toUpperCase().startsWith("F")) ? "Female" : "Male";
-
             return {
                 studentName: Config.extractFirstName(fullName),
-                studentGender: studentGender,
-                selectedText: activeRange.getValue(),
                 rowIndex: row,
                 traits: TraitsConfig.categories 
             };

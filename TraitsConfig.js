@@ -5,39 +5,47 @@
 const TraitsConfig = {
     categories: {
         "Behavior & Attitude": [
-            "Cheerful", "Defiant", "Disruptive", "Honest", "Obedient", 
-            "Polite", "Positive influence", "Punctual", "Requires Supervision", 
-            "Respectful", "Restless", "Talkative", "Trustworthy"
+            "Cheerful", "Cooperative", "Helpful", "Honest", "Polite", 
+            "Positive influence", "Punctual", "Receptive to feedback", 
+            "Respectful", "Restless at times", "Self-disciplined", 
+            "Needs guidance to stay on task", "Talkative", "Trustworthy"
         ],
         "Work Habits & Focus": [
             "Completes homework", "Consistent", "Detail-oriented", "Disorganized", 
-            "Distracted", "Hardworking", "Inconsistent effort", "Needs prompting", 
-            "Participates actively", "Procrastinates", "Resilient", "Rushes work", 
-            "Self-starter"
+            "Distracted", "Follows instructions closely", "Hardworking", 
+            "Inconsistent effort", "Needs prompting", "Participates actively", 
+            "Procrastinates", "Resilient", "Rushes work", "Self-starter", 
+            "Takes pride in work quality"
         ],
         "Social & Emotional": [
-            "Conflict resolver", "Easily provoked", "Empathetic", "Friendly", 
-            "Kind-hearted", "Leader", "Loner", "Moody", "Peer influence (Negative)", 
-            "Peer influence (Positive)", "Reserved", "Role Model", "Shy", "Team player"
+            "Conflict resolver", "Collaborative", "Empathetic", "Friendly", 
+            "Inclusive of others", "Kind-hearted", "Leader", "Prefers working independently", 
+            "Easily led by peers", "Peer influence (Positive)", "Reserved", 
+            "Role Model", "Shows empathy", "Shy", "Team player", "Learning to manage emotions"
         ],
         "Mindset & Cognitive": [
-            "Analytic", "Anxious", "Creative", "Critical thinker", "Curious", 
-            "Enthusiastic", "Gives up easily", "Growth mindset", "Lacks confidence", 
-            "Logical", "Passive learner", "Problem solver"
+            "Analytic", "Creative", "Critical thinker", "Curious", 
+            "Enthusiastic", "Growth mindset", "Inquisitive", "Lacks confidence", 
+            "Logical", "Passive learner", "Problem solver", "Reflective learner",
+            "Resourceful", "Timid when trying new tasks", "Developing persistence"
         ],
         "Communication Skills": [
-            "Articulate", "Ask insightful questions", "Confident speaker", "Expressive", 
-            "Good listener", "Interrupts others", "Quiet in class", "Strong vocabulary", 
-            "Struggles to express ideas"
+            "Articulate", "Asks insightful questions", "Confident speaker", 
+            "Expressive", "Good listener", "Learning to wait for turn to speak", 
+            "Quiet but attentive", "Strong vocabulary", "Struggles to express ideas",
+            "Active listener", "Expresses ideas clearly"
         ],
         "Conduct & Appearance": [
-            "Comported", "Lacks distinctive drive", "Maintains belongings", "Neat & Tidy", 
-            "Proper uniform", "Smartly Dressed", "Untidy work"
+            "Comported well", "Maintains belongings", "Neat & Tidy", 
+            "Proper uniform", "Respects school property", "Smartly Dressed", 
+            "Takes care of materials", "Untidy work"
         ],
         "🎯 Recommendations / Goals": [
-            "Ask for help when stuck", "Check work for errors", "Develop self-confidence", 
-            "Focus on time management", "Improve attendance", "Improve handwriting", 
-            "Participate more in class", "Read more widely", "Reduce chatter"
+            "Ask for help when stuck", "Guide them to check work for errors", 
+            "Develop self-confidence", "Help establish a study routine", 
+            "Improve school attendance", "Practice handwriting at home", 
+            "Encourage active class participation", "Encourage daily reading at home", 
+            "Help minimize classroom chatter"
         ]
     }
 };

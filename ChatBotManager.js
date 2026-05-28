@@ -118,9 +118,6 @@ Response guidelines:
 };
 
 // Global hooks for Google Apps Script client calling
-function openChatBotSidebar() {
-  ChatBotManager.openSidebar();
-}
 
 function getChatResponse(history, message, selectedText, studentContext, isGeneralMode) {
   return ChatBotManager.getChatResponse(history, message, selectedText, studentContext, isGeneralMode);
