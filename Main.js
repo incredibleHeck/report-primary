@@ -499,11 +499,11 @@ function openSubjectContextSidebar() {
 }
 
 function openGeneralSidebar() {
-    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar();
+    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar('traits');
 }
 
 function openChatBotSidebar() {
-    if (typeof ChatBotManager !== 'undefined') ChatBotManager.openSidebar();
+    if (typeof GeneralCommentsManager !== 'undefined') GeneralCommentsManager.openSidebar('chat');
 }
 
 function runFinalize() {

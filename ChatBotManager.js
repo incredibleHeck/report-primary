@@ -12,7 +12,7 @@ const ChatBotManager = {
     SpreadsheetApp.getUi().showSidebar(html);
   },
 
-  getChatResponse: function(history, message, selectedText, studentContext) {
+  getChatResponse: function(history, message, selectedText, studentContext, isGeneralMode) {
     try {
       const model = Config.MODEL_NAME;
       const key = Config.API_KEY;
@@ -21,7 +21,7 @@ const ChatBotManager = {
       }
 
       // Build system instruction
-      const systemInstructionText = this.getSystemInstruction(selectedText, studentContext);
+      const systemInstructionText = this.getSystemInstruction(selectedText, studentContext, isGeneralMode);
 
       // Build payload contents
       const contents = [];
@@ -66,7 +66,21 @@ const ChatBotManager = {
     }
   },
 
-  getSystemInstruction: function(selectedText, studentContext) {
+  getSystemInstruction: function(selectedText, studentContext, isGeneralMode) {
+    if (isGeneralMode) {
+      let contextPrompt = "";
+      if (studentContext && studentContext.studentName) {
+        contextPrompt += `\n- The active student you are assisting with is named "${studentContext.studentName}".`;
+      }
+      if (selectedText) {
+        contextPrompt += `\n- The active cell in the spreadsheet currently contains: "${selectedText}".`;
+      }
+      return `You are a helpful AI Chat Assistant and Brainstorming partner for a class teacher.
+You can answer general questions, explain educational concepts, draft lesson plan ideas, or help with school admin tasks.
+Keep your explanations clear, concise (1-2 sentences), and friendly.
+${contextPrompt}`;
+    }
+
     let contextPrompt = "";
     if (studentContext && studentContext.studentName) {
       const genderPr = studentContext.studentGender === "Female" ? "She/Her/Hers" : "He/Him/His";
@@ -108,8 +122,8 @@ function openChatBotSidebar() {
   ChatBotManager.openSidebar();
 }
 
-function getChatResponse(history, message, selectedText, studentContext) {
-  return ChatBotManager.getChatResponse(history, message, selectedText, studentContext);
+function getChatResponse(history, message, selectedText, studentContext, isGeneralMode) {
+  return ChatBotManager.getChatResponse(history, message, selectedText, studentContext, isGeneralMode);
 }
 
 function getChatContext() {
@@ -178,6 +192,27 @@ function insertTextIntoActiveCell(text) {
     return "Success";
   } catch (e) {
     console.error("Error inserting text:", e);
+    throw e;
+  }
+}
+
+function appendTextIntoActiveCell(text) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const activeRange = sheet.getActiveRange();
+    if (!activeRange) {
+      throw new Error("No cell selected.");
+    }
+    const currentVal = activeRange.getValue();
+    const separator = currentVal ? "\n" : ""; // Use newline for cleaner comment separation, or a space. Let's do newline or space. Let's do space or newline. Actually, newline is standard for appending comments! Or space is also good. Let's do space first, but if it has a period, it separates nicely. Let's do standard space. Actually, let's detect if currentVal ends with a space, otherwise add a space. Wait, " " is great.
+    const newText = currentVal + (currentVal && !currentVal.endsWith(" ") ? " " : "") + text;
+    activeRange.setValue(newText);
+    activeRange.setFontColor("#1155CC"); 
+    activeRange.setFontWeight("bold");
+    activeRange.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+    return "Success";
+  } catch (e) {
+    console.error("Error appending text:", e);
     throw e;
   }
 }

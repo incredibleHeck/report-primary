@@ -480,6 +480,107 @@
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Settings toggles styling */
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .toggle-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .toggle-container:hover {
+      border-color: var(--primary-light);
+      background: var(--primary-bg);
+    }
+
+    .toggle-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .toggle-label .material-icons-round {
+      font-size: 14px;
+      color: var(--primary);
+    }
+
+    /* Custom Switch Style */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 28px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--border);
+      transition: .3s;
+      border-radius: 16px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 10px;
+      width: 10px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(12px);
+    }
+
+    /* Input Meta counter */
+    .input-meta-info {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 4px 2px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -491,9 +592,14 @@
         <span class="material-icons-round">chat</span>
         <span>HecTech AI Assistant</span>
       </div>
-      <button class="refresh-btn" id="refreshBtn" title="Refresh selected student context">
-        <span class="material-icons-round">sync</span>
-      </button>
+      <div style="display: flex; gap: 4px;">
+        <button class="refresh-btn" id="clearHistoryBtn" title="Clear conversation history">
+          <span class="material-icons-round">delete_outline</span>
+        </button>
+        <button class="refresh-btn" id="refreshBtn" title="Refresh selected student context">
+          <span class="material-icons-round">sync</span>
+        </button>
+      </div>
     </div>
     <div class="student-card">
       <div class="student-avatar" id="studentAvatar">🤖</div>
@@ -501,6 +607,28 @@
         <div class="student-label" id="studentLabel">Active Student Context</div>
         <div class="student-name" id="studentNameDisplay">Loading context...</div>
       </div>
+    </div>
+    <div class="settings-row">
+      <label class="toggle-container" for="autoSyncToggle">
+        <span class="toggle-label">
+          <span class="material-icons-round">sync_alt</span>
+          <span>Auto-Sync</span>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="autoSyncToggle">
+          <span class="slider"></span>
+        </span>
+      </label>
+      <label class="toggle-container" for="draftRulesToggle">
+        <span class="toggle-label">
+          <span class="material-icons-round">gpp_good</span>
+          <span>Draft Rules</span>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="draftRulesToggle" checked>
+          <span class="slider"></span>
+        </span>
+      </label>
     </div>
   </div>
 
@@ -539,16 +667,21 @@
   </div>
 
   <!-- Input Footer -->
-  <div class="input-footer">
-    <div class="input-box-wrapper">
-      <textarea class="chat-input" id="chatInput" placeholder="Type a message or select a chip..." rows="1"></textarea>
-      <button class="clear-input-btn" id="clearInputBtn">
-        <span class="material-icons-round">close</span>
+  <div class="input-footer" style="flex-direction: column; align-items: stretch; gap: 4px;">
+    <div class="input-meta-info">
+      <span id="counterDisplay">0 chars • 0 words</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: flex-end;">
+      <div class="input-box-wrapper">
+        <textarea class="chat-input" id="chatInput" placeholder="Type a message or select a chip..." rows="1"></textarea>
+        <button class="clear-input-btn" id="clearInputBtn">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <button class="send-btn" id="sendBtn" disabled>
+        <span class="material-icons-round">send</span>
       </button>
     </div>
-    <button class="send-btn" id="sendBtn" disabled>
-      <span class="material-icons-round">send</span>
-    </button>
   </div>
 
   <!-- Toast Notification Overlay -->
@@ -566,6 +699,7 @@
       studentGender: "",
       rowIndex: 0
     };
+    var autoSyncInterval = null;
     
     // DOM elements
     var chatContainer = document.getElementById('chatContainer');
@@ -573,18 +707,80 @@
     var sendBtn = document.getElementById('sendBtn');
     var clearInputBtn = document.getElementById('clearInputBtn');
     var refreshBtn = document.getElementById('refreshBtn');
+    var clearHistoryBtn = document.getElementById('clearHistoryBtn');
     var studentAvatar = document.getElementById('studentAvatar');
     var studentNameDisplay = document.getElementById('studentNameDisplay');
     var toastOverlay = document.getElementById('toastOverlay');
     var toastText = document.getElementById('toastText');
     var toastIcon = document.getElementById('toastIcon');
+    var autoSyncToggle = document.getElementById('autoSyncToggle');
+    var draftRulesToggle = document.getElementById('draftRulesToggle');
+    var counterDisplay = document.getElementById('counterDisplay');
 
-    // Auto-grow textarea height
+    // Simple markdown parser helper
+    function parseMarkdown(text) {
+      if (!text) return "";
+      
+      // Escape HTML to prevent XSS issues while maintaining our generated formatting
+      var html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      
+      // Replace headers: ### text or ## text or # text
+      html = html.replace(/^### (.*$)/gim, '<h5 style="margin: 6px 0 4px; font-weight: 700; font-size: 13px; color: var(--primary-dark);">$1</h5>');
+      html = html.replace(/^## (.*$)/gim, '<h4 style="margin: 8px 0 4px; font-weight: 700; font-size: 14px; color: var(--primary-dark);">$1</h4>');
+      html = html.replace(/^# (.*$)/gim, '<h3 style="margin: 10px 0 6px; font-weight: 700; font-size: 15px; color: var(--primary-dark);">$1</h3>');
+      
+      // Bolding: **text**
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      // Italics: *text*
+      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      
+      // Bullet points: lines starting with "- " or "* "
+      var lines = html.split('\n');
+      var inList = false;
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          var itemText = line.substring(2);
+          if (!inList) {
+            lines[i] = '<ul style="margin: 6px 0 6px 16px; padding: 0; list-style-type: disc;"><li style="margin-bottom: 3px;">' + itemText + '</li>';
+            inList = true;
+          } else {
+            lines[i] = '<li style="margin-bottom: 3px;">' + itemText + '</li>';
+          }
+        } else {
+          if (inList) {
+            lines[i] = '</ul>' + lines[i];
+            inList = false;
+          }
+        }
+      }
+      if (inList) {
+        lines.push('</ul>');
+      }
+      html = lines.join('\n');
+      
+      // Paragraph breaks and newlines
+      html = html.replace(/\n\n/g, '</p><p style="margin: 6px 0;">');
+      html = html.replace(/\n/g, '<br>');
+      
+      return html;
+    }
+
+    // Auto-grow textarea height and update character/word count
     chatInput.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = (this.scrollHeight) + 'px';
       
-      if (this.value.trim().length > 0) {
+      var text = this.value;
+      var charCount = text.length;
+      var wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+      counterDisplay.innerText = charCount + ' chars • ' + wordCount + ' words';
+      
+      if (charCount > 0) {
         clearInputBtn.style.display = 'block';
         sendBtn.removeAttribute('disabled');
       } else {
@@ -599,6 +795,7 @@
       chatInput.style.height = 'auto';
       clearInputBtn.style.display = 'none';
       sendBtn.setAttribute('disabled', 'true');
+      counterDisplay.innerText = '0 chars • 0 words';
       chatInput.focus();
     });
 
@@ -614,11 +811,52 @@
     sendBtn.addEventListener('click', sendMessage);
 
     // Refresh context handler
-    refreshBtn.addEventListener('click', loadContext);
+    refreshBtn.addEventListener('click', function() {
+      loadContext(false);
+    });
+
+    // Clear history handler
+    clearHistoryBtn.addEventListener('click', function() {
+      if (confirm('Are you sure you want to clear the conversation history?')) {
+        chatHistory = [];
+        chatContainer.innerHTML = '';
+        
+        var welcomeCard = document.createElement('div');
+        welcomeCard.className = 'welcome-card';
+        welcomeCard.id = 'welcomeCard';
+        welcomeCard.innerHTML = `
+          <div class="welcome-icon">
+            <span class="material-icons-round">assistant</span>
+          </div>
+          <div class="welcome-title">Welcome to HecTech AI Chat</div>
+          <div class="welcome-body">
+            Ask me to brainstorm, polish, or rewrite comments. I'll automatically adapt to your selected student and follow the comment styling rules.
+          </div>
+        `;
+        chatContainer.appendChild(welcomeCard);
+        showToast('Chat history cleared.', 'info');
+      }
+    });
+
+    // Auto-Sync Toggle listener
+    autoSyncToggle.addEventListener('change', function() {
+      if (this.checked) {
+        autoSyncInterval = setInterval(function() {
+          loadContext(true); // silent sync
+        }, 5000);
+        showToast('Auto-Sync enabled (polls every 5s).', 'success');
+      } else {
+        if (autoSyncInterval) {
+          clearInterval(autoSyncInterval);
+          autoSyncInterval = null;
+        }
+        showToast('Auto-Sync disabled.', 'info');
+      }
+    });
 
     // Initial load
     window.addEventListener('load', function() {
-      loadContext();
+      loadContext(false);
     });
 
     // Toast triggers
@@ -643,14 +881,18 @@
     }
 
     // Load active cell & row student context from sheet
-    function loadContext() {
-      refreshBtn.style.animation = 'spin 1s linear infinite';
-      refreshBtn.setAttribute('disabled', 'true');
+    function loadContext(isSilent) {
+      if (!isSilent) {
+        refreshBtn.style.animation = 'spin 1s linear infinite';
+        refreshBtn.setAttribute('disabled', 'true');
+      }
 
       google.script.run
         .withSuccessHandler(function(context) {
-          refreshBtn.style.animation = '';
-          refreshBtn.removeAttribute('disabled');
+          if (!isSilent) {
+            refreshBtn.style.animation = '';
+            refreshBtn.removeAttribute('disabled');
+          }
           
           currentContext = context;
           
@@ -676,9 +918,11 @@
           sendBtn.removeAttribute('disabled');
         })
         .withFailureHandler(function(e) {
-          refreshBtn.style.animation = '';
-          refreshBtn.removeAttribute('disabled');
-          showToast('Failed to load sheet context: ' + e.message, 'warning');
+          if (!isSilent) {
+            refreshBtn.style.animation = '';
+            refreshBtn.removeAttribute('disabled');
+            showToast('Failed to load sheet context: ' + e.message, 'warning');
+          }
         })
         .getChatContext();
     }
@@ -699,6 +943,7 @@
       chatInput.style.height = 'auto';
       clearInputBtn.style.display = 'none';
       sendBtn.setAttribute('disabled', 'true');
+      counterDisplay.innerText = '0 chars • 0 words';
       
       // Remove welcome card if present
       var welcomeCard = document.getElementById('welcomeCard');
@@ -712,6 +957,9 @@
 
       // Disable inputs during network call
       chatInput.setAttribute('disabled', 'true');
+
+      // Check General Mode
+      var isGeneralMode = !draftRulesToggle.checked;
 
       google.script.run
         .withSuccessHandler(function(response) {
@@ -734,16 +982,15 @@
           appendMessage('bot', '⚠️ Error calling server: ' + e.message);
           scrollToBottom();
         })
-        .getChatResponse(chatHistory, text, currentContext.selectedText, currentContext);
+        .getChatResponse(chatHistory, text, currentContext.selectedText, currentContext, isGeneralMode);
     }
 
     // Handle Quick Chip click
     function handleChipClick(chipText) {
-      // Set input text to the chip instruction
       chatInput.value = chipText;
-      // Trigger textarea height and status change
       chatInput.dispatchEvent(new Event('input'));
       chatInput.focus();
+      sendMessage(); // execute immediately
     }
 
     // DOM Manipulation helpers
@@ -753,7 +1000,12 @@
       
       var bubbleDiv = document.createElement('div');
       bubbleDiv.className = 'bubble';
-      bubbleDiv.innerText = text;
+      
+      if (sender === 'bot') {
+        bubbleDiv.innerHTML = parseMarkdown(text);
+      } else {
+        bubbleDiv.innerText = text;
+      }
       
       messageDiv.appendChild(bubbleDiv);
 
@@ -762,16 +1014,38 @@
         var actionsDiv = document.createElement('div');
         actionsDiv.className = 'bot-actions';
 
+        // Word count display
+        var wordCountSpan = document.createElement('span');
+        wordCountSpan.style.fontSize = '10px';
+        wordCountSpan.style.color = 'var(--text-secondary)';
+        wordCountSpan.style.display = 'inline-flex';
+        wordCountSpan.style.alignItems = 'center';
+        wordCountSpan.style.gap = '2px';
+        wordCountSpan.style.marginRight = 'auto';
+        
+        var words = text.split(/\s+/).filter(Boolean).length;
+        wordCountSpan.innerHTML = '<span class="material-icons-round" style="font-size: 12px;">bar_chart</span><span>' + words + ' words</span>';
+        actionsDiv.appendChild(wordCountSpan);
+
         // 1. Insert to Cell Button
         var insertBtn = document.createElement('button');
         insertBtn.className = 'action-btn';
-        insertBtn.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+        insertBtn.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
         insertBtn.onclick = function() {
           insertToCell(text, insertBtn);
         };
         actionsDiv.appendChild(insertBtn);
 
-        // 2. Copy to Clipboard Button
+        // 2. Append to Cell Button
+        var appendBtn = document.createElement('button');
+        appendBtn.className = 'action-btn';
+        appendBtn.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+        appendBtn.onclick = function() {
+          appendToCell(text, appendBtn);
+        };
+        actionsDiv.appendChild(appendBtn);
+
+        // 3. Copy to Clipboard Button
         var copyBtn = document.createElement('button');
         copyBtn.className = 'action-btn';
         copyBtn.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
@@ -813,14 +1087,13 @@
       }
     }
 
+    // Scroll container
     function scrollToBottom() {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     // Insert text utility
     function insertToCell(text, buttonElement) {
-      // Find comment text (exclude actions block if any, but innerText is just text)
-      // Since innerText has the button text, we must pass the actual AI text string we saved.
       buttonElement.setAttribute('disabled', 'true');
       buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Inserting...</span>';
 
@@ -830,25 +1103,49 @@
           buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Inserted!</span>';
           showToast('Text inserted into active cell.', 'success');
           
-          // Re-enable and reset after 2.5 seconds
           setTimeout(function() {
             buttonElement.className = 'action-btn';
-            buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+            buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
             buttonElement.removeAttribute('disabled');
           }, 2500);
         })
         .withFailureHandler(function(e) {
           buttonElement.className = 'action-btn';
-          buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert to Cell</span>';
+          buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
           buttonElement.removeAttribute('disabled');
           showToast('Insert failed: ' + e.message, 'warning');
         })
         .insertTextIntoActiveCell(text);
     }
 
+    // Append text utility
+    function appendToCell(text, buttonElement) {
+      buttonElement.setAttribute('disabled', 'true');
+      buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Appending...</span>';
+
+      google.script.run
+        .withSuccessHandler(function() {
+          buttonElement.className = 'action-btn success';
+          buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Appended!</span>';
+          showToast('Text appended to active cell.', 'success');
+          
+          setTimeout(function() {
+            buttonElement.className = 'action-btn';
+            buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+            buttonElement.removeAttribute('disabled');
+          }, 2500);
+        })
+        .withFailureHandler(function(e) {
+          buttonElement.className = 'action-btn';
+          buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+          buttonElement.removeAttribute('disabled');
+          showToast('Append failed: ' + e.message, 'warning');
+        })
+        .appendTextIntoActiveCell(text);
+    }
+
     // Copy to clipboard utility
     function copyToClipboard(text, buttonElement) {
-      // Create temporary textarea
       var el = document.createElement('textarea');
       el.value = text;
       document.body.appendChild(el);

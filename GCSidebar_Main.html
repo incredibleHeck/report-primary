@@ -11,36 +11,133 @@
 <body>
 
   <div class="header">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <div style="font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px;">
+        <span class="material-icons-round" style="color: var(--primary); font-size: 20px;">assistant</span>
+        <span>HecTech AI Assistant</span>
+      </div>
+      <div style="display: flex; gap: 4px; align-items: center;">
+        <button id="clearHistoryBtn" title="Clear conversation history" style="display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 50%; width: 26px; height: 26px; align-items: center; justify-content: center;">
+          <span class="material-icons-round" style="font-size: 18px;">delete_outline</span>
+        </button>
+        <button id="refreshBtn" title="Refresh active student context" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;">
+          <span class="material-icons-round" style="font-size: 18px;">sync</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tab-header">
+      <div class="tab-btn active" id="traitsTabBtn" onclick="switchTab('traits')">
+        <span class="material-icons-round" style="font-size: 14px;">lightbulb</span>
+        <span>Traits</span>
+      </div>
+      <div class="tab-btn" id="chatTabBtn" onclick="switchTab('chat')">
+        <span class="material-icons-round" style="font-size: 14px;">chat</span>
+        <span>AI Chat</span>
+      </div>
+    </div>
+
     <div class="student-card">
       <div class="student-avatar" id="studentAvatar">?</div>
       <div class="student-details">
-        <div class="student-label">Generating for</div>
+        <div class="student-label" id="studentLabel">Active Student Context</div>
         <div id="studentNameDisplay">Loading...</div>
       </div>
     </div>
-    
-    <div class="search-wrapper">
+  </div>
+
+  <!-- Panel 1: Traits Panel -->
+  <div id="traitsPanel" class="tab-content active">
+    <div class="search-wrapper" style="margin: 0 8px 10px;">
       <span class="material-icons-round search-icon">search</span>
       <input type="text" id="searchTraits" class="search-box" placeholder="Search traits...">
     </div>
-  </div>
 
-  <div id="accordionContainer">
-    <div class="empty-state">
-      <div class="empty-state-icon">⏳</div>
-      <p>Loading categories...</p>
+    <div id="accordionContainer">
+      <div class="empty-state">
+        <div class="empty-state-icon">⏳</div>
+        <p>Loading categories...</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="selection-count">
+        <strong id="selectedCount">0</strong> traits selected
+      </div>
+      <button id="generateBtn" class="btn-primary" disabled>
+        <span class="material-icons-round" id="btnIcon">auto_awesome</span>
+        <span id="btnText">Generate Comment</span>
+        <div id="loadingSpinner" class="spinner"></div>
+      </button>
     </div>
   </div>
 
-  <div class="footer">
-    <div class="selection-count">
-      <strong id="selectedCount">0</strong> traits selected
+  <!-- Panel 2: Chatbot Panel -->
+  <div id="chatPanel" class="tab-content">
+    <div class="settings-row">
+      <div style="flex: 1;"></div>
+      <label class="toggle-container" for="draftRulesToggle" style="max-width: 120px;">
+        <span class="toggle-label">
+          <span class="material-icons-round">gpp_good</span>
+          <span>Draft Rules</span>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="draftRulesToggle" checked>
+          <span class="slider"></span>
+        </span>
+      </label>
     </div>
-    <button id="generateBtn" class="btn-primary" disabled>
-      <span class="material-icons-round" id="btnIcon">auto_awesome</span>
-      <span id="btnText">Generate Comment</span>
-      <div id="loadingSpinner" class="spinner"></div>
-    </button>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome-card" id="welcomeCard">
+        <div class="welcome-icon">
+          <span class="material-icons-round">assistant</span>
+        </div>
+        <div class="welcome-title">Welcome to HecTech AI Chat</div>
+        <div class="welcome-body">
+          Ask me to brainstorm, polish, or rewrite comments. I'll automatically adapt to your selected student and follow the comment styling rules.
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Chips -->
+    <div class="chips-outer" id="chipsOuter">
+      <button class="chip" onclick="handleChipClick('💡 Brainstorm improvements')">
+        <span class="material-icons-round">lightbulb</span>
+        <span>Brainstorm improvements</span>
+      </button>
+      <button class="chip" onclick="handleChipClick('🔄 Make this warmer & shorter')">
+        <span class="material-icons-round">autorenew</span>
+        <span>Make warmer & shorter</span>
+      </button>
+      <button class="chip" onclick="handleChipClick('📝 Write a positive review')">
+        <span class="material-icons-round">thumb_up</span>
+        <span>Write positive review</span>
+      </button>
+      <button class="chip" onclick="handleChipClick('🛡️ Check comment rules')">
+        <span class="material-icons-round">gpp_good</span>
+        <span>Check comment rules</span>
+      </button>
+    </div>
+
+    <!-- Input Footer -->
+    <div class="input-footer" style="flex-direction: column; align-items: stretch; gap: 4px;">
+      <div class="input-meta-info">
+        <span id="counterDisplay">0 chars • 0 words</span>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: flex-end;">
+        <div class="input-box-wrapper">
+          <textarea class="chat-input" id="chatInput" placeholder="Type a message or select a chip..." rows="1"></textarea>
+          <button class="clear-input-btn" id="clearInputBtn">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <button class="send-btn" id="sendBtn" disabled>
+          <span class="material-icons-round">send</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="toast-message" id="toast"></div>
