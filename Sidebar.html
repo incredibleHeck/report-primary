@@ -586,8 +586,11 @@
           setStatus("complete", "Done");
           google.script.run.toast(
             "HecTech: Batch process complete!",
-            "Success",
+            "Success"
           );
+          setTimeout(() => {
+            google.script.host.close();
+          }, 1500);
         }
       }
 

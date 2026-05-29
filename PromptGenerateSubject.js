@@ -34,30 +34,55 @@ const PromptGenerateSubject = {
 
     // INTRA-BATCH ANTI-ECHO RULE (ZERO REPETITION):
     - You are STRICTLY FORBIDDEN from reusing unique multi-word descriptive phrases across different students in this JSON array. 
-    - If you write "brings so much joy and energy" or "works with wonderful spirit" for one student, you CANNOT use those exact word combinations for anyone else in this batch. 
-    - Vary your vocabulary constantly (e.g., alternate between: cheerful attitude, high enthusiasm, wonderful focus, great dedication, fantastic energy). Every single comment in the array must sound individually written.
+    - Vary your vocabulary constantly (e.g., alternate between: cheerful attitude, high enthusiasm, wonderful focus, great dedication, fantastic energy). Every single comment must sound individually tailored.
 
-    // GHANA REPORT TONE & PARENT ADDRESS (CRITICAL):
-    - Write the way a real class teacher in a standard Ghanaian school would write to a parent.
-    - Use short, warm, conversational sentences. Simple, natural English only—no robotic AI phrasing, no flowery or dramatic tone. Easy for any parent to understand.
+    // GHANA REPORT TONE & CLOSING STRATEGY (UPDATED):
+    - Write the way a real class teacher in a standard Ghanaian school would write to a parent. Use short, warm, conversational sentences. Simple, natural English only.
     - STUDENT NAME ONLY: Refer to the student by their name (e.g. "Kofi" or "Yaa") or standard pronouns ("he", "she"). Do NOT prefix their name with "your child" or "your ward".
-    - DIRECT PARENT RECOMMENDATIONS: The final recommendation or action point in the comment MUST be directed to the parents (e.g. "Please support him at home with...", "Kindly assist her to..."). Detached third-person advice (e.g. "He needs to study..." or "She must practice...") is STRICTLY BANNED.
+    - DYNAMIC CLOSING SENTENCE: The final sentence of the comment must wrap up the review naturally. You MUST vary your closing strategy across the batch based on the student's needs:
+      1. [High Achievers / [80-100]]: End with pure praise, celebration, or a future-facing nudge (e.g., "He is a true credit to the class and should keep shining.", "I am confident she will maintain this wonderful momentum next term."). Do NOT give parents action chores for top-performing students.
+      2. [Average / Steady Achievers / [60-79]]: End with an encouraging independent goal or a light motivational push (e.g., "Aiming for more consistency will help him reach the top marks.", "Staying active in class discussions will help to stretch her abilities.").
+      3. [Struggling Achievers / [0-59]]: End with a direct parent-partnership appeal (e.g., "Kindly assist him at home with daily counting exercises.", "Please support her to revise her computing notes at home.").
+    - Detached, cold third-person declarations (e.g., "He must study harder.") are still strictly banned. Every closure must sound warm and supportive.
 
     // STRICT JARGON BAN:
     Do NOT use complex academic or AI jargon. Banned words and their simple alternatives:
     - Banned: "exhibits", "demonstrates" -> Use: "shows", "has", "is"
     - Banned: "proficiency", "mastery", "aptitude" -> Use: "good understanding", "does well", "is good at"
     - Banned: "cognitive skills", "comprehension skills" -> Use: "reading", "understanding"
-    - Banned: "summative performance", "pedagogical", "competency" -> Use: "test scores", "classwork"
-    - Banned: "facilitates", "peer-learning" -> Use: "helps", "works with others"
     - Banned: "diligent", "exemplary" -> Use: "hardworking", "excellent", "very good"
 
     // NO PEER TUTORING (CRITICAL): For students in score bands [90-100] and [80-89] (high achievers), you must NEVER suggest that they should teach, tutor, or explain work to classmates. High achievers get ONLY direct praise and encouragement about their own performance.
 
-    // VARIETY MANDATE: You are STRICTLY FORBIDDEN from using the same primary opening verb or sentence structure twice in a row.
-    // LENGTH CONSTRAINT: Strictly 20 - 30 words. Do not write more than 3 sentences.
+    // ==================================================
+    // HUMAN HYPER-REALISM & ANTI-AI DETECTOR RULES
+    // ==================================================
+    // 1. ADVERB BAN: Avoid modifying every action with "-ly" adverbs. Do NOT use: "works sensibly", "cooperates nicely", "handles easily", "participates happily". State actions directly (e.g., "handles tasks", "focuses well", "joins in projects").
+    
+    // 2. LENGTH JITTERING: Break visual uniformity. Do NOT make all comments the same size.
+    //    - For exceptional scores [90-100] and struggling scores [0-59], write a detailed 3-sentence comment (30-40 words).
+    //    - For steady, good scores [60-89], keep it punchy and short: 1-2 sentences maximum (15-22 words).
+
+    // 3. STAFFROOM LOCALIZATION (GHANA/UK PEDAGOGICAL TERMS):
+    //    - Banned American/AI terms: "worksheets", "notebooks", "practice books", "computer topics", "reviewing".
+    //    - Mandatory Local terms: "exercises", "exercise books", "classwork", "homework", "revision" or "revising notes".
+
+    // 4. REALISTIC DIAGNOSTIC TONE: For students scoring below 60, drop synthetic positivity. Do not invent traits like "has a cheerful spirit" or "brings joy" to soften a low score. State the learning gap directly, plainly, and warmly.
+
+    // 5. RHYTHMIC ASYMMETRY: Avoid a rigid 1-2-3 sentence pattern across rows. Mix up sentence lengths internally. A long complex sentence should occasionally be followed by a very short, sharp 3-word conclusion (e.g., "He works well.", "She is progressing.").
+
     // GENDER RULE: Use the provided Gender field as absolute truth (Male = He/Him/His, Female = She/Her).
     // OUTPUT FORMAT: A valid RAW JSON Array of objects, NOT wrapped in markdown. Example: [ { "id": "0", "comment": "Text..." } ]
+
+    // ==================================================
+    // 2. VARIETY & OPENING MANDATE (CRITICAL)
+    // ==================================================
+    - To prevent a repetitive vertical layout down the spreadsheet column, you must avoid starting every comment directly with the student's name or a pronoun (e.g., do not build a wall of "Kofi shows...", "Yaa has...", "He is..."). No more than 25% of rows should use this name-first structure.
+    - Vary the layout of the FIRST sentence (the performance observation) to push the student's name deeper into the line. Actively cycle through these 3 distinct opening structures across the batch:
+      1. [Trait/Behavior First]: "Showing great dedication in class, Kofi handles..." / "Always neat with her work, Yaa..."
+      2. [Context/Activity First]: "During group spreadsheet projects, Kwame..." / "In our weekly reading sessions, Ama..."
+      3. [Outcome/Observation First]: "Rushing less will help Kwesi avoid small errors when..." / "Steady progress is evident as Esi..."
+    - Never use the same structural opening OR closing strategy for two consecutive students in the JSON array. Every comment must flow seamlessly from a varied opening observation into a contextually appropriate closing sentiment.
     `;
 
     if (isPractical) {
@@ -87,15 +112,15 @@ const PromptGenerateSubject = {
         
         - Example 1 (Excellent / [90-100]) - Structure: Direct Praise -> Detail -> Next Step Action
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 95, "subject": "Coding Club" }
-          Output: "Kofi is exceptionally fast and shows great technique with logic during our Coding Club sessions. He works with real focus. Please encourage him to keep expanding his programming skills at home."
+          Output: "Kofi is very fast and shows great technique with logic during our Coding Club sessions. He works with real focus. Please encourage him to keep expanding his programming skills at home."
         
         - Example 2 (Good / [70-79]) - Structure: Trait -> Focus Area -> Recommendation
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 75, "subject": "Arts Club" }
-          Output: "Yaa has a nice creative eye and is learning fine drawing layout steps in Arts Club. She is building her confidence. Kindly encourage her to practice sketching her favorite objects at home."
+          Output: "Yaa has a creative eye and is learning fine drawing steps in Arts Club. I encourage you to support her talents."
         
         - Example 3 (Struggling / [40-49]) - Structure: Direct Action Request -> Observation -> Support
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 45, "subject": "Chess Club" }
-          Output: "Please help Kwame practice staying patient at home during table games. He enjoys Chess Club but finds it quite hard to remain fully focused when planning his moves."
+          Output: "Kwame is finding the patience and planning required in Chess Club quite challenging this term. He often struggles to remain focused when planning his moves. Please help him practice staying patient at home."
 
         // ==================================================
         // 4. SCORING GUIDE (PRACTICAL 1-100)
@@ -143,15 +168,15 @@ const PromptGenerateSubject = {
 
         - Example 1 (Excellent / [90-100]) - Structure: Focus/Behavior -> Topics -> Action
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 92, "subject": "Mathematics" }
-          Output: "With his excellent classroom focus, Kofi handles complex fraction and decimal problems with total ease. He is doing beautifully. Kindly challenge him to keep aiming for top marks next term."
+          Output: "With his excellent classroom focus, Kofi handles complex fraction and decimal exercises with total ease. He is doing very well. Kindly challenge him to keep aiming for top marks next term."
         
         - Example 2 (Inconsistent / [60-69]) - Structure: Struggle Warning -> Topics -> Parent Remedy
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 65, "subject": "Science" }
-          Output: "Rushing through tasks often prevents Yaa from showing her true potential in plant topics and photosynthesis. I advise that you help her build a steady evening review routine at home."
+          Output: "Rushing through classwork often prevents Yaa from showing her true potential in plant topics. I advise helping her revise her notes."
         
         - Example 3 (Struggling / [40-49]) - Structure: Direct Appeal -> Topics -> Encouragement
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 42, "subject": "English" }
-          Output: "Please guide Kwame through basic grammar exercises daily. He is trying his best, but identifying nouns and pronouns without close supervision remains quite difficult for him."
+          Output: "Kwame is finding standard grammar and spelling exercises quite difficult to grasp this term. Identifying basic nouns and pronouns without close supervision remains a struggle. Please guide him through daily revision at home."
 
         // ==================================================
         // 4. SCORING GUIDE (ACADEMIC 1-100)
