@@ -1,5 +1,5 @@
 // ==========================================
-// HECTECH SubjectCommentManager.js
+// HECTECH SubjectCommentManager.js (Updated)
 // ==========================================
 
 const SubjectCommentManager = {
@@ -8,9 +8,6 @@ const SubjectCommentManager = {
         const selection = SelectionProcessor.getSmartSelection();
         if (!selection) return;
 
-        // 🟢 HARDENED: Dynamic Discovery (No more +4)
-        // We look for a header containing "COMMENT" on Row 2
-        // If not found, we fallback to scoreCol + 3 (Legacy compatibility)
         const scoreCol = selection.getColumn();
         let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
         
@@ -19,7 +16,6 @@ const SubjectCommentManager = {
             console.warn("Could not find 'COMMENT' header. Defaulting to scoreCol + 2.");
         }
 
-        // Save State for Undo
         if (typeof StateManager !== 'undefined') {
             const undoRange = sheet.getRange(selection.getRow(), commentColIndex, selection.getNumRows(), 1);
             StateManager.saveForUndo(undoRange);
@@ -32,17 +28,14 @@ const SubjectCommentManager = {
         }
     },
 
-    // 🟢 NEW: Process a specific chunk range from the sidebar
     processRange: function (chunkRange) {
         const sheet = chunkRange.getSheet();
         let commentColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
         
         if (commentColIndex === -1) {
-            // Default to 2 columns to the right of the score column
             commentColIndex = chunkRange.getColumn() + 2;
         }
 
-        // Save State for Undo
         if (typeof StateManager !== 'undefined') {
             const undoRange = sheet.getRange(chunkRange.getRow(), commentColIndex, chunkRange.getNumRows(), 1);
             StateManager.saveForUndo(undoRange);
@@ -61,7 +54,7 @@ const SubjectCommentManager = {
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
-        // 2. FETCH CONTEXT (container snapshot first, then legacy library props)
+        // 2. FETCH CONTEXT
         const ssId = ss.getId();
         const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
         let storedJson = PropertiesService.getDocumentProperties().getProperty(storageKey);
@@ -81,15 +74,14 @@ const SubjectCommentManager = {
             } catch (e) {}
         }
 
-        // 3. ALIGNMENT LOGIC (Hardened for Row 3 Data)
+        // 3. ALIGNMENT LOGIC
         const scores = scoreRange.getValues();
         const startRow = scoreRange.getRow();
         const numRows = scoreRange.getNumRows();
 
-        const subjectDataStart = Config.DATA_START_ROW; // 3
-        const classlistDataStart = 3; // Classlist data starts at Row 3
+        const subjectDataStart = Config.DATA_START_ROW; 
+        const classlistDataStart = 3; 
         
-        // Offset = 3 - 3 = 0.
         const rowOffset = subjectDataStart - classlistDataStart; 
         const startRowInClasslist = startRow - rowOffset; 
 
@@ -102,12 +94,21 @@ const SubjectCommentManager = {
 
         const masterData = classlistSheet.getRange(startRowInClasslist, 1, numRows, maxColNeeded).getValues();
 
+        // 🟢 HARDENED DRILLDOWN: Check if this is a Club Sheet and locate the Dropdown Column
+        const isPracticalSubject = (sheetName.includes("PE") || sheetName.includes("PHYSICAL") || sheetName.includes("CLUB"));
+        let clubValues = [];
+        if (sheetName.includes("CLUB")) {
+            let clubColIndex = Config.getColByName(sheet.getName(), "CLUB NAME", -1);
+            if (clubColIndex === -1) clubColIndex = Config.getColByName(sheet.getName(), "CLUB", -1);
+            if (clubColIndex !== -1) {
+                // Read the row range values specifically from the dropdown column
+                clubValues = sheet.getRange(startRow, clubColIndex, numRows, 1).getValues();
+            }
+        }
+
         let batchRequest = [];
 
-        // 🟢 NUANCE DETECTION: PE & Clubs
-        const isPracticalSubject = (sheetName.includes("PE") || sheetName.includes("PHYSICAL") || sheetName.includes("CLUB"));
-
-        // 5. BUILD BATCH
+        // 5. BUILD BATCH WITH CUSTOM SUB-SUBJECT NAMES
         for (let r = 0; r < numRows; r++) {
             const fullName = masterData[r][nameColIndex - 1]; 
             const genderRaw = masterData[r][genderColIndex - 1]; 
@@ -117,13 +118,25 @@ const SubjectCommentManager = {
 
             if (!fullName || score === "" || score == null) continue;
 
+            // Determine if row has a specific dropdown club assigned
+            let assignedSubject = sheetName;
+            if (sheetName.includes("CLUB") && clubValues.length > 0 && clubValues[r] && clubValues[r][0]) {
+                let extractedClub = String(clubValues[r][0]).trim();
+                if (extractedClub) {
+                    // Title Case normalization (e.g. "coding" -> "Coding")
+                    extractedClub = extractedClub.replace(/\b\w/g, c => c.toUpperCase());
+                    // Append "Club" safely if missing
+                    assignedSubject = extractedClub.toUpperCase().includes("CLUB") ? extractedClub : extractedClub + " Club";
+                }
+            }
+
             batchRequest.push({
                 id: r.toString(), 
                 name: Config.extractFirstName(fullName),
                 gender: gender,
                 score: score,
-                subject: sheetName,
-                isPractical: isPracticalSubject // Pass flag to Prompt
+                subject: assignedSubject, // Dynamic Assignment (e.g., "Coding Club")
+                isPractical: isPracticalSubject 
             });
         }
 
@@ -165,7 +178,6 @@ const SubjectCommentManager = {
             });
 
             targetCommentRange.setValues(currentCommentValues);
-            // Draft Style: Neon Green for visibility
             targetCommentRange.setFontColor("#39FF14"); 
             targetCommentRange.setFontWeight("bold");
             
