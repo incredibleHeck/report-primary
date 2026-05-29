@@ -30,6 +30,7 @@ const LEGACY_SCRIPT_PROPERTY_PREFIXES = [
   'SCHOOL_BREAKS_',
   'SCHOOL_RESUMES_',
   'TEACHER_NAME_',
+  'REPORT_FOLDER_'
 ];
 
 function legacyKeyMatchesAnyPrefix(key) {

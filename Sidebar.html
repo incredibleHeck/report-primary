@@ -463,7 +463,7 @@
 
       let totalRows = 0;
       let rowsCompleted = 0;
-      let chunkSize = 6;
+      let chunkSize = 10;
       let currentAction = "";
       let isCancelled = false;
       let chunkQueue = [];
@@ -544,7 +544,7 @@
         }
 
         totalRows = info.numRows;
-        chunkSize = info.chunkSize || 6;
+        chunkSize = info.chunkSize || 10;
         currentAction = info.action;
 
         document.getElementById("sidebar-title").textContent = info.title;

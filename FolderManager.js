@@ -13,10 +13,16 @@ const FolderManager = {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const ssId = ss.getId();
         
-        // 1. CHECK SCRIPT PROPERTIES (persistent across sessions)
-        const props = PropertiesService.getScriptProperties();
+        // 1. CHECK DOCUMENT & SCRIPT PROPERTIES (persistent across sessions)
+        const docProps = PropertiesService.getDocumentProperties();
+        const scriptProps = PropertiesService.getScriptProperties();
         const propKey = `REPORT_FOLDER_${ssId}`;
-        const savedId = props.getProperty(propKey);
+        
+        let savedId = docProps.getProperty(propKey);
+        if (!savedId) {
+            savedId = scriptProps.getProperty(propKey);
+        }
+        
         if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("getAutoReportFolderId: savedId=" + savedId);
         
         if (savedId) {
@@ -35,7 +41,8 @@ const FolderManager = {
                     return savedId;
                 }
                 if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG("getAutoReportFolderId: saved folder gone, error: " + e.message);
-                props.deleteProperty(propKey);
+                docProps.deleteProperty(propKey);
+                scriptProps.deleteProperty(propKey);
             }
         }
 
@@ -50,11 +57,11 @@ const FolderManager = {
                 if (folder.isTrashed()) {
                     throw new Error("Folder is trashed");
                 }
-                props.setProperty(propKey, cachedId);
+                docProps.setProperty(propKey, cachedId);
                 return cachedId;
             } catch (e) {
                 if (e.message && e.message.includes("server error")) {
-                    props.setProperty(propKey, cachedId);
+                    docProps.setProperty(propKey, cachedId);
                     return cachedId;
                 }
                 cache.remove(cacheKey);
@@ -85,7 +92,7 @@ const FolderManager = {
         }
 
         // 5. PERSIST
-        props.setProperty(propKey, folderId);
+        docProps.setProperty(propKey, folderId);
         cache.put(cacheKey, folderId, 1200);
 
         return folderId;
@@ -132,6 +139,7 @@ const FolderManager = {
     resetCache: function() {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         CacheService.getUserCache().remove(`HECTECH_FOLDER_${ssId}`);
+        PropertiesService.getDocumentProperties().deleteProperty(`REPORT_FOLDER_${ssId}`);
         PropertiesService.getScriptProperties().deleteProperty(`REPORT_FOLDER_${ssId}`);
     }
 };

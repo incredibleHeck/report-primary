@@ -71,23 +71,24 @@ const PromptGenerateSubject = {
         */
         
         // ==================================================
-        // 3. FEW-SHOT TRAINING EXAMPLES
+        // 3. FEW-SHOT TRAINING EXAMPLES (RADICALLY VARIED STRUCTURES)
         // ==================================================
-        Use these examples to guide your output style:
-        - Example 1 (Excellent / [90-100]):
+        Look closely at how these examples use completely different sentence layouts and flows. Do NOT use a single rigid template for the batch:
+
+        - Example 1 (Excellent / [90-100]) - Structure: Focus/Behavior -> Topics -> Action
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 95, "subject": "PE" }
           Topics: "high jump and sprinting"
-          Output: "Kofi is very fast and shows great technique in sprinting and high jump. He works with real focus. Please encourage him to keep challenging himself next term."
+          Output: "With amazing energy and focus, Kofi handles sprinting and high jump techniques with total ease. He is performing beautifully. Kindly challenge him to keep aiming higher next term."
         
-        - Example 2 (Good / [70-79]):
+        - Example 2 (Good / [70-79]) - Structure: Topic introduction -> Behavior -> Parent Remedy
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 75, "subject": "Music" }
           Topics: "singing and recorder"
-          Output: "Yaa has a nice voice and is learning to play the recorder. She is building her confidence. Please encourage her to practice her songs at home."
+          Output: "Yaa has a nice voice for singing and is steadily learning the recorder. She can still be a bit shy in class. I advise that you encourage her to practice performing at home to build confidence."
         
-        - Example 3 (Struggling / [40-49]):
+        - Example 3 (Struggling / [40-49]) - Structure: Direct Appeal -> Topics -> Encouragement
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 45, "subject": "Clubs" }
           Topics: "chess club"
-          Output: "Kwame enjoys chess but finds it hard to stay focused during games. He is still learning basic moves. Please encourage him to practice patience at home."
+          Output: "Please encourage Kwame to practice patience and focus at home. He really enjoys being in the chess club, but learning the basic moves and staying calm during games remains quite difficult for him."
 
         // ==================================================
         // 4. SCORING GUIDE (PRACTICAL 1-100)
@@ -99,6 +100,10 @@ const PromptGenerateSubject = {
         [50-59] PASSIVE: Quiet or hesitant. Nudge to join in more and build confidence.
         [40-49] STRUGGLING: Rarely joins in or finds coordination hard. Extra basic practice basics.
         [0-39] URGENT: Often not prepared or not taking part. Needs a plan with parents.
+
+        STRUCTURAL VARIETY RULES:
+        - Do NOT start every parent recommendation with the word "Please". Mix it up using phrases like "Kindly assist...", "I encourage you to...", "It will help if you...", or "I advise you to...".
+        - Alternate where the topics appear. Sometimes put them in the first sentence, sometimes in the middle, and sometimes at the end.
 
         STUDENT DATA: 
         ${JSON.stringify(data)}
@@ -125,23 +130,24 @@ const PromptGenerateSubject = {
         */
 
         // ==================================================
-        // 3. FEW-SHOT TRAINING EXAMPLES
+        // 3. FEW-SHOT TRAINING EXAMPLES (RADICALLY VARIED STRUCTURES)
         // ==================================================
-        Use these examples to guide your output style:
-        - Example 1 (Exceptional / [90-100]):
+        Look closely at how these examples use completely different sentence layouts and flows. Do NOT use a single rigid template for the batch:
+
+        - Example 1 (Exceptional / [90-100]) - Structure: Focus/Behavior -> Topics -> Action
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 92, "subject": "Mathematics" }
           Topics: "fractions and decimals"
-          Output: "Kofi has shown an excellent understanding of fractions and decimals in class. He solves problems with ease. Please encourage him to maintain this standard next term."
+          Output: "With his excellent classroom focus, Kofi handles complex fraction and decimal problems with total ease. He is doing beautifully. Kindly challenge him to keep aiming for top marks next term."
         
-        - Example 2 (Inconsistent / [60-69]):
+        - Example 2 (Inconsistent / [60-69]) - Structure: Struggle Warning -> Topics -> Parent Remedy
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 65, "subject": "Science" }
           Topics: "photosynthesis and plants"
-          Output: "Yaa understands the basics of photosynthesis, but her test scores are inconsistent. She sometimes rushes her work. Please help her review plant topics at home."
+          Output: "Rushing through tasks often prevents Yaa from showing her true potential in plant topics and photosynthesis. I advise that you help her build a steady evening review routine at home."
         
-        - Example 3 (Struggling / [40-49]):
+        - Example 3 (Struggling / [40-49]) - Structure: Direct Appeal -> Topics -> Encouragement
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 42, "subject": "English" }
           Topics: "nouns and pronouns"
-          Output: "Kwame finds grammar work like identifying nouns and pronouns quite difficult. He needs steady support. Please help him practice reading and simple grammar exercises daily."
+          Output: "Please guide Kwame through basic grammar exercises daily. He is trying his best, but identifying nouns and pronouns without close supervision remains quite difficult for him."
 
         // ==================================================
         // 4. SCORING GUIDE (ACADEMIC 1-100)
@@ -153,6 +159,10 @@ const PromptGenerateSubject = {
         [50-59] BELOW AVERAGE: Some topics hard. Needs steady practice to catch up.
         [40-49] STRUGGLING: Big gaps. Review older topics and ask for extra help.
         [0-39] CRITICAL: Very far behind. Needs a clear support plan with parents at home.
+        
+        STRUCTURAL VARIETY RULES:
+        - Do NOT start every parent recommendation with the word "Please". Mix it up using phrases like "Kindly assist...", "I encourage you to...", "It will help if you...", or "I advise you to...".
+        - Alternate where the topics appear. Sometimes put them in the first sentence, sometimes in the middle, and sometimes at the end.
         
         STUDENT DATA: 
         ${JSON.stringify(data)}

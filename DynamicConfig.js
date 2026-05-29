@@ -45,7 +45,7 @@ const DynamicConfig = {
 
     // --- AI & CORE ---
     get API_KEY() { return this._get("GEMINI_API_KEY") || ""; },
-    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-2.5-flash"; },
+    get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-3.5-flash"; },
     
     // --- SHEET NAMES (Configurable via Script Properties with defaults) ---
     get CLASSLIST_SHEET_NAME() { return this._get("CLASSLIST_SHEET_NAME") || "CLASSLIST"; },
@@ -352,7 +352,7 @@ const DynamicConfig = {
         } catch(e) {
             return { SUMMARY_ROW_1: 20, SUMMARY_ROW_2: 21, GEN_REM_ROW: 23 };
         }
-    }
+    },
     
     /**
      * Helper to normalize student names for matching

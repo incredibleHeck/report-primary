@@ -218,7 +218,7 @@ function RUN_SYSTEM_READINESS_CHECK() {
       category: "AI",
       item: "Gemini Model",
       status: modelName ? "OK" : "WARNING",
-      msg: modelName || "Not set (default: gemini-2.5-flash)"
+      msg: modelName || "Not set (default: gemini-3.5-flash)"
     });
 
     // Email Quota
@@ -576,7 +576,7 @@ function getSelectionInfo() {
 
     return {
         numRows: config.numRows,
-        chunkSize: 6, 
+        chunkSize: 10, 
         action: action,
         title: title
     };

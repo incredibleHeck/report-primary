@@ -23,7 +23,7 @@ const SubjectContextManager = {
      */
     saveContext: function (data) {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        const props = PropertiesService.getScriptProperties();
+        const props = PropertiesService.getDocumentProperties();
         const storageKey = SubjectContextManager.contextStorageKeyFromSubjectName(data.subjectName, ssId);
         const contextPayload = JSON.stringify({
             grade: data.grade,
@@ -41,10 +41,12 @@ const SubjectContextManager = {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const storageKey = SubjectContextManager.contextStorageKeyFromSheetName(sheetName, ssId);
 
-        let storedJson = null;
-        if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
+        let storedJson = PropertiesService.getDocumentProperties().getProperty(storageKey);
+        
+        if (!storedJson && typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
             storedJson = ClientScriptPropertiesBridge.getRawProperty(storageKey);
         }
+        
         if (!storedJson) {
             storedJson = PropertiesService.getScriptProperties().getProperty(storageKey);
         }

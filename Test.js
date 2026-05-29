@@ -124,7 +124,7 @@ function testWhatsAppTemplateSend() {
 function testGeminiConnection() {
   var props = PropertiesService.getScriptProperties();
   var apiKey = props.getProperty("GEMINI_API_KEY");
-  var model = props.getProperty("GEMINI_MODEL_NAME") || "gemini-2.5-flash";
+  var model = props.getProperty("GEMINI_MODEL_NAME") || "gemini-3.5-flash";
 
   if (!apiKey || apiKey.length < 10) {
     SpreadsheetApp.getUi().alert("GEMINI_API_KEY is missing or too short. Run Setup first.");

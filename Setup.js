@@ -23,7 +23,7 @@ const SetupManager = {
     const config = {
       // 1. AI SETTINGS (secret entered via prompt)
       "GEMINI_API_KEY": "",
-      "GEMINI_MODEL_NAME": "gemini-2.5-flash",
+      "GEMINI_MODEL_NAME": "gemini-3.5-flash",
 
       // 2. SHEET CONFIGURATION
       "CLASSLIST_SHEET_NAME": "CLASSLIST",

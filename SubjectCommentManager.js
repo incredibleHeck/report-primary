@@ -64,8 +64,8 @@ const SubjectCommentManager = {
         // 2. FETCH CONTEXT (container snapshot first, then legacy library props)
         const ssId = ss.getId();
         const storageKey = `CTX_${sheetName.toUpperCase().replace(/\s+/g, '_')}_${ssId}`;
-        let storedJson = null;
-        if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
+        let storedJson = PropertiesService.getDocumentProperties().getProperty(storageKey);
+        if (!storedJson && typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
             storedJson = ClientScriptPropertiesBridge.getRawProperty(storageKey);
         }
         if (!storedJson) {

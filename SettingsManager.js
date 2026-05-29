@@ -86,19 +86,27 @@ const SettingsManager = {
 
     getSettings: function () {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        let map;
+        
+        let bridgeMap = {};
         if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
-            map = ClientScriptPropertiesBridge.getSnapshot() || {};
-        } else {
-            map = PropertiesService.getScriptProperties().getProperties();
+            bridgeMap = ClientScriptPropertiesBridge.getSnapshot() || {};
         }
+        
+        let legacyScriptProps = {};
+        if (typeof ClientScriptPropertiesBridge === 'undefined' || !ClientScriptPropertiesBridge.isHydrated()) {
+            legacyScriptProps = PropertiesService.getScriptProperties().getProperties();
+        }
+        
+        const docProps = PropertiesService.getDocumentProperties().getProperties();
+        const map = Object.assign({}, legacyScriptProps, bridgeMap, docProps);
+        
         return SettingsManager.getSettingsFromPropertyMap(map, ssId);
     },
 
-    /** Persists to this script's properties (library project when not using the client shell). */
+    /** Persists to the container document's properties (isolated to the spreadsheet). */
     saveSettings: function (settings) {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        const props = PropertiesService.getScriptProperties();
+        const props = PropertiesService.getDocumentProperties();
         props.setProperties(SettingsManager.buildSettingsSaveProperties(settings, ssId));
         return SettingsManager.applySettingsSideEffects(settings);
     }
