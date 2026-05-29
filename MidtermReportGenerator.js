@@ -12,17 +12,7 @@ const MidtermReportGenerator = {
     PROG: "F7",
     YEAR: "K7",
     BREAK: "A8",
-    RESUME: "H8",
-
-    RAW_SCR: "D20",
-    OUT_OF: "G20",
-    AVE_MARK: "J20",
-    AVE_GRD: "D21",
-    BEST_GRD: "G21",
-    WORST_GRD: "J21",
-
-    GEN_REM: "E23",
-    TEACHER: "L24",
+    RESUME: "H8"
   },
 
   runPreview: function (clientToken) {
@@ -219,9 +209,19 @@ const MidtermReportGenerator = {
    * 🟢 OPTIMIZED: Fill template using batch setValues() for speed
    */
   fillTemplateFast: function (sheet, row, cols, subjects, subjectCount) {
-    // Clear content areas in one batch call
+    // Clear content areas dynamically
+    const layout = Config.MIDTERM_TEMPLATE_LAYOUT;
+    const subjectOrder = Object.keys(subjects);
+    const subStart = subjectOrder.length > 0 ? subjects[subjectOrder[0]].row : 10;
+    const subEnd = subjectOrder.length > 0 ? subjects[subjectOrder[subjectOrder.length - 1]].row : 16;
+    
     sheet
-      .getRangeList(["A6:L8", "B10:F16", "D19:L21", "E23:L26"])
+      .getRangeList([
+          "A6:L8", 
+          `B${subStart}:F${subEnd}`, 
+          `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
+          `E${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 3}`
+      ])
       .clearContent();
 
     // --- HEADER ROWS 6-8 ---
@@ -246,7 +246,7 @@ const MidtermReportGenerator = {
         "",
         "",
         "",
-        "Programme: PRIMARY",
+        "Programme: " + Config.PROGRAMME_NAME,
         "",
         "",
         "",
@@ -271,29 +271,22 @@ const MidtermReportGenerator = {
     ];
     sheet.getRange("A6:L8").setValues(headerData);
 
-    // --- SUBJECT ROWS 10-16: Midterm structure (Total, Ave, empty, Grade, Comment) ---
-    const subjectOrder = [
-      "English",
-      "Mathematics",
-      "Science",
-      "Bible Knowledge",
-      "French",
-      "Humanities",
-      "Computing",
-    ];
-    const subjectData = subjectOrder.map((subj) => {
-      const sIdx = subjects[subj].startIdx;
-      return [
-        row[sIdx], // B: Total Score (100)
-        row[sIdx + 3], // C: Class Average
-        "", // D: empty
-        row[sIdx + 1], // E: Grade
-        row[sIdx + 2], // F: Comment
-      ];
-    });
-    sheet.getRange("B10:F16").setValues(subjectData);
+    // --- SUBJECT ROWS ---
+    if (subjectOrder.length > 0) {
+      const subjectData = subjectOrder.map((subj) => {
+        const sIdx = subjects[subj].startIdx;
+        return [
+          row[sIdx], // B: Total Score (100)
+          row[sIdx + 3], // C: Class Average
+          "", // D: empty
+          row[sIdx + 1], // E: Grade
+          row[sIdx + 2], // F: Comment
+        ];
+      });
+      sheet.getRange(`B${subStart}:F${subEnd}`).setValues(subjectData);
+    }
 
-    // --- SUMMARY ROWS 20-21 ---
+    // --- SUMMARY ROWS ---
     const outOf = subjectCount * 100;
     const summaryData1 = [
       "Raw Score: " + row[cols.RAW_SCORE],
@@ -313,16 +306,25 @@ const MidtermReportGenerator = {
       "",
       "Worst Grade: " + row[cols.WORST_GRADE],
     ];
-    sheet.getRange("D20:J20").setValues([summaryData1]);
-    sheet.getRange("D21:J21").setValues([summaryData2]);
+    sheet.getRange(`D${layout.SUMMARY_ROW_1}:J${layout.SUMMARY_ROW_1}`).setValues([summaryData1]);
+    sheet.getRange(`D${layout.SUMMARY_ROW_2}:J${layout.SUMMARY_ROW_2}`).setValues([summaryData2]);
 
     // --- GENERAL COMMENT ---
-    sheet.getRange(this.CELLS.GEN_REM).setValue(row[cols.GENERAL_REMARK]);
+    sheet.getRange(`E${layout.GEN_REM_ROW}`).setValue(row[cols.GENERAL_REMARK]);
   },
 
   rebuildTemplateLabels: function (sheet) {
-    // Legacy method - kept for compatibility
-    const ranges = ["A6:L8", "B10:F16", "D19:L21", "E23:L26"];
+    const layout = Config.MIDTERM_TEMPLATE_LAYOUT;
+    const subjectOrder = Object.keys(Config.MIDTERM_SUBJECT_CONFIG);
+    const subStart = subjectOrder.length > 0 ? Config.MIDTERM_SUBJECT_CONFIG[subjectOrder[0]].row : 10;
+    const subEnd = subjectOrder.length > 0 ? Config.MIDTERM_SUBJECT_CONFIG[subjectOrder[subjectOrder.length - 1]].row : 16;
+    
+    const ranges = [
+      "A6:L8", 
+      `B${subStart}:F${subEnd}`, 
+      `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
+      `E${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 3}`
+    ];
     sheet.getRangeList(ranges).clearContent();
 
     sheet.getRange(this.CELLS.NAME).setValue("STUDENT NAME: ");
@@ -331,17 +333,17 @@ const MidtermReportGenerator = {
       .getRange(this.CELLS.ROLL)
       .setValue("No. on Roll: " + Config.ROLL_COUNT);
     sheet.getRange(this.CELLS.CLASS).setValue("Class: " + Config.CLASS_NAME);
-    sheet.getRange(this.CELLS.PROG).setValue("Programme: PRIMARY");
+    sheet.getRange(this.CELLS.PROG).setValue("Programme: " + Config.PROGRAMME_NAME);
     sheet.getRange(this.CELLS.YEAR).setValue(Config.TERM_YEAR_INFO);
     sheet.getRange(this.CELLS.BREAK).setValue(Config.SCHOOL_BREAKS);
     sheet.getRange(this.CELLS.RESUME).setValue(Config.SCHOOL_RESUMES);
 
-    sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
-    sheet.getRange("G20").setValue("Out of: " + (Object.keys(Config.MIDTERM_SUBJECT_CONFIG).length * 100));
-    sheet.getRange(this.CELLS.AVE_MARK).setValue("Average Mark: ");
-    sheet.getRange(this.CELLS.AVE_GRD).setValue("Average Grade: ");
-    sheet.getRange(this.CELLS.BEST_GRD).setValue("Best Grade: ");
-    sheet.getRange(this.CELLS.WORST_GRD).setValue("Worst Grade: ");
+    sheet.getRange(`D${layout.SUMMARY_ROW_1}`).setValue("Raw Score: ");
+    sheet.getRange(`G${layout.SUMMARY_ROW_1}`).setValue("Out of: " + (Object.keys(Config.MIDTERM_SUBJECT_CONFIG).length * 100));
+    sheet.getRange(`J${layout.SUMMARY_ROW_1}`).setValue("Average Mark: ");
+    sheet.getRange(`D${layout.SUMMARY_ROW_2}`).setValue("Average Grade: ");
+    sheet.getRange(`G${layout.SUMMARY_ROW_2}`).setValue("Best Grade: ");
+    sheet.getRange(`J${layout.SUMMARY_ROW_2}`).setValue("Worst Grade: ");
   },
 
   setRichText: function (sheet, cell, label, value) {

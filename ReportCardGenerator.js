@@ -86,16 +86,7 @@ const ReportCardGenerator = {
     CELLS: {
         NAME: "A6",    ID: "F6",      ROLL: "J6",      
         CLASS: "A7",   ATT: "F7",     YEAR: "J7",      
-        PROG: "A8",    DATE: "F8",    TERM: "I8",      NEXT_TERM: "J8",
-        
-        MUSIC_TOT: "F17", MUSIC_AVE: "G17", MUSIC_GRD: "H17", MUSIC_REM: "I17", 
-        PE_REM: "F18",    
-        CLUB_REM: "F19",  
-        
-        RAW_SCR: "D23", OUT_OF: "G23", AVE_MARK: "I23", 
-        AVE_GRD: "D24", BEST_GRD: "G24", WORST_GRD: "I24", 
-        
-        GEN_REM: "D26", TEACHER: "L26" 
+        PROG: "A8",    DATE: "F8",    TERM: "I8",      NEXT_TERM: "J8"
     },
 
     /**
@@ -321,58 +312,90 @@ const ReportCardGenerator = {
      * Reduces API calls from ~70 to ~10 per student = 7x faster
      */
     fillTemplateFast: function(sheet, row, cols, subjects, attendanceTotal) {
-        // Clear content areas in one batch call
-        sheet.getRangeList(["A6:L8", "B10:I19", "D23:L24", "D26:L32"]).clearContent();
+        // Clear content areas dynamically based on layout
+        const layout = Config.TEMPLATE_LAYOUT;
+        const subjectOrder = Object.keys(subjects);
+        const subStart = subjectOrder.length > 0 ? subjects[subjectOrder[0]].row : 10;
+        const subEnd = subjectOrder.length > 0 ? subjects[subjectOrder[subjectOrder.length - 1]].row : 16;
+        
+        const rangesToClear = [
+            "A6:L8", 
+            `B${subStart}:I${subEnd}`, 
+            `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
+            `D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 6}`
+        ];
+        
+        if (layout.MUSIC_ROW > 0) rangesToClear.push(`B${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`);
+        if (layout.PE_ROW > 0) rangesToClear.push(`B${layout.PE_ROW}:I${layout.PE_ROW}`);
+        if (layout.CLUB_ROW > 0) rangesToClear.push(`B${layout.CLUB_ROW}:I${layout.CLUB_ROW}`);
+        
+        sheet.getRangeList(rangesToClear).clearContent();
         
         // --- HEADER ROW 6-8: Use batch setValues for 3 rows ---
         const headerData = [
             ["Student Name: " + row[cols.STUDENT_NAME], "", "", "", "", "Student ID: " + row[cols.STUDENT_ID], "", "", "", "No. on Roll: " + Config.ROLL_COUNT, "", ""],
             ["Class: " + Config.CLASS_NAME, "", "", "", "", "Attendance: " + row[cols.ATTENDANCE] + " / " + attendanceTotal, "", "", "", Config.TERM_YEAR_INFO, "", ""],
-            ["Programme: PRIMARY", "", "", "", "", "Vacation Date: " + Config.REPORT_DATE, "", "", "", "Next Term Begins: " + Config.NEXT_TERM_BEGINS, "", ""]
+            ["Programme: " + Config.PROGRAMME_NAME, "", "", "", "", "Vacation Date: " + Config.REPORT_DATE, "", "", "", "Next Term Begins: " + Config.NEXT_TERM_BEGINS, "", ""]
         ];
         sheet.getRange("A6:L8").setValues(headerData);
         
-        // --- SUBJECT ROWS 10-16: Build 2D array for batch update ---
-        const subjectOrder = ["English", "Mathematics", "Science", "Bible Knowledge", "French", "Humanities", "Computing"];
-        const subjectData = subjectOrder.map(subj => {
-            const sIdx = subjects[subj].startIdx;
-            return [
-                row[sIdx],      // B: CW 20
-                row[sIdx + 1],  // C: MT 20
-                "",             // D: empty
-                row[sIdx + 2],  // E: EOT 60
-                row[sIdx + 3],  // F: Total 100
-                row[sIdx + 6],  // G: Average
-                row[sIdx + 4],  // H: Grade
-                row[sIdx + 5]   // I: Comment
-            ];
-        });
-        sheet.getRange("B10:I16").setValues(subjectData);
+        // --- SUBJECT ROWS: Build 2D array for batch update ---
+        if (subjectOrder.length > 0) {
+            const subjectData = subjectOrder.map(subj => {
+                const sIdx = subjects[subj].startIdx;
+                return [
+                    row[sIdx],      // B: CW 20
+                    row[sIdx + 1],  // C: MT 20
+                    "",             // D: empty
+                    row[sIdx + 2],  // E: EOT 60
+                    row[sIdx + 3],  // F: Total 100
+                    row[sIdx + 6],  // G: Average
+                    row[sIdx + 4],  // H: Grade
+                    row[sIdx + 5]   // I: Comment
+                ];
+            });
+            sheet.getRange(`B${subStart}:I${subEnd}`).setValues(subjectData);
+        }
         
-        // --- MUSIC, PE, CLUBS: Rows 17-19 ---
-        const practicalData = [
-            ["", "", "", "", row[cols.MUSIC_TOTAL], row[cols.MUSIC_AVG], row[cols.MUSIC_GRADE], row[cols.MUSIC_REMARK]],
-            ["", "", "", "", row[cols.PE_REMARK], "", "", ""],
-            ["", "", "", "", row[cols.CLUB_REMARK], "", "", ""]
-        ];
-        sheet.getRange("B17:I19").setValues(practicalData);
+        // --- PRACTICAL ROWS ---
+        if (layout.MUSIC_ROW > 0) {
+            sheet.getRange(`F${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`).setValues([[row[cols.MUSIC_TOTAL], row[cols.MUSIC_AVG], row[cols.MUSIC_GRADE], row[cols.MUSIC_REMARK]]]);
+        }
+        if (layout.PE_ROW > 0) {
+            sheet.getRange(`F${layout.PE_ROW}`).setValue(row[cols.PE_REMARK]);
+        }
+        if (layout.CLUB_ROW > 0) {
+            sheet.getRange(`F${layout.CLUB_ROW}`).setValue(row[cols.CLUB_REMARK]);
+        }
         
-        // --- SUMMARY ROWS 23-24 ---
-        const outOf = Object.keys(subjects).length * 100;
+        // --- SUMMARY ROWS ---
+        const outOf = subjectOrder.length * 100;
         const summaryData = [
             ["Raw Score: " + row[cols.RAW_SCORE], "", "", "Out of: " + outOf, "", "Average Mark: " + row[cols.AVG_MARK]],
             ["Average Grade: " + row[cols.AVG_GRADE], "", "", "Best Grade: " + row[cols.BEST_GRADE], "", "Worst Grade: " + row[cols.WORST_GRADE]]
         ];
-        sheet.getRange("D23:I24").setValues(summaryData);
+        sheet.getRange(`D${layout.SUMMARY_ROW_1}:I${layout.SUMMARY_ROW_2}`).setValues(summaryData);
         
-        // --- GENERAL COMMENT & TEACHER: Row 26 ---
-        sheet.getRange("D26").setValue(row[cols.GENERAL_REMARK]);
-        sheet.getRange("L26").setValue(row[cols.TEACHER_NAME]);
+        // --- GENERAL COMMENT & TEACHER ---
+        sheet.getRange(`D${layout.GEN_REM_ROW}`).setValue(row[cols.GENERAL_REMARK]);
+        sheet.getRange(`L${layout.GEN_REM_ROW}`).setValue(row[cols.TEACHER_NAME]);
     },
 
     rebuildTemplateLabels: function(sheet, attendanceTotal) {
-        // Legacy method - kept for compatibility but fillTemplateFast is preferred
-        const ranges = ["A6:L8", "B10:I19", "D23:L24", "D26:L32"];
+        const layout = Config.TEMPLATE_LAYOUT;
+        const subjectOrder = Object.keys(Config.SUBJECT_CONFIG);
+        const subStart = subjectOrder.length > 0 ? Config.SUBJECT_CONFIG[subjectOrder[0]].row : 10;
+        const subEnd = subjectOrder.length > 0 ? Config.SUBJECT_CONFIG[subjectOrder[subjectOrder.length - 1]].row : 16;
+        
+        const ranges = [
+            "A6:L8", 
+            `B${subStart}:I${subEnd}`, 
+            `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
+            `D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 6}`
+        ];
+        if (layout.MUSIC_ROW > 0) ranges.push(`B${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`);
+        if (layout.PE_ROW > 0) ranges.push(`B${layout.PE_ROW}:I${layout.PE_ROW}`);
+        if (layout.CLUB_ROW > 0) ranges.push(`B${layout.CLUB_ROW}:I${layout.CLUB_ROW}`);
         sheet.getRangeList(ranges).clearContent();
 
         sheet.getRange(this.CELLS.NAME).setValue("STUDENT NAME: ");
@@ -381,16 +404,16 @@ const ReportCardGenerator = {
         sheet.getRange(this.CELLS.CLASS).setValue("Class: " + Config.CLASS_NAME);
         sheet.getRange(this.CELLS.ATT).setValue("Attendance: ");
         sheet.getRange(this.CELLS.YEAR).setValue(Config.TERM_YEAR_INFO);
-        sheet.getRange(this.CELLS.PROG).setValue("Programme: PRIMARY");
+        sheet.getRange(this.CELLS.PROG).setValue("Programme: " + Config.PROGRAMME_NAME);
         sheet.getRange(this.CELLS.DATE).setValue("Vacation Date: " + Config.REPORT_DATE);
         sheet.getRange(this.CELLS.NEXT_TERM).setValue("Next Term Begins: " + Config.NEXT_TERM_BEGINS);
 
-        sheet.getRange(this.CELLS.RAW_SCR).setValue("Raw Score: ");
-        sheet.getRange(this.CELLS.OUT_OF).setValue(`Out of: ${Object.keys(Config.SUBJECT_CONFIG).length * 100}`);
-        sheet.getRange(this.CELLS.AVE_MARK).setValue("Average Mark: ");
-        sheet.getRange(this.CELLS.AVE_GRD).setValue("Average Grade: ");
-        sheet.getRange(this.CELLS.BEST_GRD).setValue("Best Grade: ");
-        sheet.getRange(this.CELLS.WORST_GRD).setValue("Worst Grade: ");
+        sheet.getRange(`D${layout.SUMMARY_ROW_1}`).setValue("Raw Score: ");
+        sheet.getRange(`G${layout.SUMMARY_ROW_1}`).setValue(`Out of: ${Object.keys(Config.SUBJECT_CONFIG).length * 100}`);
+        sheet.getRange(`I${layout.SUMMARY_ROW_1}`).setValue("Average Mark: ");
+        sheet.getRange(`D${layout.SUMMARY_ROW_2}`).setValue("Average Grade: ");
+        sheet.getRange(`G${layout.SUMMARY_ROW_2}`).setValue("Best Grade: ");
+        sheet.getRange(`I${layout.SUMMARY_ROW_2}`).setValue("Worst Grade: ");
     },
 
     setRichText: function(sheet, cell, label, value) {

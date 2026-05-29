@@ -1,0 +1,5 @@
+# Ignore sensitive data and vault templates
+*.csv
+
+# Ignore Clasp internal
+.clasp.json
