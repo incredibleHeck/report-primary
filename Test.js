@@ -1,72 +1,94 @@
-// ==========================================
-// HECTECH Test.js — Smoke tests (admin only, excluded from clasp push)
-// ==========================================
-// Run these from the Apps Script editor to verify connectivity before batch sends.
+// =========================================================================
+// HECTECH Test.js — Hardened Smoke Tests (Admin Only, Excluded from clasp push)
+// =========================================================================
+// Run these directly from the Apps Script Editor to verify configuration channels
+// and catch authorization exceptions before initiating production batch runs.
 
 /**
- * Sends a plain text message (no template required).
- * Tests: token + phone ID + basic connectivity.
+ * Sends a plain text message to verify core API credentials and connectivity.
+ * Verifies global tokens and Meta Graph API routing status.
  */
 function testWhatsAppConnection() {
-  var phone = "233532947022";
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const phone = "233532947022";
+  const props = PropertiesService.getScriptProperties().getProperties();
 
-  var config = {
-    token: PropertiesService.getScriptProperties().getProperty("WHATSAPP_TOKEN"),
-    id: PropertiesService.getScriptProperties().getProperty("WHATSAPP_PHONE_ID")
-  };
+  // 🟢 FIXED: Normalizes token references to align with your production architecture
+  const token = props["WHATSAPP_TOKEN"] || props["WHATSAPP_ACCESS_TOKEN"];
+  const phoneId = props["WHATSAPP_PHONE_ID"];
 
-  console.log("Testing with ID:", config.id);
-  console.log("Testing with Token:", config.token ? config.token.substring(0, 10) + "..." : "MISSING");
+  console.log("Telemetry Diagnostics: Testing Gateway Phone ID ->", phoneId);
+  console.log("Telemetry Diagnostics: Token Signature Status ->", token ? `${token.substring(0, 10)}...*******` : "MISSING");
 
-  var url = "https://graph.facebook.com/v25.0/" + config.id + "/messages";
+  if (!phoneId || !token) {
+    executeAlertOrLog("❌ Pre-flight Disruption: Critical Meta Phone ID or Access Token configurations missing.");
+    return;
+  }
 
-  var payload = {
+  const url = `https://graph.facebook.com/v25.0/${phoneId}/messages`;
+  const payload = {
     messaging_product: "whatsapp",
     to: phone,
     type: "text",
-    text: { body: "HecTech Connection Test: Success!" }
+    text: { body: "HecTech Infrastructure Gateway Connection Test: Success!" }
   };
 
   try {
-    var options = {
+    const options = {
       method: "post",
-      headers: { "Authorization": "Bearer " + config.token, "Content-Type": "application/json" },
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
 
-    var req = UrlFetchApp.fetch(url, options);
-    console.log("Response:", req.getContentText());
+    const response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    console.log(`Gateway Response Log [HTTP ${code}]:`, response.getContentText());
 
-    if (req.getResponseCode() === 200) {
-      SpreadsheetApp.getUi().alert("Connection SUCCESS! Text message sent.");
+    if (code === 200 || code === 201) {
+      executeAlertOrLog("✅ Connection SUCCESS! Direct text message handshake verified.");
     } else {
-      SpreadsheetApp.getUi().alert("Connection FAILED. Check Logs.\n\n" + req.getContentText());
+      executeAlertOrLog(`❌ Connection REJECTED [HTTP ${code}]:\n\n${response.getContentText()}`);
     }
-  } catch (e) {
-    console.error(e);
-    SpreadsheetApp.getUi().alert("Error: " + e.message);
+  } catch (err) {
+    console.error("Catastrophic connection disruption intercepted:", err);
+    executeAlertOrLog(`❌ Operational Error: ${err.message}`);
   }
 }
 
 /**
- * Sends a real template message (no attachment) to verify template name + language match.
- * This catches the #132001 error BEFORE you run the full batch.
+ * Dispatches a template message to catch Meta translation and naming exceptions.
+ * Automatically resolves sheet-scoped suffix parameters to prevent false negatives.
  */
 function testWhatsAppTemplateSend() {
-  var phone = "233532947022";
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ssId = ss ? ss.getId() : "";
+  const phone = "233532947022";
+  
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const token = props["WHATSAPP_TOKEN"] || props["WHATSAPP_ACCESS_TOKEN"];
+  const phoneId = props["WHATSAPP_PHONE_ID"];
 
-  var props = PropertiesService.getScriptProperties();
-  var token = props.getProperty("WHATSAPP_TOKEN");
-  var phoneId = props.getProperty("WHATSAPP_PHONE_ID");
-  var templateName = props.getProperty("WHATSAPP_TEMPLATE_NAME") || "student_report_pdf";
-  var templateLang = props.getProperty("WHATSAPP_TEMPLATE_LANGUAGE") || "en";
+  // 🟢 FIXED: Resolves sheet-scoped overrides dynamically based on active workbook ID
+  const resolveScopedProperty = (baseKey, fallbackDefault) => {
+    if (ssId && props[`${baseKey}_${ssId}`]) {
+      return props[`${baseKey}_${ssId}`];
+    }
+    return props[baseKey] || fallbackDefault;
+  };
 
-  console.log("Template:", templateName, "Language:", templateLang);
+  const templateName = resolveScopedProperty("WHATSAPP_TEMPLATE_NAME", "student_report_pdf");
+  const templateLang = resolveScopedProperty("WHATSAPP_TEMPLATE_LANGUAGE", "en");
 
-  var url = "https://graph.facebook.com/v25.0/" + phoneId + "/messages";
+  console.log(`Targeting Template Reference: [${templateName}] | Locale: [${templateLang}]`);
 
-  var payload = {
+  if (!phoneId || !token) {
+    executeAlertOrLog("❌ Setup Incomplete: Core routing parameters unassigned.");
+    return;
+  }
+
+  const url = `https://graph.facebook.com/v25.0/${phoneId}/messages`;
+  const payload = {
     messaging_product: "whatsapp",
     to: phone,
     type: "template",
@@ -77,7 +99,7 @@ function testWhatsAppTemplateSend() {
         {
           type: "body",
           parameters: [
-            { type: "text", parameter_name: "student_name", text: "Test Student" }
+            { type: "text", parameter_name: "student_name", text: "Sandbox Diagnostic Student" }
           ]
         }
       ]
@@ -85,113 +107,99 @@ function testWhatsAppTemplateSend() {
   };
 
   try {
-    var options = {
+    const options = {
       method: "post",
-      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
 
-    var res = UrlFetchApp.fetch(url, options);
-    var code = res.getResponseCode();
-    var body = res.getContentText();
-    console.log("Response " + code + ":", body);
+    const res = UrlFetchApp.fetch(url, options);
+    const code = res.getResponseCode();
+    const body = res.getContentText();
+    console.log(`Template Handshake Response [HTTP ${code}]:`, body);
 
     if (code === 200 || code === 201) {
-      SpreadsheetApp.getUi().alert(
-        "Template test SUCCESS!\n\n" +
-        "Template: " + templateName + "\n" +
-        "Language: " + templateLang + "\n\n" +
-        "Your WhatsApp batch should work."
-      );
+      executeAlertOrLog(`✅ Template Check SUCCESS!\n\nTemplate String Name: ${templateName}\nLanguage Reference Code: ${templateLang}\n\nMulti-tenant deployment arrays are clear to send.`);
     } else {
-      var json = JSON.parse(body);
-      var errMsg = json.error ? json.error.message : body;
-      SpreadsheetApp.getUi().alert(
-        "Template test FAILED (" + code + ")\n\n" + errMsg +
-        "\n\nCheck WHATSAPP_TEMPLATE_NAME and WHATSAPP_TEMPLATE_LANGUAGE in Script Properties."
-      );
+      const json = JSON.parse(body);
+      const errMsg = json.error ? json.error.message : body;
+      executeAlertOrLog(`❌ Template Validation FAILED [HTTP ${code}]\n\nDetails: ${errMsg}\n\nVerify that the template name exactly matches your Meta dashboard profiles.`);
     }
-  } catch (e) {
-    console.error(e);
-    SpreadsheetApp.getUi().alert("Error: " + e.message);
+  } catch (err) {
+    console.error("Exception thrown during template validation track:", err);
+    executeAlertOrLog(`❌ Execution Error: ${err.message}`);
   }
 }
 
 /**
- * Sends a minimal prompt to Gemini to verify API key and model.
+ * Sends a minimal payload check to Google AI Studio.
+ * Verifies private token validation states and model visibility.
  */
 function testGeminiConnection() {
-  var props = PropertiesService.getScriptProperties();
-  var apiKey = props.getProperty("GEMINI_API_KEY");
-  var model = props.getProperty("GEMINI_MODEL_NAME") || "gemini-3.5-flash";
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const apiKey = props["GEMINI_API_KEY"];
+  const model = props["GEMINI_MODEL_NAME"] || "gemini-3.5-flash";
 
   if (!apiKey || apiKey.length < 10) {
-    SpreadsheetApp.getUi().alert("GEMINI_API_KEY is missing or too short. Run Setup first.");
+    executeAlertOrLog("❌ Security Failure: GEMINI_API_KEY is missing or too short. Configure master keys via developer console.");
     return;
   }
 
-  console.log("Testing model:", model);
+  console.log("Targeting Generation Engine Profile:", model);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-
-  var payload = {
-    contents: [{ parts: [{ text: "Reply with only the word OK" }] }],
+  const payload = {
+    contents: [{ parts: [{ text: "Respond with only the token word OK" }] }],
     generationConfig: { maxOutputTokens: 10 }
   };
 
   try {
-    var options = {
+    const options = {
       method: "post",
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
 
-    var res = UrlFetchApp.fetch(url, options);
-    var code = res.getResponseCode();
-    var body = res.getContentText();
-    console.log("Response " + code + ":", body);
+    const res = UrlFetchApp.fetch(url, options);
+    const code = res.getResponseCode();
+    const body = res.getContentText();
+    console.log(`AI Gateway Endpoint Response [HTTP ${code}]:`, body);
 
     if (code === 200) {
-      var json = JSON.parse(body);
-      var reply = "";
-      try { reply = json.candidates[0].content.parts[0].text; } catch (e) { reply = "(could not parse reply)"; }
-      SpreadsheetApp.getUi().alert(
-        "Gemini connection SUCCESS!\n\n" +
-        "Model: " + model + "\n" +
-        "Reply: " + reply.trim()
-      );
+      const json = JSON.parse(body);
+      let reply = "";
+      try { reply = json.candidates[0].content.parts[0].text; } catch (e) { reply = "(Failed to isolate textual response node)"; }
+      executeAlertOrLog(`✅ Gemini Connection SUCCESS!\n\nActive Engine Model: ${model}\nGateway Extraction: ${reply.trim()}`);
     } else {
-      SpreadsheetApp.getUi().alert("Gemini test FAILED (" + code + ")\n\n" + body);
+      executeAlertOrLog(`❌ Gemini Processing Error [HTTP ${code}]:\n\n${body}`);
     }
-  } catch (e) {
-    console.error(e);
-    SpreadsheetApp.getUi().alert("Error: " + e.message);
+  } catch (err) {
+    console.error("Catastrophic pipeline break on AI infrastructure route:", err);
+    executeAlertOrLog(`❌ Pipeline Drop Failure: ${err.message}`);
   }
 }
 
 /**
- * Smoke test to verify Autopilot trigger registration and Single Temp Sheet reuse.
+ * Smoke test verifies background autopilot trigger registrations and safe data-continuation tasks.
  */
 function testAutopilotAndSheetReuse() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Clear any existing resubmit triggers first
+  if (!ss) return;
+
   clearResubmitTriggers();
   
-  // Mock the timeout limit to 10 seconds (10000ms)
   const limitName = 'TEST_TIMEOUT_LIMIT';
-  this[limitName] = 10000; 
+  this[limitName] = 10000; // Mock safety runtime margin to 10 seconds (10000ms)
   
   try {
-    ss.toast("Running autopilot mock test...", "Test Console", 5);
+    ss.toast("Injecting simulated execution limits...", "Autopilot Tracker Check", 4);
     
-    // We will call runAllReportsSafely. It should process a few reports,
-    // hit the 10s limit, register a trigger, and terminate.
+    // Call the master generation engine loop
     runAllReportsSafely();
     
-    // Check if trigger was registered
+    // Evaluate if continuation triggers register correctly upon hitting timeout limits
     const triggers = ScriptApp.getProjectTriggers();
     let triggerFound = false;
     triggers.forEach(t => {
@@ -201,28 +209,26 @@ function testAutopilotAndSheetReuse() {
     });
     
     if (triggerFound) {
-      ss.toast("✅ Autopilot Trigger registration test PASSED!", "Test Console", 5);
+      ss.toast("✅ Autopilot Trigger registration test PASSED!", "Test Complete", 5);
       console.log("✅ Autopilot Trigger registration test PASSED!");
     } else {
-      ss.toast("❌ Autopilot Trigger registration test FAILED! (No trigger found)", "Test Console", 5);
-      console.error("❌ Autopilot Trigger registration test FAILED!");
+      ss.toast("❌ Autopilot Trigger registration test FAILED!", "Test Complete", 5);
+      console.error("❌ Autopilot Trigger registration test FAILED: No resubmit trigger resolved.");
     }
-  } catch (e) {
-    console.error("Test error:", e.stack);
-    ss.toast(`❌ Test error: ${e.message}`, "Test Console", 5);
+  } catch (err) {
+    console.error("Test execution block crash:", err.stack);
+    ss.toast(`❌ Exception Intercepted: ${err.message}`, "Test Complete", 5);
   } finally {
-    // Clean up test trigger
     clearResubmitTriggers();
-    // Remove global mock variable
-    delete this[limitName];
+    delete this[limitName]; // Flush global variables cleanly
   }
 }
 
 /**
- * Smoke test for ChatBotManager.getChatResponse and system instructions.
+ * Smoke test for ChatBotManager.getChatResponse system context processing.
  */
 function testChatBotResponse() {
-  console.log("Starting ChatBot smoke test...");
+  console.log("Initiating ChatBot extraction pipeline smoke test...");
   const history = [
     { sender: 'user', text: "Hello, I need help with Jessica's report." },
     { sender: 'bot', text: "Hello! I am ready to help. Please tell me what you would like to draft." }
@@ -236,15 +242,34 @@ function testChatBotResponse() {
   };
 
   try {
-    const response = ChatBotManager.getChatResponse(history, message, selectedText, studentContext);
-    console.log("Chat Response Status:", response.error ? "FAILED" : "SUCCESS");
-    console.log("Response text:", response.text || response.message);
-    if (!response.error) {
-      console.log("✅ Smoke test passed!");
-    } else {
-      console.error("❌ Smoke test failed: ", response.message);
+    if (typeof ChatBotManager === 'undefined') {
+      console.error("❌ Test Block Dropped: ChatBotManager engine module unlinked from active namespace.");
+      return;
     }
-  } catch (e) {
-    console.error("❌ Exception in smoke test: ", e.message, e.stack);
+    
+    const response = ChatBotManager.getChatResponse(history, message, selectedText, studentContext);
+    console.log("Chat Response Pipeline Execution Status ->", response.error ? "FAILED" : "SUCCESS");
+    console.log("Extracted Content Payload Node ->", response.text || response.message);
+    
+    if (!response.error) {
+      console.log("✅ ChatBot Response Extraction Smoke Test PASSED!");
+    } else {
+      console.error("❌ ChatBot Response Verification FAILED: ", response.message);
+    }
+  } catch (err) {
+    console.error("❌ Catastrophic crash inside ChatBot smoke test route: ", err.message, err.stack);
+  }
+}
+
+/**
+ * 🟢 DEFENSIVE UI UTILITY WRAPPER
+ * Prevents execution crashes by routing outputs to Logger if the UI environment is missing.
+ */
+function executeAlertOrLog(messageText) {
+  console.log(messageText);
+  try {
+    SpreadsheetApp.getUi().alert("HecTech Diagnostic Center", messageText, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (uiErr) {
+    Logger.log(`[Headless Runtime Mode Active] - Dialog Out: ${messageText}`);
   }
 }

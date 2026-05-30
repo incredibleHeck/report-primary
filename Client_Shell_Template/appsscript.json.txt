@@ -1,6 +1,14 @@
 {
   "timeZone": "Africa/Accra",
   "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "HecTechVault",
+        "libraryId": "1zX6RSBTZSMLPig93Hwxh6pdiPKJGw5wUkqV4aDn1KzYq2ROtuwaPVS0P",
+        "version": "1",
+        "developmentMode": false
+      }
+    ]
   },
   "oauthScopes": [
     "https://www.googleapis.com/auth/script.container.ui",

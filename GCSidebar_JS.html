@@ -262,13 +262,13 @@
 
       btn.disabled = true;
       text.textContent = "Generating...";
-      spinner.style.display = "inline-block";
+      spinner.className = "spinner-visible";
       icon.style.display = "none";
 
       google.script.run
         .withSuccessHandler(function() {
           text.textContent = "Done!";
-          spinner.style.display = "none";
+          spinner.className = "spinner-hidden";
           icon.style.display = "inline-block";
           icon.textContent = "check_circle";
           btn.classList.add('success');
@@ -284,7 +284,7 @@
         })
         .withFailureHandler(function(err) {
           text.textContent = "Try Again";
-          spinner.style.display = "none";
+          spinner.className = "spinner-hidden";
           icon.style.display = "inline-block";
           icon.textContent = "refresh";
           btn.disabled = false;

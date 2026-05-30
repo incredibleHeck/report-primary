@@ -1,5 +1,5 @@
 // ==========================================
-// HECTECH FixMismatchManager.js
+// HECTECH FixMismatchManager.js (Hardened)
 // ==========================================
 
 const FixMismatchManager = {
@@ -7,16 +7,16 @@ const FixMismatchManager = {
         const selection = SelectionProcessor.getSmartSelection();
         if (!selection) return;
         
-        // 🟢 PREFERRED: Using the Centralized RangeValidator
-        // This handles the Row 3 check and cleans the selection automatically.
+        // 🟢 PREFERRED: Using Centralized RangeValidator
+        // This handles Row 3 checks and cleans bounds automatically.
         const range = RangeValidator.getValidDataRange(selection);
         if (!range) return;
 
-        // Save State for Undo (if StateManager exists)
+        // Save State for Undo protection
         if (typeof StateManager !== 'undefined') StateManager.saveForUndo(range);
         
         // 1. FRESH SLATE RESET
-        range.setFontColor("#FFFFFF"); // Reset to white for dark background visibility
+        range.setFontColor("#FFFFFF"); // Reset to high-contrast white text for dark sheets
         range.clearNote();
         SpreadsheetApp.flush();
 
@@ -32,8 +32,9 @@ const FixMismatchManager = {
 
     fixRange: function (range) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = range.getSheet();
         
-        // 2. CONFIG: Source of Truth
+        // 2. CONFIG: Global Source of Truth
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
         if (!classlistSheet) throw new Error(`❌ Missing Classlist Sheet: "${Config.CLASSLIST_SHEET_NAME}"`);
 
@@ -41,9 +42,14 @@ const FixMismatchManager = {
         const startRow = range.getRow();
         const numRows = range.getNumRows();
         
-        // 3. ALIGNMENT LOGIC (Row 3 Awareness)
-        const rowOffset = Config.DATA_START_ROW - 2; // Offset is 1 for Row 3 start
+        // 3. HARDENED ROW ALIGNMENT (Data-to-Data Row 3 Parity)
+        const subjectDataStart = Config.DATA_START_ROW; // 3
+        const classlistDataStart = 3; // Standardized to Row 3 to eliminate lookup offset drift
+        const rowOffset = subjectDataStart - classlistDataStart; // 0
         const startRowInClasslist = startRow - rowOffset;
+
+        // Safety header-zone boundary check
+        if (startRowInClasslist < 3) throw new Error("Selection header overlap. Please select student rows only (Row 3+).");
 
         // 4. FETCH DATA
         const nameColIndex = Config.CLASSLIST_NAME_COL;    
@@ -53,13 +59,13 @@ const FixMismatchManager = {
 
         let batchRequest = [];
 
-        // 5. BUILD BATCH
+        // 5. BUILD PAYLOAD BATCH
         for (let r = 0; r < subjectData.length; r++) {
             if (!masterData[r]) continue;
 
             const fullName = masterData[r][nameColIndex - 1]; 
             const genderRaw = masterData[r][genderColIndex - 1];
-            const gender = (String(genderRaw).toUpperCase().startsWith("F")) ? "Female" : "Male";
+            const gender = (genderRaw && String(genderRaw).trim().toUpperCase().startsWith("F")) ? "Female" : "Male";
 
             if (!fullName || String(fullName).trim() === "") continue;
             
@@ -67,10 +73,11 @@ const FixMismatchManager = {
 
             for (let c = 0; c < subjectData[0].length; c++) {
                 const comment = subjectData[r][c];
+                // Process only valid comment fields containing evaluation text (> 10 characters)
                 if (typeof comment === 'string' && comment.trim().length > 10) {
                     batchRequest.push({
                         id: `${r}_${c}`,
-                        name: firstName,
+                        name: firstName, // Pass conversational first name for alignment processing
                         gender: gender,
                         comment: comment,
                         rowIndex: r,
@@ -83,7 +90,7 @@ const FixMismatchManager = {
         if (batchRequest.length === 0) return { success: true, changes: 0 };
 
         try {
-            // 6. CALL GEMINI
+            // 6. CALL GEMINI MISMATCH PIPELINE
             const fixedComments = callGeminiJsonBatch(
                 batchRequest, 
                 Config.MODEL_NAME, 
@@ -91,13 +98,13 @@ const FixMismatchManager = {
                 () => PromptFixMismatch.getFixMismatchPrompt(batchRequest)
             );
 
-            // Create ID-based map of fixed comments
+            // Create string-safe ID map of fixed comments
             const resultMap = {};
             if (Array.isArray(fixedComments)) {
                 fixedComments.forEach(item => {
                     if (item && item.id !== undefined) {
                         const text = item.comment || item.text;
-                        if (text) resultMap[item.id] = text;
+                        if (text) resultMap[item.id.toString()] = text;
                     }
                 });
             }
@@ -106,19 +113,23 @@ const FixMismatchManager = {
             const fontColors = range.getFontColors();
             const fontWeights = range.getFontWeights();
 
-            // 7. APPLY FIXES
+            // 7. APPLY REPAIRED DATA OVERLAYS
             batchRequest.forEach((item) => {
                 const original = item.comment;
-                let fixed = resultMap[item.id];
+                let fixed = resultMap[item.id.toString()];
                 
+                // Protect parsing loop against sub-object string wrappers
                 if (typeof fixed === 'object' && fixed !== null) {
                     fixed = fixed.comment || fixed.text || original;
                 }
                 
+                // Normalization check strips trailing whitespaces before matching values
                 if (fixed && fixed.trim() !== original.trim()) {
                     changesCount++;
-                    subjectData[item.rowIndex][item.colIndex] = fixed;
-                    fontColors[item.rowIndex][item.colIndex] = "#ff9900"; // Orange highlight
+                    subjectData[item.rowIndex][item.colIndex] = fixed.trim();
+                    
+                    // Style Feedback: High-intensity Electric Neon Orange pops beautifully on black grids
+                    fontColors[item.rowIndex][item.colIndex] = "#FF6600"; 
                     fontWeights[item.rowIndex][item.colIndex] = "bold";
                 }
             });

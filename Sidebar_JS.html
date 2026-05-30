@@ -1,0 +1,251 @@
+<script>
+  // =========================================================================
+  // HECTECH 2.0 BATCH CONCURRENCY WORKER ENGINE
+  // Core Interface Scripting Pipeline
+  // =========================================================================
+
+  // 🟢 OPTIMIZED: Safety throttle guards against GAS lock contentions
+  const MAX_CONCURRENT_REQUESTS = 3; 
+  const MAX_RETRIES = 3;
+
+  // Internal state tracking matrices
+  let totalRows = 0;
+  let rowsCompleted = 0;
+  let rowsFailed = 0; // 🟢 FIXED: Tracks skipped lines to prevent silent error masks
+  let chunkSize = 10;
+  let currentAction = "";
+  let isCancelled = false;
+  let chunkQueue = [];
+  let activeRequests = 0;
+
+  /**
+   * Pushes high-readability logs straight to the obsidian console terminal box.
+   */
+  function log(message, type = "info") {
+    const logDiv = document.getElementById("log");
+    if (!logDiv) return;
+
+    const entry = document.createElement("div");
+    let colorClass = "log-info";
+    if (type === "error") colorClass = "log-error";
+    if (type === "success") colorClass = "log-success";
+
+    const time = new Date().toLocaleTimeString([], { hour12: false });
+    entry.className = `log-entry ${colorClass}`;
+    entry.innerHTML = `<span class="timestamp">${time}</span><span>${message}</span>`;
+
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  /**
+   * Refreshes interface counters and handles progress track styles.
+   */
+  function updateProgress() {
+    const processedTotal = rowsCompleted + rowsFailed;
+    const percent = totalRows > 0 ? Math.min(100, Math.round((processedTotal / totalRows) * 100)) : 0;
+
+    const progressBar = document.getElementById("progress-bar");
+    if (progressBar) {
+      progressBar.style.width = percent + "%";
+      if (percent === 100) {
+        progressBar.classList.add(rowsFailed > 0 ? "error" : "success");
+      }
+    }
+
+    const percentText = document.getElementById("progress-percent");
+    if (percentText) percentText.textContent = percent + "%";
+    
+    const completedText = document.getElementById("completed-count");
+    if (completedText) completedText.textContent = rowsCompleted;
+    
+    const totalText = document.getElementById("total-count");
+    if (totalText) totalText.textContent = totalRows;
+  }
+
+  /**
+   * Manages status badges and synchronizes sync animation cycles.
+   */
+  function setStatus(type, label) {
+    const badge = document.getElementById("status-badge");
+    const iconWrapper = document.getElementById("status-icon");
+    if (!badge || !iconWrapper) return;
+
+    const icon = iconWrapper.querySelector(".material-icons-round");
+
+    badge.className = "status-badge " + type;
+    const labelElem = document.getElementById("status-label");
+    if (labelElem) labelElem.textContent = label;
+
+    // Toggle rotation animation based on task processing state
+    if (type === "running") {
+      icon.textContent = "sync";
+      icon.classList.add("rotate-animation");
+      iconWrapper.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark))";
+    } else {
+      icon.classList.remove("rotate-animation"); // Stop heavy layout paint cycles immediately
+      if (type === "complete") {
+        icon.textContent = "check_circle";
+        iconWrapper.style.background = "linear-gradient(135deg, var(--success), #22c55e)";
+      } else if (type === "error") {
+        icon.textContent = "error";
+        iconWrapper.style.background = "linear-gradient(135deg, var(--error), #b91c1c)";
+      }
+    }
+  }
+
+  // Document entry init binding
+  window.onload = function () {
+    log("Establishing secure connection channel...", "info");
+    google.script.run
+      .withSuccessHandler(initQueue)
+      .withFailureHandler((err) => {
+        log(`Connection failed: ${err.message || err}`, "error");
+        setStatus("error", "Failed");
+        const title = document.getElementById("sidebar-title");
+        if (title) title.innerText = "Connection Refused";
+      })
+      .getSelectionInfo();
+  };
+
+  /**
+   * Parses active student selections and splits chunks into serial queues.
+   */
+  function initQueue(info) {
+    if (!info || info.error) {
+      log(info ? info.error : "Malformed setup parameters returned.", "error");
+      setStatus("error", "Setup Error");
+      return;
+    }
+
+    totalRows = info.numRows;
+    chunkSize = info.chunkSize || 10;
+    currentAction = info.action;
+
+    document.getElementById("sidebar-title").textContent = info.title || "Processing Chunks";
+    document.getElementById("sidebar-desc").textContent = `Processing ${totalRows} items in smart batches`;
+    document.getElementById("batch-size").textContent = chunkSize;
+    document.getElementById("total-count").textContent = totalRows;
+    
+    const cancelBtn = document.getElementById("cancel-btn");
+    if (cancelBtn) cancelBtn.classList.remove("hidden");
+
+    setStatus("running", "Processing");
+
+    // Partition processing segments safely
+    for (let i = 0; i < totalRows; i += chunkSize) {
+      let size = Math.min(chunkSize, totalRows - i);
+      chunkQueue.push({ startRowIndex: i, count: size, retries: 0 });
+    }
+
+    log(`Queue initialized: ${chunkQueue.length} operational blocks allocated.`, "info");
+    processQueue();
+  }
+
+  /**
+   * Process manager loops through items and coordinates thread tracking variables.
+   */
+  function processQueue() {
+    // 🟢 FIXED: Cancellation allows flying chunks to settle before updating the UI state
+    if (!isCancelled) {
+      while (activeRequests < MAX_CONCURRENT_REQUESTS && chunkQueue.length > 0) {
+        const chunk = chunkQueue.shift();
+        activeRequests++;
+        sendChunk(chunk);
+      }
+    }
+
+    // Evaluate operational termination criteria dynamically
+    if (activeRequests === 0) {
+      const cancelBtn = document.getElementById("cancel-btn");
+      if (cancelBtn) cancelBtn.classList.add("hidden");
+
+      if (isCancelled) {
+        log("Process terminated. Outstanding connections closed safely.", "error");
+        setStatus("error", "Cancelled");
+        return;
+      }
+
+      if (rowsFailed > 0) {
+        // 🟢 FIXED: Provides clear interface alerts if operations finish with processing errors
+        log(`Batch run complete with exclusions. Success: ${rowsCompleted}, Failures: ${rowsFailed}.`, "error");
+        document.getElementById("sidebar-title").textContent = "Completed with Errors";
+        document.getElementById("sidebar-desc").textContent = "Review compilation logs for omitted rows.";
+        setStatus("error", "Exclusions");
+      } else {
+        log("All tasks completed successfully across rosters!", "success");
+        document.getElementById("sidebar-title").textContent = "Complete";
+        document.getElementById("sidebar-desc").textContent = "All rows updated successfully.";
+        setStatus("complete", "Done");
+        
+        google.script.run.toast("HecTech: Batch process completed successfully!", "Success");
+      }
+
+      // Automatically dismiss the panel interface layout upon successful runs
+      if (rowsFailed === 0) {
+        setTimeout(() => { google.script.host.close(); }, 1600);
+      }
+    }
+  }
+
+  /**
+   * Routes processing tasks across asynchronous network endpoints.
+   */
+  function sendChunk(chunk) {
+    const batchNum = Math.floor(chunk.startRowIndex / chunkSize) + 1;
+    log(`Batch #${batchNum} processing (${chunk.count} columns)...`, "info");
+
+    google.script.run
+      .withSuccessHandler(() => {
+        activeRequests--;
+        if (!isCancelled) {
+          rowsCompleted += chunk.count;
+          log(`Batch #${batchNum} written successfully.`, "success");
+        }
+        updateProgress();
+        processQueue();
+      })
+      .withFailureHandler((err) => {
+        activeRequests--;
+        log(`Batch #${batchNum} connection dropped: ${err.message || err}`, "error");
+
+        if (!isCancelled && chunk.retries < MAX_RETRIES) {
+          chunk.retries++;
+          log(`Retrying batch #${batchNum} (Attempt ${chunk.retries + 1}/${MAX_RETRIES + 1})...`, "info");
+          chunkQueue.unshift(chunk); // Move back to head of queue to prioritize sequence order
+        } else {
+          if (!isCancelled) {
+            rowsFailed += chunk.count; // Log skipped rows to maintain data integrity tracking
+            log(`Batch #${batchNum} permanently skipped after max retries.`, "error");
+          }
+        }
+        updateProgress();
+        processQueue();
+      })
+      .processChunk(currentAction, chunk.startRowIndex, chunk.count);
+  }
+
+  /**
+   * Action trigger flips cancellation variables instantly.
+   */
+  document.getElementById("cancel-btn").onclick = function () {
+    if (isCancelled) return;
+    
+    isCancelled = true;
+    this.disabled = true;
+    this.innerHTML = '<span class="material-icons-round rotate-animation">hourglass_empty</span><span>Settling Threads...</span>';
+    
+    log("Cancellation registered. Waiting for outstanding tasks to settle...", "error");
+    
+    const progressBar = document.getElementById("progress-bar");
+    if (progressBar) progressBar.classList.add("error");
+    
+    setStatus("error", "Stopping");
+    
+    // Clear out unstarted queue entries immediately
+    chunkQueue = []; 
+    
+    // Force process check to handle immediate state drops if request counts sit at zero
+    processQueue();
+  };
+</script>

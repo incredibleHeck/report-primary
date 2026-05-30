@@ -8,66 +8,74 @@
 
 function runAllReportsSafely(clientToken) {
     if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllReportsSafely called. clientToken type=${typeof clientToken}`);
-    const BATCH_SIZE = 8;
-    const PAUSE_SECONDS = 20; 
-    let remainingStudents = 999;  // Starting high to enter the loop
-    let batchNumber = 1;
+    const BATCH_SIZE = 10; 
     const startTime = new Date().getTime();
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    ss.toast("Starting batch generation...", "HecTech Engine", 5);
+    ss.toast("Initializing turbo batch generation...", "HecTech Engine", 4);
 
     const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
     if (!templateSheet) {
-        ss.toast("❌ Template sheet not found.", "HecTech Engine", 5);
+        ss.toast("❌ Error: Template sheet layout not resolved.", "HecTech Engine", 5);
         return;
     }
 
-    // Create a temporary hidden copy of the template sheet to avoid concurrent collisions and reuse it
+    // Resolve token persistence before scheduling autopilot loops
+    let effectiveToken = (typeof clientToken === 'string' && clientToken) ? clientToken : null;
+    const propKey = `OAUTH_TOKEN_CACHE_${ss.getId()}`;
+    const docProps = PropertiesService.getDocumentProperties();
+
+    if (effectiveToken) {
+        docProps.setProperty(propKey, effectiveToken); 
+    } else {
+        effectiveToken = docProps.getProperty(propKey) || ScriptApp.getOAuthToken();
+    }
+
+    // Isolate batch sheets cleanly to avoid concurrent design collisions
     let tempSheet = null;
     try {
         tempSheet = templateSheet.copyTo(ss);
         tempSheet.setName(`TEMP_BATCH_${new Date().getTime()}`);
         tempSheet.hideSheet();
     } catch (e) {
-        console.error("Failed to copy template sheet:", e.message);
-        ss.toast("❌ Failed to duplicate template sheet.", "HecTech Engine", 5);
+        console.error("Failed to duplicate template layout context:", e.message);
+        ss.toast("❌ Failed to compile temporary execution layout.", "HecTech Engine", 5);
         return;
     }
 
     try {
-        // Keep running until the process function says 0 students are left
+        let remainingStudents = 999;
+        let batchNumber = 1;
+
         while (remainingStudents > 0) {
-            // Check execution duration (270,000 ms = 4.5 mins limit)
             const elapsed = new Date().getTime() - startTime;
-            const limit = (typeof TEST_TIMEOUT_LIMIT !== 'undefined') ? TEST_TIMEOUT_LIMIT : 270000;
+            const limit = (typeof TEST_TIMEOUT_LIMIT !== 'undefined') ? TEST_TIMEOUT_LIMIT : 240000; // 4-minute safety threshold
+            
             if (elapsed > limit) {
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`runAllReportsSafely: elapsed time ${elapsed}ms exceeds safety limit ${limit}ms. Scheduling trigger.`);
-                ss.toast("Approaching Google execution limit. Auto-resuming in 1 minute...", "Autopilot", 10);
-                setupResubmitTrigger('EOT');
+                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`Safety limit reached (${elapsed}ms). Saving state and caching trigger lifecycle...`);
+                ss.toast("Nearing system execution boundary. Auto-resuming next sequence...", "Autopilot", 8);
+                
+                setupResubmitTrigger('EOT'); 
                 return;
             }
 
-            console.log(`Starting Batch #${batchNumber}...`);
+            console.log(`Executing Processing Sequence Block #${batchNumber}...`);
             
-            // Run the generator for exactly 8 students using the shared tempSheet
-            remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE, clientToken, tempSheet);
+            // Deliver operational context variables to processor array
+            remainingStudents = ReportCardGenerator.process(false, BATCH_SIZE, effectiveToken, tempSheet);
 
             if (remainingStudents > 0) {
-                console.log(`Batch ${batchNumber} done. ${remainingStudents} left. Pausing for ${PAUSE_SECONDS}s to avoid rate limits...`);
-                ss.toast(`Cooling down for ${PAUSE_SECONDS}s... ${remainingStudents} reports left.`, "HecTech Engine", PAUSE_SECONDS);
-                
-                // 🟢 The 20-second pause between batches
-                Utilities.sleep(PAUSE_SECONDS * 1000); 
-                
+                SpreadsheetApp.flush();
+                Utilities.sleep(1500); // Cooldown pause to protect execution threads
                 batchNumber++;
             }
         }
 
-        console.log("🎉 All reports generated successfully!");
-        ss.toast("🎉 All reports generated successfully!", "HecTech Engine", -1);
+        console.log("All reports generated successfully across records!");
+        ss.toast("🎉 All matching terminal reports compiled successfully!", "HecTech Engine", -1);
         
-        // Success complete - clear any scheduled triggers
+        // Clear all session cache keys and scheduled triggers cleanly
+        docProps.deleteProperty(propKey);
         clearResubmitTriggers();
     } finally {
         if (tempSheet) {
@@ -75,113 +83,94 @@ function runAllReportsSafely(clientToken) {
                 ss.deleteSheet(tempSheet);
                 SpreadsheetApp.flush();
             } catch (err) {
-                console.error("Failed to delete batch temp sheet:", err.message);
+                console.error("Temporary system cleanup routine dropped frame:", err.message);
             }
         }
     }
 }
 
 const ReportCardGenerator = {
-    // 🟢 CELL COORDINATES (Template sheet positions)
+    // Structural coordinate targets
     CELLS: {
         NAME: "A6",    ID: "F6",      ROLL: "J6",      
         CLASS: "A7",   ATT: "F7",     YEAR: "J7",      
         PROG: "A8",    DATE: "F8",    TERM: "I8",      NEXT_TERM: "J8"
     },
 
-    /**
-     * Writes PDF IDs (col D by default) and WhatsApp status (col E) on CONTACT LIST from row 2.
-     * Two separate single-column ranges so layout does not rely on D/E being adjacent.
-     */
     flushContactPdfColumns: function(contactSheet, pdfUpdates) {
         const slice = pdfUpdates.slice(1);
         const n = slice.length;
         if (n === 0) return;
+        
         const startRow = 2;
         const cPdf = Config.COL_PDF_ID;
         const cWa = Config.COL_WHATSAPP_STATUS;
-        const pdfVals = slice.map(function (row) { return [row[0] != null && row[0] !== "" ? row[0] : ""]; });
-        const waVals = slice.map(function (row) { return [row[1] != null && row[1] !== "" ? row[1] : ""]; });
+        
+        const pdfVals = slice.map(row => [row[0] != null && row[0] !== "" ? row[0] : ""]);
+        const waVals = slice.map(row => [row[1] != null && row[1] !== "" ? row[1] : ""]);
+        
         contactSheet.getRange(startRow, cPdf, n, 1).setValues(pdfVals);
         contactSheet.getRange(startRow, cWa, n, 1).setValues(waVals);
         SpreadsheetApp.flush();
     },
 
-    runPreview: function(clientToken) { this.process(true, 999, clientToken); },
+    runPreview: function(clientToken) { this.process(true, 5, clientToken); },
 
-    // Update the parameters to accept a batch limit and an optional shared tempSheet
     process: function (isPreview = false, batchLimit = 999, clientToken, sharedTempSheet = null) {
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: clientToken type=${typeof clientToken}`);
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sourceSheet = ss.getSheetByName(Config.REPORT_SHEET_NAME);
         const templateSheet = ss.getSheetByName(Config.TEMPLATE_SHEET_NAME);
         const contactSheet = ss.getSheetByName(Config.CONTACT_SHEET_NAME);
         
-        if (!sourceSheet) throw new Error(`❌ Missing sheet: "${Config.REPORT_SHEET_NAME}"`);
-        if (!templateSheet) throw new Error(`❌ Missing sheet: "${Config.TEMPLATE_SHEET_NAME}"`);
-        if (!contactSheet) throw new Error(`❌ Missing sheet: "${Config.CONTACT_SHEET_NAME}"`);
+        if (!sourceSheet || !templateSheet || !contactSheet) {
+            throw new Error("Critical structural dependencies missing from workbook container framework.");
+        }
 
-        // Get column indices from config
         const cols = Config.REPORT_COLUMNS;
         const subjects = Config.SUBJECT_CONFIG;
         const attendanceTotal = Config.ATTENDANCE_TOTAL;
 
-        // Fetch OAuth token once - use clientToken if provided, fallback to ScriptApp
-        // If clientToken is an event object (e.g. from a menu click), it's an object, not a string.
-        let finalToken = clientToken;
-        if (typeof clientToken !== 'string' || !clientToken) {
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: generating fallback token`);
-            finalToken = ScriptApp.getOAuthToken();
+        // Extract token payload safely
+        let token = clientToken;
+        if (typeof token !== 'string' || !token) {
+            token = PropertiesService.getDocumentProperties().getProperty(`OAUTH_TOKEN_CACHE_${ss.getId()}`) || ScriptApp.getOAuthToken();
         }
-        const token = finalToken;
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: final token type=${typeof token}`);
 
-        // Ensure gridlines are off once (not in loop)
-        templateSheet.setHiddenGridlines(false);
         const folderId = FolderManager.getAutoReportFolderId(token);
         const destinationFolder = DriveApp.getFolderById(folderId);
 
-        // Pre-map Contact List for O(1) Lookup using normalized names
+        // Pre-map Contact sheet rows for O(1) processing lookups
         const contactData = contactSheet.getDataRange().getValues();
         const contactMap = new Map();
         for (let r = 2; r < contactData.length; r++) {
             const cName = contactData[r][Config.COL_NAME - 1];
-            if (cName) {
-                contactMap.set(Config.normalizeName(cName), r);
-            }
+            if (cName) contactMap.set(Config.normalizeName(cName), r);
         }
 
-        // Prepare memory storage for batch write-back (Cols D & E)
         const pdfIdCol = Config.COL_PDF_ID - 1;
         const waStatusCol = Config.COL_WHATSAPP_STATUS - 1;
         const pdfUpdates = contactData.map(row => [row[pdfIdCol], row[waStatusCol]]);
         let contactPdfDirty = false;
 
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: fetching data from source sheet`);
         const firstDataRow = Config.REPORT_DATA_FIRST_ROW;
         const lastRow = sourceSheet.getLastRow();
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sourceSheet lastRow=${lastRow}, firstDataRow=${firstDataRow}`);
         
         if (lastRow < firstDataRow) {
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: No data in REPORT DATA sheet`);
-            ss.toast("No data found in REPORT DATA sheet.", "HecTech Engine", 5);
+            ss.toast("No active student records discovered inside data target.", "HecTech Engine", 4);
             return 0;
         }
 
         const numDataRows = lastRow - firstDataRow + 1;
         const data = sourceSheet.getRange(firstDataRow, 1, numDataRows, sourceSheet.getLastColumn()).getValues();
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: data length=${data.length}, contactMap size=${contactMap.size}`);
 
         let successCount = 0;
         let errorCount = 0;
-        let processedInThisBatch = 0; // Track how many we've done this round
-        let remainingToProcess = 0;   // Track how many are left overall
+        let processedInThisBatch = 0;
+        let remainingToProcess = 0;
 
-        const startIdx = 0; // Data array is 0-indexed relative to row 2
-        const limitIdx = isPreview ? Math.min(startIdx + 5, data.length) : data.length;
+        const limitIdx = isPreview ? Math.min(5, data.length) : data.length;
 
-        // 🟢 PRE-CHECK: Count how many are actually left before we start looping
-        let missingContacts = 0;
+        // Pre-flight execution count audit
         for (let r = 0; r < data.length; r++) {
             const sName = data[r][cols.STUDENT_NAME];
             if (!sName) continue;
@@ -190,106 +179,70 @@ const ReportCardGenerator = {
             const tIdx = contactMap.get(nName);
             if (tIdx !== undefined) {
                 const stat = contactData[tIdx][waStatusCol];
-                if (stat !== "PDF_READY" && stat !== "SENT") {
-                    remainingToProcess++;
-                }
-            } else {
-                missingContacts++;
+                if (stat !== "PDF_READY" && stat !== "SENT") remainingToProcess++;
             }
         }
         
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: remainingToProcess=${remainingToProcess}, missingContacts=${missingContacts}`);
+        if (remainingToProcess === 0 && !isPreview) return 0;
 
-        // If nothing left, return 0 to stop the Autopilot
-        if (remainingToProcess === 0 && !isPreview) {
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: remainingToProcess is 0. All done.`);
-            ss.toast("All reports are already generated! Use 'Reset Sent Statuses' to regenerate.", "HecTech Engine", 5);
-            return 0;
-        }
-
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: starting loop from ${startIdx} to ${limitIdx}`);
-        for (let i = startIdx; i < limitIdx; i++) {
-            // 🛑 STOP if we hit our safe batch limit for this run
+        for (let i = 0; i < limitIdx; i++) {
             if (processedInThisBatch >= batchLimit) break;
 
             const row = data[i];
             const studentName = row[cols.STUDENT_NAME];
             if (!studentName) continue;
 
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: processing student ${studentName}`);
-
             const normalizedName = Config.normalizeName(studentName);
             const targetIndex = contactMap.get(normalizedName);
             
-            // 🟢 CRITICAL FIX 1: Prevent Infinite Loop if Contact is Missing
             if (targetIndex !== undefined) {
                 const existingStatus = contactData[targetIndex][waStatusCol];
-                // If it's a preview, we WANT to generate it even if it's already done
-                if (!isPreview && (existingStatus === "PDF_READY" || existingStatus === "SENT")) {
-                    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: skipping ${studentName}, already ${existingStatus}`);
-                    continue; // Skip already generated
-                }
-            } else {
-                console.warn(`⚠️ Skipping ${studentName} - Name missing from Contact Sheet!`);
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: skipping ${studentName}, missing from contact sheet`);
-                if (!isPreview) continue; // Force skip to prevent infinite retry loops
+                if (!isPreview && (existingStatus === "PDF_READY" || existingStatus === "SENT")) continue;
+            } else if (!isPreview) {
+                continue; 
             }
 
             let tempSheet = null;
             let ownTempSheetCreated = false;
+            
             try {
                 if (sharedTempSheet) {
                     tempSheet = sharedTempSheet;
                 } else {
-                    // Create a temporary hidden copy of the template sheet to avoid concurrent collisions
-                    if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: duplicating template for ${studentName}`);
                     tempSheet = templateSheet.copyTo(ss);
                     tempSheet.hideSheet();
-                    
-                    const cleanName = studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
-                    tempSheet.setName(`TEMP_${cleanName}_${new Date().getTime()}`);
+                    tempSheet.setName(`TEMP_${studentName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 12)}_${new Date().getTime()}`);
                     ownTempSheetCreated = true;
                 }
 
-                // --- 1. Fill Temp Template Using Batch Operations ---
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: filling template for ${studentName}`);
+                // --- 1. POPULATE LAYOUT ARRAYS ---
                 this.fillTemplateFast(tempSheet, row, cols, subjects, attendanceTotal);
 
-                // --- 2. Generate PDF ---
+                // --- 2. EXPORT EXTRUDED PDF BLOB ---
                 SpreadsheetApp.flush();
+                Utilities.sleep(1000); 
                 
-                // Pause to prevent Google's "Server Error" on PDF export
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: sleeping 3s for ${studentName}`);
-                Utilities.sleep(3000); 
-                
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: creating blob for ${studentName}`);
                 const pdfBlob = this.createBlobFromSheet(tempSheet, studentName, token);
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saving file for ${studentName}`);
                 const pdfFile = destinationFolder.createFile(pdfBlob);
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: saved file ${pdfFile.getId()}`);
                 
-                // Update memory array using normalized name matching
                 if (targetIndex !== undefined) {
                     pdfUpdates[targetIndex][0] = pdfFile.getId();
                     pdfUpdates[targetIndex][1] = "PDF_READY";
                     contactPdfDirty = true;
                 }
+                
                 successCount++;
-                processedInThisBatch++; // Increment our batch counter
-                remainingToProcess--;   // Decrement our remaining counter
+                processedInThisBatch++;
+                remainingToProcess--;
             } catch (err) { 
-                console.error(`PDF Error for ${studentName}: ${err.message}`);
-                if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`ReportCardGenerator.process: ERROR for ${studentName}: ${err.message}`);
+                console.error(`Execution failure compiling card for ${studentName}: ${err.message}`);
                 errorCount++;
             } finally {
-                // Guarantee cleanup of the temporary sheet only if we created it in this loop
                 if (tempSheet && ownTempSheetCreated) {
                     try {
                         ss.deleteSheet(tempSheet);
                         SpreadsheetApp.flush();
-                    } catch (cleanupErr) {
-                        console.error(`Failed to delete temporary sheet for ${studentName}: ${cleanupErr.message}`);
-                    }
+                    } catch (e) {}
                 }
             }
         }
@@ -298,66 +251,64 @@ const ReportCardGenerator = {
             this.flushContactPdfColumns(contactSheet, pdfUpdates);
         }
 
-        const msg = isPreview 
-            ? `Preview Ready.${errorCount > 0 ? ` (${errorCount} errors, check console)` : ''}` 
-            : `Batch Complete! ${processedInThisBatch} reports generated.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
-        ss.toast(msg, "HecTech Engine", 5);
-
-        // Tell the Autopilot how many are left
         return remainingToProcess; 
     },
 
     /**
-     * 🟢 OPTIMIZED: Fill template using batch setValues() instead of individual setValue()
-     * Reduces API calls from ~70 to ~10 per student = 7x faster
+     * Writes evaluation data vectors via matrix array mappings.
+     * Integrates formatting safety locks.
      */
     fillTemplateFast: function(sheet, row, cols, subjects, attendanceTotal) {
-        // Clear content areas dynamically based on layout
         const layout = Config.TEMPLATE_LAYOUT;
         const subjectOrder = Object.keys(subjects);
         const subStart = subjectOrder.length > 0 ? subjects[subjectOrder[0]].row : 10;
         const subEnd = subjectOrder.length > 0 ? subjects[subjectOrder[subjectOrder.length - 1]].row : 16;
         
-        const rangesToClear = [
-            "A6:L8", 
-            `B${subStart}:I${subEnd}`, 
-            `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
-            `D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 6}`
-        ];
-        
+        // 🟢 HARDENED DYNAMIC RANGE CLEARING: Protects parser from malformed or missing sheet parameters
+        const rangesToClear = ["A6:L8"];
+        if (subStart > 0 && subEnd >= subStart) rangesToClear.push(`B${subStart}:I${subEnd}`);
+        if (layout.SUMMARY_ROW_1 > 0 && layout.SUMMARY_ROW_2 >= layout.SUMMARY_ROW_1) {
+            rangesToClear.push(`D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`);
+        }
+        if (layout.GEN_REM_ROW > 0) rangesToClear.push(`D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 5}`);
         if (layout.MUSIC_ROW > 0) rangesToClear.push(`B${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`);
         if (layout.PE_ROW > 0) rangesToClear.push(`B${layout.PE_ROW}:I${layout.PE_ROW}`);
         if (layout.CLUB_ROW > 0) rangesToClear.push(`B${layout.CLUB_ROW}:I${layout.CLUB_ROW}`);
         
         sheet.getRangeList(rangesToClear).clearContent();
         
-        // --- HEADER ROW 6-8: Use batch setValues for 3 rows ---
-        const headerData = [
-            ["Student Name: " + row[cols.STUDENT_NAME], "", "", "", "", "Student ID: " + row[cols.STUDENT_ID], "", "", "", "No. on Roll: " + Config.ROLL_COUNT, "", ""],
-            ["Class: " + Config.CLASS_NAME, "", "", "", "", "Attendance: " + row[cols.ATTENDANCE] + " / " + attendanceTotal, "", "", "", Config.TERM_YEAR_INFO, "", ""],
-            ["Programme: " + Config.PROGRAMME_NAME, "", "", "", "", "Vacation Date: " + Config.REPORT_DATE, "", "", "", "Next Term Begins: " + Config.NEXT_TERM_BEGINS, "", ""]
-        ];
-        sheet.getRange("A6:L8").setValues(headerData);
+        // --- HEADER COMPILATION INTERFACE ---
+        this.setRichText(sheet, "A6", "Student Name: ", row[cols.STUDENT_NAME]);
+        this.setRichText(sheet, "F6", "Student ID: ", row[cols.STUDENT_ID]);
+        this.setRichText(sheet, "J6", "No. on Roll: ", Config.ROLL_COUNT);
         
-        // --- SUBJECT ROWS: Build 2D array for batch update ---
+        this.setRichText(sheet, "A7", "Class: ", Config.CLASS_NAME);
+        this.setRichText(sheet, "F7", "Attendance: ", `${row[cols.ATTENDANCE]} / ${attendanceTotal}`);
+        sheet.getRange("J7").setValue(Config.TERM_YEAR_INFO);
+        
+        this.setRichText(sheet, "A8", "Programme: ", Config.PROGRAMME_NAME);
+        this.setRichText(sheet, "F8", "Vacation Date: ", Config.REPORT_DATE);
+        this.setRichText(sheet, "J8", "Next Term Begins: ", Config.NEXT_TERM_BEGINS);
+        
+        // --- SUBJECT MATRIX SWEEPS ---
         if (subjectOrder.length > 0) {
             const subjectData = subjectOrder.map(subj => {
                 const sIdx = subjects[subj].startIdx;
                 return [
                     row[sIdx],      // B: CW 20
                     row[sIdx + 1],  // C: MT 20
-                    "",             // D: empty
+                    "",             // D: Structural buffer
                     row[sIdx + 2],  // E: EOT 60
                     row[sIdx + 3],  // F: Total 100
                     row[sIdx + 6],  // G: Average
                     row[sIdx + 4],  // H: Grade
-                    row[sIdx + 5]   // I: Comment
+                    row[sIdx + 5]   // I: Localized AI Comment
                 ];
             });
             sheet.getRange(`B${subStart}:I${subEnd}`).setValues(subjectData);
         }
         
-        // --- PRACTICAL ROWS ---
+        // --- PRACTICAL & NON-SCORING CONTROLS ---
         if (layout.MUSIC_ROW > 0) {
             sheet.getRange(`F${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`).setValues([[row[cols.MUSIC_TOTAL], row[cols.MUSIC_AVG], row[cols.MUSIC_GRADE], row[cols.MUSIC_REMARK]]]);
         }
@@ -368,7 +319,7 @@ const ReportCardGenerator = {
             sheet.getRange(`F${layout.CLUB_ROW}`).setValue(row[cols.CLUB_REMARK]);
         }
         
-        // --- SUMMARY ROWS ---
+        // --- PERFORMANCE CRITERIA RATIOS ---
         const outOf = subjectOrder.length * 100;
         const summaryData = [
             ["Raw Score: " + row[cols.RAW_SCORE], "", "", "Out of: " + outOf, "", "Average Mark: " + row[cols.AVG_MARK]],
@@ -376,9 +327,11 @@ const ReportCardGenerator = {
         ];
         sheet.getRange(`D${layout.SUMMARY_ROW_1}:I${layout.SUMMARY_ROW_2}`).setValues(summaryData);
         
-        // --- GENERAL COMMENT & TEACHER ---
-        sheet.getRange(`D${layout.GEN_REM_ROW}`).setValue(row[cols.GENERAL_REMARK]);
-        sheet.getRange(`L${layout.GEN_REM_ROW}`).setValue(row[cols.TEACHER_NAME]);
+        // --- GENERAL REVIEWS & SIGNATURE MARKS ---
+        if (layout.GEN_REM_ROW > 0) {
+            sheet.getRange(`D${layout.GEN_REM_ROW}`).setValue(row[cols.GENERAL_REMARK]);
+            sheet.getRange(`L${layout.GEN_REM_ROW}`).setValue(row[cols.TEACHER_NAME]);
+        }
     },
 
     rebuildTemplateLabels: function(sheet, attendanceTotal) {
@@ -387,12 +340,12 @@ const ReportCardGenerator = {
         const subStart = subjectOrder.length > 0 ? Config.SUBJECT_CONFIG[subjectOrder[0]].row : 10;
         const subEnd = subjectOrder.length > 0 ? Config.SUBJECT_CONFIG[subjectOrder[subjectOrder.length - 1]].row : 16;
         
-        const ranges = [
-            "A6:L8", 
-            `B${subStart}:I${subEnd}`, 
-            `D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`, 
-            `D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 6}`
-        ];
+        const ranges = ["A6:L8"];
+        if (subStart > 0 && subEnd >= subStart) ranges.push(`B${subStart}:I${subEnd}`);
+        if (layout.SUMMARY_ROW_1 > 0 && layout.SUMMARY_ROW_2 >= layout.SUMMARY_ROW_1) {
+            ranges.push(`D${layout.SUMMARY_ROW_1}:L${layout.SUMMARY_ROW_2}`);
+        }
+        if (layout.GEN_REM_ROW > 0) ranges.push(`D${layout.GEN_REM_ROW}:L${layout.GEN_REM_ROW + 5}`);
         if (layout.MUSIC_ROW > 0) ranges.push(`B${layout.MUSIC_ROW}:I${layout.MUSIC_ROW}`);
         if (layout.PE_ROW > 0) ranges.push(`B${layout.PE_ROW}:I${layout.PE_ROW}`);
         if (layout.CLUB_ROW > 0) ranges.push(`B${layout.CLUB_ROW}:I${layout.CLUB_ROW}`);
@@ -407,28 +360,19 @@ const ReportCardGenerator = {
         sheet.getRange(this.CELLS.PROG).setValue("Programme: " + Config.PROGRAMME_NAME);
         sheet.getRange(this.CELLS.DATE).setValue("Vacation Date: " + Config.REPORT_DATE);
         sheet.getRange(this.CELLS.NEXT_TERM).setValue("Next Term Begins: " + Config.NEXT_TERM_BEGINS);
-
-        sheet.getRange(`D${layout.SUMMARY_ROW_1}`).setValue("Raw Score: ");
-        sheet.getRange(`G${layout.SUMMARY_ROW_1}`).setValue(`Out of: ${Object.keys(Config.SUBJECT_CONFIG).length * 100}`);
-        sheet.getRange(`I${layout.SUMMARY_ROW_1}`).setValue("Average Mark: ");
-        sheet.getRange(`D${layout.SUMMARY_ROW_2}`).setValue("Average Grade: ");
-        sheet.getRange(`G${layout.SUMMARY_ROW_2}`).setValue("Best Grade: ");
-        sheet.getRange(`I${layout.SUMMARY_ROW_2}`).setValue("Worst Grade: ");
     },
 
     setRichText: function(sheet, cell, label, value) {
         const fullText = label + String(value || "");
         const richText = SpreadsheetApp.newRichTextValue()
             .setText(fullText)
-            .setTextStyle(0, label.length, SpreadsheetApp.newTextStyle().setBold(true).build())
-            .setTextStyle(label.length, fullText.length, SpreadsheetApp.newTextStyle().setBold(false).build())
+            .setTextStyle(0, label.length, SpreadsheetApp.newTextStyle().setBold(true).setFontColor("#FFFFFF").build())
+            .setTextStyle(label.length, fullText.length, SpreadsheetApp.newTextStyle().setBold(false).setFontColor("#E2E8F0").build())
             .build();
         sheet.getRange(cell).setRichTextValue(richText);
     },
 
-    // ⚡ Update: Accepts Token as Argument
     createBlobFromSheet: function(sheet, fileName, token) {
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: token type=${typeof token}, length=${token ? token.length : 0}`);
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const gid = sheet.getSheetId();
         const url = `https://docs.google.com/spreadsheets/d/${ssId}/export?format=pdf&size=A4&portrait=false&fitw=true&fith=false&gridlines=false&gid=${gid}`;
@@ -437,10 +381,8 @@ const ReportCardGenerator = {
             muteHttpExceptions: true
         };
         const response = UrlFetchApp.fetch(url, params);
-        if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: response code=${response.getResponseCode()}`);
         if (response.getResponseCode() !== 200) {
-            if (typeof DEBUG_LOG !== 'undefined') DEBUG_LOG(`createBlobFromSheet: error body=${response.getContentText().substring(0, 500)}`);
-            throw new Error(`Export failed (${response.getResponseCode()}): Google Servers are busy. Please try again.`);
+            throw new Error(`Google Export Engine Throttled (${response.getResponseCode()}). Rescheduling slice row.`);
         }
         return response.getBlob().setName(`${fileName} Report.pdf`);
     }

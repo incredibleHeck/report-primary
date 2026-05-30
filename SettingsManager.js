@@ -1,20 +1,23 @@
 // ==========================================
-// HECTECH SettingsManager.js
+// HECTECH SettingsManager.js (Hardened)
 // ==========================================
 
 const SettingsManager = {
     openSidebar: function () {
         const html = HtmlService.createHtmlOutputFromFile('SettingsSidebar')
             .setTitle('Class Settings')
-            .setWidth(300);
+            .setWidth(300)
+            .addMetaTag('viewport', 'width=device-width, initial-scale=1');
         SpreadsheetApp.getUi().showSidebar(html);
     },
 
     /**
-     * Read class settings from a plain key/value map (e.g. container Script Properties).
+     * Reads class settings from a combined property map.
+     * Prioritizes sheet-scoped variations cleanly before falling back to system keys.
      */
     getSettingsFromPropertyMap: function (map, ssId) {
         const getProp = (key, defaultVal) => {
+            if (!map) return defaultVal;
             return map[`${key}_${ssId}`] || map[key] || defaultVal;
         };
 
@@ -33,57 +36,79 @@ const SettingsManager = {
         };
     },
 
-    /**
-     * Build the property object for setProperties (KEY_<ssId> per field).
-     */
-    /** Keys that should be saved globally (bare key) rather than per-spreadsheet. */
-    GLOBAL_KEYS: ['WHATSAPP_TEMPLATE_NAME', 'WHATSAPP_TEMPLATE_LANGUAGE'],
+    /** Bare keys that bypass sheet-scoping to remain globally shared across projects */
+    GLOBAL_KEYS: ['WHATSAPP_TEMPLATE_NAME', 'WHATSAPP_TEMPLATE_LANGUAGE', 'GEMINI_MODEL_NAME', 'API_KEY'],
 
+    /**
+     * Maps settings objects to their exact target storage keys.
+     */
     buildSettingsSaveProperties: function (settings, ssId) {
         const clientSettings = {};
+        if (!settings) return clientSettings;
+
         for (const key in settings) {
-            if (this.GLOBAL_KEYS.indexOf(key) !== -1) {
-                clientSettings[key] = settings[key];
-            } else {
-                clientSettings[`${key}_${ssId}`] = settings[key];
+            if (Object.prototype.hasOwnProperty.call(settings, key)) {
+                if (this.GLOBAL_KEYS.indexOf(key) !== -1) {
+                    clientSettings[key] = String(settings[key]).trim();
+                } else {
+                    clientSettings[`${key}_${ssId}`] = String(settings[key]).trim();
+                }
             }
         }
         return clientSettings;
     },
 
-    /** Sheet updates after settings were persisted in the container project. */
+    /**
+     * Handles background side effects after a save path executes successfully.
+     * Synchronizes and writes the active teacher name down the core tracking columns.
+     */
     applySettingsSideEffects: function (settings) {
+        // Clear active configuration cache registries instantly to prevent stale parameters
         if (typeof invalidateConfigCache === 'function') {
             invalidateConfigCache();
         } else if (typeof DynamicConfig !== 'undefined' && DynamicConfig._cache) {
-            DynamicConfig._cache = {};
+            DynamicConfig._cache = Object.create(null);
         }
 
         try {
-            const ss = SpreadsheetApp.getActiveSpreadsheet();
-            const sheet = ss.getSheetByName(typeof Config !== 'undefined' ? Config.REPORT_SHEET_NAME : "REPORT DATA");
+            if (!settings || !settings.TEACHER_NAME) return { success: true };
 
-            if (sheet && settings.TEACHER_NAME) {
-                let targetCol = 69;
+            const ss = SpreadsheetApp.getActiveSpreadsheet();
+            const reportSheetName = (typeof Config !== 'undefined' && Config.REPORT_SHEET_NAME) ? Config.REPORT_SHEET_NAME : "REPORT DATA";
+            const sheet = ss.getSheetByName(reportSheetName);
+
+            if (sheet) {
+                // 🟢 CONFIG SOURCE OF TRUTH ALIGNMENT: Enforce clean Row 3 boundaries
+                const startRow = (typeof Config !== 'undefined' && Config.DATA_START_ROW) ? Config.DATA_START_ROW : 3;
+                const lastRow = sheet.getLastRow();
+
+                // Defensive check: Drop tracking adjustments if the sheet contains no valid rows
+                if (lastRow < startRow) {
+                    return { success: true };
+                }
+
+                let targetCol = 69; // Fallback default index
                 if (typeof Config !== 'undefined' && Config.REPORT_COLUMNS && Config.REPORT_COLUMNS.TEACHER_NAME) {
                     targetCol = Config.REPORT_COLUMNS.TEACHER_NAME + 1;
                 }
 
-                const startRow = 2;
-                const lastRow = Math.max(sheet.getLastRow(), startRow);
-                const numRows = lastRow - startRow + 1;
+                const numRows = (lastRow - startRow) + 1;
+                const nameArray = new Array(numRows).fill([settings.TEACHER_NAME.trim()]);
 
-                const nameArray = new Array(numRows).fill([settings.TEACHER_NAME]);
-
+                // Write the teacher name array down the column efficiently in a single block operation
                 sheet.getRange(startRow, targetCol, numRows, 1).setValues(nameArray);
+                SpreadsheetApp.flush();
             }
         } catch (e) {
-            console.error("Error applying teacher name:", e);
+            console.error("Failed to push systemic teacher background updates:", e);
         }
 
         return { success: true };
     },
 
+    /**
+     * Resolves configurations by merging script snapshots, bridge objects, and document states.
+     */
     getSettings: function () {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
         
@@ -92,40 +117,57 @@ const SettingsManager = {
             bridgeMap = ClientScriptPropertiesBridge.getSnapshot() || {};
         }
         
-        let legacyScriptProps = {};
+        let localScriptProps = {};
         if (typeof ClientScriptPropertiesBridge === 'undefined' || !ClientScriptPropertiesBridge.isHydrated()) {
-            legacyScriptProps = PropertiesService.getScriptProperties().getProperties();
+            localScriptProps = PropertiesService.getScriptProperties().getProperties();
         }
         
         const docProps = PropertiesService.getDocumentProperties().getProperties();
-        const map = Object.assign({}, legacyScriptProps, bridgeMap, docProps);
+        
+        // Build unified lookups by merging snapshots in order of priority
+        const map = Object.assign(Object.create(null), localScriptProps, bridgeMap, docProps);
         
         return SettingsManager.getSettingsFromPropertyMap(map, ssId);
     },
 
-    /** Persists to the container document's properties (isolated to the spreadsheet). */
+    /**
+     * Clean save operation writes to local properties storage.
+     * Standardizes state routing to work seamlessly with your bridge architecture.
+     */
     saveSettings: function (settings) {
         const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        const props = PropertiesService.getDocumentProperties();
-        props.setProperties(SettingsManager.buildSettingsSaveProperties(settings, ssId));
+        const payload = SettingsManager.buildSettingsSaveProperties(settings, ssId);
+        
+        // 🟢 FIXED: Standardized target saves to match client shell patterns exactly
+        if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
+            PropertiesService.getScriptProperties().setProperties(payload);
+        } else {
+            PropertiesService.getDocumentProperties().setProperties(payload);
+        }
+        
         return SettingsManager.applySettingsSideEffects(settings);
     }
 };
 
-// Global hooks for the HTML sidebar (library-bound deployments)
-function getSettingsData() { return SettingsManager.getSettings(); }
-function saveSettingsData(settings) { return SettingsManager.saveSettings(settings); }
-function openSettingsSidebar() { SettingsManager.openSidebar(); }
+// ==========================================
+// CENTRAL EXPOSURE SYSTEM LINKS
+// ==========================================
 
-// Container shell: read/write Script Properties in the user's project, then call these.
+function getSettingsData() { verifyLicenseAuthorization(); return SettingsManager.getSettings(); }
+function saveSettingsData(settings) { verifyLicenseAuthorization(); return SettingsManager.saveSettings(settings); }
+function openSettingsSidebar() { verifyLicenseAuthorization(); SettingsManager.openSidebar(); }
+
 function getSettingsFromPropertyMap(map, ssId) {
+    verifyLicenseAuthorization();
     return SettingsManager.getSettingsFromPropertyMap(map, ssId);
 }
 
 function buildSettingsSaveProperties(settings, ssId) {
+    verifyLicenseAuthorization();
     return SettingsManager.buildSettingsSaveProperties(settings, ssId);
 }
 
 function afterClientSettingsSaved(settings) {
+    verifyLicenseAuthorization();
     return SettingsManager.applySettingsSideEffects(settings);
 }

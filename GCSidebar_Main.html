@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   
@@ -10,36 +12,42 @@
 </head>
 <body>
 
-  <div class="header">
+  <div class="header layout-stack-vertical">
+    
     <div class="student-card">
       <div class="student-avatar" id="studentAvatar">?</div>
       <div class="student-details">
         <div class="student-label">Generating for</div>
-        <div id="studentNameDisplay">Loading...</div>
+        <div class="student-name" id="studentNameDisplay">Loading canvas context...</div>
       </div>
     </div>
     
     <div class="search-wrapper">
       <span class="material-icons-round search-icon">search</span>
-      <input type="text" id="searchTraits" class="search-box" placeholder="Search traits...">
+      <input type="text" id="searchTraits" class="search-box" placeholder="Search traits (e.g., Diligent, Attentive)..." autocomplete="off">
     </div>
   </div>
 
-  <div id="accordionContainer">
-    <div class="empty-state">
-      <div class="empty-state-icon">⏳</div>
-      <p>Loading categories...</p>
+  <div id="accordionContainer" class="accordion-scroll-frame">
+    <div class="empty-state layout-center-contents">
+      <div class="empty-state-icon animated-pulse">⏳</div>
+      <p class="empty-state-text">Loading structured trait dimensions...</p>
     </div>
   </div>
 
-  <div class="footer">
-    <div class="selection-count">
-      <strong id="selectedCount">0</strong> traits selected
+  <div class="footer layout-stack-vertical">
+    <div class="selection-meta-bar">
+      <div class="selection-count">
+        <strong id="selectedCount">0</strong> traits prioritized
+      </div>
     </div>
-    <button id="generateBtn" class="btn-primary" disabled>
-      <span class="material-icons-round" id="btnIcon">auto_awesome</span>
-      <span id="btnText">Generate Comment</span>
-      <div id="loadingSpinner" class="spinner"></div>
+    
+    <button id="generateBtn" class="btn-primary layout-flex-horizontal" disabled>
+      <div class="btn-content-wrapper layout-flex-horizontal">
+        <span class="material-icons-round" id="btnIcon">auto_awesome</span>
+        <span id="btnText">Generate Comment</span>
+      </div>
+      <div id="loadingSpinner" class="spinner-hidden"></div>
     </button>
   </div>
 

@@ -1,5 +1,5 @@
 // ==========================================
-// HECTECH PolishManager.js
+// HECTECH PolishManager.js (Production Ready)
 // ==========================================
 
 const PolishManager = {
@@ -35,6 +35,7 @@ const PolishManager = {
 
     processRange: function (range) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = range.getSheet();
         
         // 1. CONFIG: Use Global Config as Source of Truth
         const classlistSheet = ss.getSheetByName(Config.CLASSLIST_SHEET_NAME);
@@ -48,15 +49,15 @@ const PolishManager = {
         const numRows = range.getNumRows();
         const numCols = range.getNumColumns();
 
-        // 2. ALIGNMENT LOGIC (Row 3 Awareness)
+        // 2. HARDENED ROW ALIGNMENT (Data-to-Data Row 3 Parity)
         const subjectDataStart = Config.DATA_START_ROW; // 3
-        const classlistDataStart = 2; // Classlist starts at 2
-        const rowOffset = subjectDataStart - classlistDataStart; // 1
+        const classlistDataStart = 3; // Standardized to Row 3 to align tracking lines
+        const rowOffset = subjectDataStart - classlistDataStart; // 0
         
         const startRowInClasslist = startRow - rowOffset;
 
-        // Safety check
-        if (startRowInClasslist < 2) throw new Error("Selection header overlap. Please select student rows only.");
+        // Safety boundary check
+        if (startRowInClasslist < 3) throw new Error("Selection header overlap. Please select student rows only (Row 3+).");
 
         // 3. DYNAMIC COLUMN FETCHING
         const nameColIndex = Config.CLASSLIST_NAME_COL;    
@@ -68,7 +69,7 @@ const PolishManager = {
         const students = [];
         const mapping = []; 
 
-        // 4. BUILD STUDENT LIST
+        // 4. BUILD UNIFIED STUDENT PAYLOAD LIST
         for (let r = 0; r < numRows; r++) {
             if (!masterData[r]) continue;
 
@@ -78,14 +79,16 @@ const PolishManager = {
 
             if (!fullName || String(fullName).trim() === "") continue;
 
+            const cleanId = `row_${r}`;
             const studentObj = {
-                studentId: `row_${r}`,
-                name: fullName,
+                id: cleanId,         // Defensive: Include 'id' for model output mapping stability
+                studentId: cleanId,  // Preserve matching schema properties
+                name: Config.extractFirstName(fullName), // Extract first name for style rules alignment
                 gender: gender,
                 comments: {}
             };
 
-            // Only send if there is text to polish (> 3 chars)
+            // Only queue fields that contain valid text blocks (> 3 characters)
             let hasComments = false;
             for (let c = 0; c < numCols; c++) {
                 const val = data[r][c];
@@ -97,7 +100,7 @@ const PolishManager = {
 
             if (hasComments) {
                 students.push(studentObj);
-                mapping.push({ rowIndex: r, studentId: studentObj.studentId });
+                mapping.push({ rowIndex: r, studentId: cleanId });
             }
         }
 
@@ -107,7 +110,7 @@ const PolishManager = {
             const model = Config.MODEL_NAME;
             const key = Config.API_KEY;
             
-            // 5. CALL GEMINI
+            // 5. CALL GEMINI REPORT BATCH
             const results = callGeminiReportBatch(
                 students, 
                 model, 
@@ -117,33 +120,43 @@ const PolishManager = {
 
             let changesCount = 0;
             
-            // 6. APPLY CHANGES
-            results.forEach((pStudent) => {
-                const mapEntry = mapping.find(m => m.studentId === pStudent.studentId);
-                if (!mapEntry) return;
+            // 6. MAP AND PROCESS REWRITE DATA BACK TO INDICES
+            if (Array.isArray(results)) {
+                results.forEach((pStudent) => {
+                    if (!pStudent) return;
+                    
+                    // Defensive extraction block resolves both standard 'id' and 'studentId' object properties safely
+                    const receivedId = pStudent.studentId || pStudent.id;
+                    if (!receivedId) return;
 
-                const r = mapEntry.rowIndex;
-                const pComments = pStudent.comments || {};
+                    const mapEntry = mapping.find(m => m.studentId === receivedId.toString());
+                    if (!mapEntry) return;
 
-                for (let c = 0; c < numCols; c++) {
-                    const colKey = c.toString();
-                    const original = data[r][c];
-                    let polished = pComments[colKey];
+                    const r = mapEntry.rowIndex;
+                    const pComments = pStudent.comments || {};
 
-                    // Handle edge case where API returns object instead of string
-                    if (typeof polished === 'object' && polished !== null) {
-                        polished = polished.text || polished.comment || original;
+                    for (let c = 0; c < numCols; c++) {
+                        const colKey = c.toString();
+                        const original = data[r][c];
+                        let polished = pComments[colKey];
+
+                        // Handle exception edge case where API maps strings into sub-objects
+                        if (typeof polished === 'object' && polished !== null) {
+                            polished = polished.text || polished.comment || original;
+                        }
+
+                        // If cell text updated, overwrite layout and flag status style
+                        if (polished && polished.trim() !== original.trim()) {
+                            data[r][c] = polished.trim();
+                            
+                            // High-contrast neon green layout indicator for dark backgrounds
+                            fontColors[r][c] = "#39FF14"; 
+                            fontWeights[r][c] = "bold";
+                            changesCount++;
+                        }
                     }
-
-                    // If changed, update and highlight
-                    if (polished && polished !== original) {
-                        data[r][c] = polished;
-                        fontColors[r][c] = "#ffff00"; // Bright Yellow highlight
-                        fontWeights[r][c] = "bold";
-                        changesCount++;
-                    }
-                }
-            });
+                });
+            }
 
             if (changesCount > 0) {
                 range.setValues(data);

@@ -1,9 +1,9 @@
 // ==========================================
-// HECTECH DynamicConfig.js (Cleaned & Optimized)
+// HECTECH DynamicConfig.js (Hardened)
 // ==========================================
 
 const DynamicConfig = {
-    // 1. LAZY LOADING CACHE (Prevents Quota Errors)
+    // 1. LAZY LOADING CACHE (Hardened against Cache Miss Storms)
     _cache: {},
     _ssId: null,
     
@@ -14,14 +14,15 @@ const DynamicConfig = {
         const ssId = this._ssId;
         const clientKey = `${key}_${ssId}`;
         
-        if (this._cache[clientKey]) return this._cache[clientKey];
+        // 🟢 FIXED: Explicit checking preserves null/falsy values and prevents repetitive Property Service fetches
+        if (this._cache.hasOwnProperty(clientKey)) return this._cache[clientKey];
         
         let val = null;
         if (typeof ClientScriptPropertiesBridge !== 'undefined' && ClientScriptPropertiesBridge.isHydrated()) {
             val = ClientScriptPropertiesBridge.getConfigValue(key, ssId);
         }
         
-        // Standalone fallback (only works when run directly in the vault container, not as a library)
+        // Standalone fallback
         if (!val) {
             try {
                 const props = PropertiesService.getScriptProperties();
@@ -47,7 +48,7 @@ const DynamicConfig = {
     get API_KEY() { return this._get("GEMINI_API_KEY") || ""; },
     get MODEL_NAME() { return this._get("GEMINI_MODEL_NAME") || "gemini-3.5-flash"; },
     
-    // --- SHEET NAMES (Configurable via Script Properties with defaults) ---
+    // --- SHEET NAMES ---
     get CLASSLIST_SHEET_NAME() { return this._get("CLASSLIST_SHEET_NAME") || "CLASSLIST"; },
     get REPORT_SHEET_NAME() { return this._get("REPORT_SHEET_NAME") || "REPORT DATA"; },
     get CONTACT_SHEET_NAME() { return this._get("CONTACT_SHEET_NAME") || "CONTACT LIST"; },
@@ -62,7 +63,6 @@ const DynamicConfig = {
     // --- ARCHITECTURE ---
     get HEADER_ROW() { return 2; },     
     get DATA_START_ROW() { return this._getInt("DATA_START_ROW", 3); }, 
-    /** First row of student rows on REPORT DATA (usually 2: header row 1; set to 3 if you use a second header row). */
     get REPORT_DATA_FIRST_ROW() { return this._getInt("REPORT_DATA_FIRST_ROW", 3); },
     get ATTENDANCE_TOTAL() { return this._getInt("ATTENDANCE_TOTAL", 64); },
 
@@ -83,33 +83,48 @@ const DynamicConfig = {
     get WHATSAPP_ACCESS_TOKEN() { return this._get("WHATSAPP_TOKEN") || ""; },
     get WHATSAPP_PHONE_ID() { return this._get("WHATSAPP_PHONE_ID") || ""; },
     get WHATSAPP_TEMPLATE_NAME() { return this._get("WHATSAPP_TEMPLATE_NAME") || "student_report_pdf"; },
-    /** Must match the approved template language in Meta (often en_US or en_GB). */
     get WHATSAPP_TEMPLATE_LANGUAGE() { return this._get("WHATSAPP_TEMPLATE_LANGUAGE") || "en"; },
 
     /**
-     * 🟢 SMART DISCOVERY HELPER
-     * Finds column index by Name. Defaults to fallbackIndex if not found.
+     * 🟢 HARDENED DISCOVERY HELPER
+     * Prioritizes exact matches to prevent dangerous column cross-writing collisions.
      */
     getColByName: function(sheetName, headerName, fallbackIndex) {
         const cacheKey = `COL_${sheetName}_${headerName}`;
-        if (this._cache[cacheKey]) return this._cache[cacheKey];
+        if (this._cache[cacheKey] !== undefined) return this._cache[cacheKey];
 
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const sheet = ss.getSheetByName(sheetName);
             if (!sheet) return fallbackIndex;
 
-            // Detect Header Row based on sheet type
             const headerRow = this.HEADER_ROW;
-            
             const lastCol = sheet.getLastColumn();
-            // getRange(row, column, numRows, numColumns). 1 row, lastCol columns.
-            const headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+            if (lastCol <= 0) return fallbackIndex;
             
-            // Normalize for matching
+            const headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0].map(h => String(h).toUpperCase().trim());
             const target = headerName.toUpperCase().trim();
-            // We use 'includes' for safer partial matching (e.g., "TERM ONE STUDENT NAME" matches "STUDENT NAME")
-            const index = headers.findIndex(h => String(h).toUpperCase().includes(target));
+
+            // 🟢 CRITICAL COLLISION FILTER: Intercept and resolve broad keyword requests safely
+            if (target === "COMMENT" || target === "GENERAL COMMENT") {
+                const preferenceMatrix = ["GENERAL COMMENT", "CLASS TEACHER'S COMMENT", "CLASS TEACHER’S COMMENT", "TEACHER COMMENT", "COMMENT"];
+                for (const preferredTerm of preferenceMatrix) {
+                    const matchIdx = headers.findIndex(h => h === preferredTerm);
+                    if (matchIdx !== -1) {
+                        const result = matchIdx + 1;
+                        this._cache[cacheKey] = result;
+                        return result;
+                    }
+                }
+            }
+
+            // Phase 1: Try strict exact match to avoid collision hazards
+            let index = headers.indexOf(target);
+            
+            // Phase 2: Fall back to partial matching only if no exact match is found
+            if (index === -1) {
+                index = headers.findIndex(h => h.includes(target));
+            }
 
             const result = (index !== -1) ? index + 1 : fallbackIndex;
             this._cache[cacheKey] = result;
@@ -120,8 +135,7 @@ const DynamicConfig = {
         }
     },
 
-    // 🟢 DYNAMIC GETTERS (Aligned to your CONTACT LIST structure)
-    // Structure: Name (A), Contact (B), Email (C), PDF ID (D), Status (E)
+    // --- DYNAMIC CONTACT COLUMN GETTERS ---
     get COL_NAME() { return this.getColByName(this.CONTACT_SHEET_NAME, "STUDENT NAME", 1); },
     get COL_PHONE() { return this.getColByName(this.CONTACT_SHEET_NAME, "CONTACT", 2); },
     get COL_EMAIL() { return this.getColByName(this.CONTACT_SHEET_NAME, "EMAILS", 3); },
@@ -129,17 +143,22 @@ const DynamicConfig = {
     get COL_WHATSAPP_STATUS() { return this.getColByName(this.CONTACT_SHEET_NAME, "WHATSAP", 5); }, 
     get COL_EMAIL_STATUS() { return this.getColByName(this.CONTACT_SHEET_NAME, "EMAIL STATUS", 6); },
 
-    // 🟢 REPORT DATA COLUMN INDICES (0-based for array access)
+    // --- REPORT DATA COLUMN INDICES ---
     get REPORT_COLUMNS() {
         if (this._reportCols) return this._reportCols;
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const sheet = ss.getSheetByName(this.REPORT_SHEET_NAME);
-            const headers = sheet.getRange(this.HEADER_ROW, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+            if (!sheet) return {};
+            
+            const lastCol = sheet.getLastColumn();
+            if (lastCol <= 0) return {};
+
+            const headers = sheet.getRange(this.HEADER_ROW, 1, 1, lastCol).getValues()[0].map(h => String(h).trim().toUpperCase());
             
             const getCol = (nameList, defaultIdx) => {
                 for (const name of nameList) {
-                    const idx = headers.findIndex(h => h.includes(name));
+                    const idx = headers.findIndex(h => h === name || h.includes(name));
                     if (idx !== -1) return idx;
                 }
                 return defaultIdx;
@@ -174,15 +193,19 @@ const DynamicConfig = {
         }
     },
     
-    // 🟢 SUBJECT CONFIGURATIONS FOR END OF TERM REPORT
+    // --- SUBJECT CONFIGURATIONS ---
     get SUBJECT_CONFIG() {
         if (this._subConfig) return this._subConfig;
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const dataSheet = ss.getSheetByName(this.REPORT_SHEET_NAME);
             const templateSheet = ss.getSheetByName(this.TEMPLATE_SHEET_NAME);
+            if (!dataSheet || !templateSheet) return {};
             
-            const headers = dataSheet.getRange(this.HEADER_ROW, 1, 1, dataSheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+            const lastDataCol = dataSheet.getLastColumn();
+            if (lastDataCol <= 0) return {};
+
+            const headers = dataSheet.getRange(this.HEADER_ROW, 1, 1, lastDataCol).getValues()[0].map(h => String(h).trim().toUpperCase());
             const templateRows = templateSheet.getRange(1, 1, templateSheet.getLastRow(), 1).getValues().map(row => String(row[0]).trim());
             
             const SUBJECT_MAP = {
@@ -201,7 +224,7 @@ const DynamicConfig = {
                 if (!subName || subName === "GRADING SYSTEM" || subName.startsWith("90 –") || subName === "PERFORMANCE ANALYSIS") break;
                 
                 const upperName = subName.toUpperCase();
-                if (upperName === "PHYSICAL EDUCATION" || upperName === "CLUB" || upperName === "MUSIC" || upperName === "ART" || upperName === "ARTS") continue; // Handled as practical/non-scoring
+                if (upperName === "PHYSICAL EDUCATION" || upperName === "CLUB" || upperName === "MUSIC" || upperName === "ART" || upperName === "ARTS") continue;
                 
                 let abbr = SUBJECT_MAP[upperName];
                 if (!abbr) abbr = upperName.substring(0, 3);
@@ -219,12 +242,14 @@ const DynamicConfig = {
         }
     },
     
-    // 🟢 TEMPLATE LAYOUT (Dynamically find rows)
+    // --- TEMPLATE LAYOUTS ---
     get TEMPLATE_LAYOUT() {
         if (this._layout) return this._layout;
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const templateSheet = ss.getSheetByName(this.TEMPLATE_SHEET_NAME);
+            if (!templateSheet) return { MUSIC_ROW: 17, PE_ROW: 18, CLUB_ROW: 19, SUMMARY_ROW_1: 23, SUMMARY_ROW_2: 24, GEN_REM_ROW: 26 };
+
             const colA = templateSheet.getRange(1, 1, templateSheet.getLastRow(), 1).getValues().map(row => String(row[0]).trim().toUpperCase());
             
             const musicRow = colA.indexOf("MUSIC") + 1;
@@ -249,18 +274,22 @@ const DynamicConfig = {
         }
     },
     
-    // 🟢 MIDTERM DATA COLUMN INDICES (0-based)
+    // --- MIDTERM CONFIGURATIONS ---
     get MIDTERM_COLUMNS() {
         if (this._midtermCols) return this._midtermCols;
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const sheet = ss.getSheetByName(this.MIDTERM_SHEET_NAME);
             if (!sheet) return {}; 
-            const headers = sheet.getRange(this.HEADER_ROW, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+            
+            const lastMidCol = sheet.getLastColumn();
+            if (lastMidCol <= 0) return {};
+
+            const headers = sheet.getRange(this.HEADER_ROW, 1, 1, lastMidCol).getValues()[0].map(h => String(h).trim().toUpperCase());
             
             const getCol = (nameList, defaultIdx) => {
                 for (const name of nameList) {
-                    const idx = headers.findIndex(h => h.includes(name));
+                    const idx = headers.findIndex(h => h === name || h.includes(name));
                     if (idx !== -1) return idx;
                 }
                 return defaultIdx;
@@ -286,7 +315,6 @@ const DynamicConfig = {
         }
     },
     
-    // 🟢 MIDTERM SUBJECT CONFIG
     get MIDTERM_SUBJECT_CONFIG() {
         if (this._midtermSubConfig) return this._midtermSubConfig;
         try {
@@ -295,7 +323,10 @@ const DynamicConfig = {
             const templateSheet = ss.getSheetByName(this.MIDTERM_TEMPLATE_NAME);
             if (!dataSheet || !templateSheet) return {};
             
-            const headers = dataSheet.getRange(this.HEADER_ROW, 1, 1, dataSheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+            const lastMidDataCol = dataSheet.getLastColumn();
+            if (lastMidDataCol <= 0) return {};
+
+            const headers = dataSheet.getRange(this.HEADER_ROW, 1, 1, lastMidDataCol).getValues()[0].map(h => String(h).trim().toUpperCase());
             const templateRows = templateSheet.getRange(1, 1, templateSheet.getLastRow(), 1).getValues().map(row => String(row[0]).trim());
             
             const SUBJECT_MAP = {
@@ -337,7 +368,8 @@ const DynamicConfig = {
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
             const templateSheet = ss.getSheetByName(this.MIDTERM_TEMPLATE_NAME);
-            if (!templateSheet) return {};
+            if (!templateSheet) return { SUMMARY_ROW_1: 20, SUMMARY_ROW_2: 21, GEN_REM_ROW: 23 };
+            
             const colA = templateSheet.getRange(1, 1, templateSheet.getLastRow(), 1).getValues().map(row => String(row[0]).trim().toUpperCase());
             
             let gradingRow = colA.findIndex(s => s.includes("90 –") || s === "90 - 100") + 1;
@@ -354,9 +386,6 @@ const DynamicConfig = {
         }
     },
     
-    /**
-     * Helper to normalize student names for matching
-     */
     normalizeName: function(name) {
         if (!name) return "";
         return String(name).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -368,7 +397,6 @@ const DynamicConfig = {
         const format = this._get("NAME_FORMAT") || "LAST_FIRST";
         const nameStr = fullName.toString().trim();
         
-        // Comma separation implies LAST_FIRST format (e.g., "Abrahams, Jeslyn")
         if (nameStr.indexOf(",") !== -1) {
             const parts = nameStr.split(",");
             return parts[1].trim().split(/\s+/)[0];
@@ -380,7 +408,6 @@ const DynamicConfig = {
         if (format === "FIRST_LAST") {
             return parts[0];
         } else {
-            // LAST_FIRST format with compound surname prefixes
             const compoundPrefixes = ["de", "di", "da", "del", "du", "la", "le", "van", "von", "der", "den", "dos", "el"];
             let surnameWords = 1;
             

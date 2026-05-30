@@ -12,27 +12,31 @@ The system has recently completed a "Production Readiness" overhaul, moving from
 - **Dynamic Subject Discovery**: The engine scans the spreadsheet at runtime to discover header positions and template rows. It natively supports the Primary layout (7 Scored Subjects + Music, PE, Clubs). 
 - **Non-Scoring Subjects**: Dynamically handles subjects like "Arts" as practical/non-scoring subjects, ensuring academic averages remain accurate without manual intervention.
 - **Dynamic Programme Labels**: The `PROGRAMME_NAME` is fully dynamic, eliminating hardcoded "PRIMARY" labels.
-- **Privacy Enforcement**: Integrated robust `.gitignore` hygiene to prevent sensitive `.csv` student data from entering version control.
-- **AI-Powered Comments**: Context-aware subject comments and general teacher summaries via Google Gemini AI.
+- **Vault + Shell Architecture**: All core code lives in this vault, while each campus spreadsheet simply runs a tiny "shell" script to connect. This allows you to update one codebase and deploy to all Primary campuses instantly.
+- **IP Protection & License Lock**: Integrated a license verification switch (`verifyLicenseAuthorization()`). Only authorized spreadsheet IDs registered in the Vault's private library-space properties (`AUTHORIZED_CAMPUS_IDS`) can execute operations.
+- **Autopilot Timeout Protection**: Midterm report generation and WhatsApp blaster batches automatically track runtime execution. If a run nears the 6-minute Apps Script ceiling (yield set at 230 seconds), the engine automatically schedules a background resubmission trigger to yield control and resume safely.
+- **Premium Obsidian UI Theme**: Upgraded all HTML sidebars (Traits Comment Generator, Settings Panel, ChatBot Assistant, Progress Trackers) with a unified dark obsidian palette (#09090b backgrounds, neon violet buttons, electric green/orange accents).
+- **Comprehensive Undo State Restorations**: Implemented a State Manager rollback engine that caches cell values, font weights, colors, and notes, allowing teachers to restore previous comments easily.
+- **Atomic Telemetry Logs**: Standardized `DEBUG_LOG` with a `LockService` mutex lock to prevent cell write contentions when multiple background triggers log simultaneously.
+- **AI-Powered Comments**: Context-aware subject comments and general teacher summaries via Google Gemini AI (`gemini-3.5-flash`).
 - **Grammar & Style Polish**: Tools to correct pronouns, fix name mismatches, and refine tone.
 - **Multi-Channel Delivery**: Batch email and WhatsApp delivery via Meta Business API with exponential backoff and retry logic.
-- **Vault + Shell Architecture**: All core code lives in this vault, while each campus spreadsheet simply runs a tiny "shell" script to connect. This allows you to update one codebase and deploy to all Primary campuses instantly.
 
 ## Architecture
 
 ```
 ┌──────────────────────────┐      ┌─────────────────────────────┐
 │  HecTech Vault (Library) │◄─────│  School Spreadsheet (Clone) │
-│  - All shared code       │      │  - Client_Shell.js          │
-│  - DynamicConfig, API,   │      │  - Script Properties:       │
-│    Managers, Sidebars    │      │    API keys, tokens, class  │
-│  - Published as library  │      │    settings per school      │
+│  - Proprietary Core Code │      │  - Client_Shell.gs          │
+│  - Private Secrets &     │      │  - Client properties:       │
+│    Campus License Whitelist│    │    Class settings, school   │
+│  - No UI container scopes│      │    metadata per campus      │
 └──────────────────────────┘      └─────────────────────────────┘
 ```
 
-- **Vault (this repo)**: contains all logic. Pushed via `clasp push` and published as a library.
-- **Client Shell**: a small connector script pasted into each school's Apps Script project. It hydrates the library with the school's Script Properties before every menu action.
-- **Script Properties**: live on each school's project (not the vault). Secrets (API keys, tokens) and per-class settings are stored there.
+- **Vault (this repo)**: Contains all intellectual property. Pushed via `clasp push` and published as a library. Contains no container UI scopes to maintain a narrow, secure execution boundary.
+- **Client Shell**: A small connector script pasted into each school's Apps Script project. It hydrates the library with the school's Script Properties before every action.
+- **Script Properties**: Live on each school's local project. Secrets (Gemini/WhatsApp API credentials) and campus settings are isolated here, protecting the vault from state bleeding.
 
 ## Performance
 
@@ -46,7 +50,7 @@ The system has recently completed a "Production Readiness" overhaul, moving from
 ## Setup & Deployment
 
 1. **Vault Deployment**: Use `clasp push` to sync this Primary project up to Google Apps Script.
-2. **School Setup**: See [`Client_Shell_Template/README_DEPLOYMENT.md`](Client_Shell_Template/README_DEPLOYMENT.md) for the step-by-step checklist on hydrating a spreadsheet with the `Client_Shell.js.txt` connector.
+2. **School Setup**: See [`Client_Shell_Template/README_DEPLOYMENT.md`](Client_Shell_Template/README_DEPLOYMENT.md) for the step-by-step checklist on hydrating a spreadsheet with the `Client_Shell.js.txt` connector and matching `appsscript.json.txt` manifest.
 3. **Class Customization**: Fill out Class Settings (Term, Year, Report Date, Programme) directly via the Sidebar UI in the Sheet.
 
 ### Required Script Properties (per school)
@@ -70,7 +74,8 @@ The system has recently completed a "Production Readiness" overhaul, moving from
 ## Technical Notes
 - **Report Column Mapping**: Column indices are determined dynamically at runtime in `DynamicConfig.js` by matching header strings (e.g. `MATH`, `SCI`).
 - **Batch Processing**: Uses `UserProperties` to store queue data. Multiple teachers can work in the same sheet without collisions.
-- **Security**: Secrets are never hardcoded.
+- **Security**: Master Vault secrets (license lists) are kept private in Library properties. Campus properties only store local campus configs.
+- **Ignore Rules**: The `.claspignore` is pre-configured to block developer testing tools (`Test.js`, `ScriptPropertiesLegacyCleanup.js`), dataset caches (`*.csv`), local node packages, and git configurations from production pushes.
 
 ## License
 Private - HecTech AI

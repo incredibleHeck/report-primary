@@ -6,24 +6,25 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
       :root {
-        --primary: #6366f1;
-        --primary-dark: #4f46e5;
-        --primary-light: #a5b4fc;
-        --primary-bg: rgba(99, 102, 241, 0.08);
-        --success: #10b981;
-        --success-bg: rgba(16, 185, 129, 0.1);
-        --warning: #f59e0b;
-        --error: #ef4444;
-        --bg: #f8fafc;
-        --surface: rgba(255, 255, 255, 0.9);
-        --text: #1e293b;
-        --text-secondary: #64748b;
-        --text-muted: #94a3b8;
-        --border: #e2e8f0;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-        --shadow-lg: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -4px rgba(99, 102, 241, 0.05);
+        /* HecTech Premium Dark Contrast Palette */
+        --bg: #000000;                  /* Pure Black matching sheet background */
+        --surface: #121214;             /* Zinc Obsidian Dark Surface */
+        --surface-card: #18181b;        /* Elevated Control Container */
+        --primary: #8b5cf6;             /* Neon Violet Accent */
+        --primary-dark: #7c3aed;
+        --primary-light: #c084fc;
+        --primary-bg: rgba(139, 92, 246, 0.15);
+        --success: #39FF14;             /* Universal HecTech Neon Green */
+        --success-bg: rgba(57, 255, 20, 0.1);
+        --warning: #ff6600;             /* Mismatch Identity Orange */
+        --error: #ff3333;               /* Audit Crimson Red */
+        --border: #27272a;              /* Slate Charcoal Borders */
+        --text: #f8fafc;                /* Crisp Off-White Typography */
+        --text-secondary: #a1a1aa;      /* Zinc Gray Secondary Info */
+        --text-muted: #52525b;          /* Darker Inline Placeholders */
         --radius: 14px;
         --radius-sm: 10px;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       }
 
       * {
@@ -34,59 +35,50 @@
 
       body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: linear-gradient(180deg, var(--bg) 0%, #e2e8f0 100%);
+        background: var(--bg);
         min-height: 100vh;
         color: var(--text);
+        overflow-x: hidden;
       }
 
       .header {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: white;
+        background: linear-gradient(135deg, #1e1b4b, #0f172a);
+        border-bottom: 1px solid var(--border);
         padding: 24px 20px;
         text-align: center;
         position: relative;
-        overflow: hidden;
-      }
-
-      .header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-        pointer-events: none;
       }
 
       .header-icon {
-        width: 56px;
-        height: 56px;
-        background: rgba(255,255,255,0.15);
+        width: 52px;
+        height: 52px;
+        background: var(--primary-bg);
+        border: 1px solid rgba(139, 92, 246, 0.3);
         border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 12px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow);
       }
 
       .header-icon .material-icons-round {
-        font-size: 28px;
+        font-size: 26px;
+        color: var(--primary-light);
       }
 
       .subject-title {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
+        color: var(--text);
         margin: 0 0 4px;
         text-transform: uppercase;
         letter-spacing: 1px;
       }
 
       .header-subtitle {
-        font-size: 12px;
-        opacity: 0.85;
+        font-size: 11px;
+        color: var(--text-secondary);
         font-weight: 500;
       }
 
@@ -103,20 +95,10 @@
         box-shadow: var(--shadow);
         border: 1px solid var(--border);
         margin-bottom: 16px;
-        backdrop-filter: blur(8px);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-      
-      .card:hover {
-        box-shadow: var(--shadow-lg);
       }
 
       .form-group {
         margin-bottom: 20px;
-      }
-
-      .form-group:last-of-type {
-        margin-bottom: 0;
       }
 
       .form-label {
@@ -132,50 +114,50 @@
       }
 
       .form-label .material-icons-round {
-        font-size: 18px;
-        color: var(--primary);
+        font-size: 16px;
+        color: var(--primary-light);
       }
 
       .form-select {
         width: 100%;
-        padding: 12px 16px;
+        padding: 12px 14px;
         border: 2px solid var(--border);
         border-radius: var(--radius-sm);
         font-family: inherit;
         font-size: 14px;
         color: var(--text);
-        background: var(--bg);
+        background: var(--surface-card);
         cursor: pointer;
         transition: all 0.2s ease;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 12px center;
-        background-size: 20px;
+        background-size: 18px;
       }
 
       .form-select:hover {
-        border-color: var(--primary-light);
+        border-color: var(--text-muted);
       }
 
       .form-select:focus {
         outline: none;
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-bg);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
       }
 
       .form-textarea {
         width: 100%;
-        padding: 12px 16px;
+        padding: 12px 14px;
         border: 2px solid var(--border);
         border-radius: var(--radius-sm);
         font-family: inherit;
         font-size: 14px;
         color: var(--text);
-        background: var(--surface);
+        background: var(--surface-card);
         resize: vertical;
-        min-height: 120px;
-        line-height: 1.6;
+        min-height: 110px;
+        line-height: 1.5;
         transition: all 0.2s ease;
       }
 
@@ -184,13 +166,13 @@
       }
 
       .form-textarea:hover {
-        border-color: var(--primary-light);
+        border-color: var(--text-muted);
       }
 
       .form-textarea:focus {
         outline: none;
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-bg);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
       }
 
       .helper-text {
@@ -204,6 +186,7 @@
 
       .helper-text .material-icons-round {
         font-size: 14px;
+        color: var(--text-muted);
         flex-shrink: 0;
         margin-top: 1px;
       }
@@ -224,13 +207,13 @@
         justify-content: center;
         gap: 10px;
         transition: all 0.2s ease;
-        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        box-shadow: 0 4px 14px rgba(139, 92, 246, 0.2);
         margin-top: 16px;
       }
 
       .btn-primary:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
       }
 
       .btn-primary:active {
@@ -238,7 +221,7 @@
       }
 
       .btn-primary .material-icons-round {
-        font-size: 20px;
+        font-size: 18px;
       }
 
       .status-message {
@@ -252,11 +235,11 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
-        animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.15);
       }
 
       @keyframes slideIn {
-        from { opacity: 0; transform: translateY(-10px); }
+        from { opacity: 0; transform: translateY(-6px); }
         to { opacity: 1; transform: translateY(0); }
       }
 
@@ -267,21 +250,24 @@
       .status-message.success {
         background: var(--success-bg);
         color: var(--success);
+        border: 1px solid rgba(57, 255, 20, 0.2);
       }
 
       .status-message.error {
         background: rgba(239, 68, 68, 0.1);
         color: var(--error);
+        border: 1px solid rgba(239, 68, 68, 0.2);
       }
 
       .status-message.loading {
         background: var(--primary-bg);
-        color: var(--primary);
+        color: var(--primary-light);
+        border: 1px solid rgba(139, 92, 246, 0.2);
       }
 
       .tips-card {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(99, 102, 241, 0.08));
-        border: 1px dashed var(--primary-light);
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.02), rgba(139, 92, 246, 0.05));
+        border: 1px dashed var(--border);
         border-radius: var(--radius-sm);
         padding: 16px;
       }
@@ -289,7 +275,7 @@
       .tips-title {
         font-size: 12px;
         font-weight: 700;
-        color: var(--primary-dark);
+        color: var(--primary-light);
         margin-bottom: 10px;
         display: flex;
         align-items: center;
@@ -357,7 +343,7 @@
           <textarea id="topics" class="form-textarea" placeholder="Enter topics separated by commas...
 
 Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
-          <div class="helper-text">
+          <div id="topicCount" class="helper-text">
             <span class="material-icons-round">info</span>
             These topics will be referenced in AI-generated comments
           </div>
@@ -392,6 +378,9 @@ Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
 
       window.onload = function() {
         google.script.run.withSuccessHandler(populate).getSubjectContext();
+        
+        // Dynamic cleanup/count monitor loop for fields
+        document.getElementById('topics').addEventListener('input', updateTopicIndicator);
       };
 
       function populate(data) {
@@ -399,7 +388,24 @@ Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
         currentSheetName = data.currentSheetName;
 
         if (data.grade) document.getElementById('grade').value = data.grade;
-        if (data.topics) document.getElementById('topics').value = data.topics;
+        if (data.topics) {
+          document.getElementById('topics').value = data.topics;
+          updateTopicIndicator();
+        }
+      }
+
+      function updateTopicIndicator() {
+        const value = document.getElementById('topics').value;
+        const countIndicator = document.getElementById('topicCount');
+        
+        // Clean segment calculation fields
+        const topicsArray = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        
+        if (topicsArray.length > 0) {
+          countIndicator.innerHTML = `<span class="material-icons-round" style="color: var(--success)">check_circle</span> Parsed <strong>${topicsArray.length}</strong> distinct topics ready for prompt injection.`;
+        } else {
+          countIndicator.innerHTML = `<span class="material-icons-round">info</span> Separate your custom terms using comma breaks.`;
+        }
       }
 
       function showStatus(message, type) {
@@ -417,9 +423,16 @@ Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
 
       function saveData() {
         const gradeVal = document.getElementById('grade').value;
-        const topicsVal = document.getElementById('topics').value.trim();
+        const rawTopics = document.getElementById('topics').value;
 
-        if (!gradeVal || !topicsVal) {
+        // 🟢 CLIENT-SIDE SANITIZATION ARRAYS:
+        // Strips spaces, removes empty comma spaces, and joins tokens cleanly
+        const sanitizedTopics = rawTopics.split(',')
+          .map(t => t.trim())
+          .filter(t => t.length > 0)
+          .join(', ');
+
+        if (!gradeVal || !sanitizedTopics) {
           showStatus("Please fill in all fields", "error");
           return;
         }
@@ -427,7 +440,7 @@ Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
         const data = {
           subjectName: currentSheetName,
           grade: gradeVal,
-          topics: topicsVal
+          topics: sanitizedTopics
         };
 
         showStatus("Saving configuration...", "loading");
@@ -440,6 +453,10 @@ Example: Fractions, Decimals, Word Problems, Measurement"></textarea>
 
       function onSaved(msg) {
         showStatus(msg || "Configuration saved successfully!", "success");
+      }
+
+      function unsubscribeLoader() {
+        // Safe clear helper handling long status states if needed
       }
 
       function onError(err) {

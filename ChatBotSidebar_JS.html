@@ -1,0 +1,648 @@
+<script>
+    // ==========================================
+    // HECTECH Sidebar JavaScript (Hardened Platform Core)
+    // ==========================================
+
+    // State management encapsulation
+    var chatHistory = [];
+    var currentContext = {
+      selectedText: "",
+      studentName: "",
+      studentGender: "",
+      rowIndex: 0
+    };
+    var autoSyncInterval = null;
+    var isContextPollingActive = false; // 🟢 FIXED: Concurrency guard stops stacked background network requests
+    
+    // DOM elements
+    var chatContainer = document.getElementById('chatContainer');
+    var chatInput = document.getElementById('chatInput');
+    var sendBtn = document.getElementById('sendBtn');
+    var clearInputBtn = document.getElementById('clearInputBtn');
+    var refreshBtn = document.getElementById('refreshBtn');
+    var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    var studentAvatar = document.getElementById('studentAvatar');
+    var studentNameDisplay = document.getElementById('studentNameDisplay');
+    var toastOverlay = document.getElementById('toastOverlay');
+    var toastText = document.getElementById('toastText');
+    var toastIcon = document.getElementById('toastIcon');
+    var autoSyncToggle = document.getElementById('autoSyncToggle');
+    var draftRulesToggle = document.getElementById('draftRulesToggle');
+    var counterDisplay = document.getElementById('counterDisplay');
+
+    /**
+     * Parse markdown segments safely.
+     * Hardened with high-contrast text styles for dark mode compatibility.
+     */
+    function parseMarkdown(text) {
+      if (!text) return "";
+      
+      // Escape HTML components securely to guard against structural code fragmentation
+      var html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      
+      // 🟢 FIXED: Updated typography color parameters guarantee strong text contrast on dark theme sidebars
+      html = html.replace(/^### (.*$)/gim, '<h5 style="margin: 8px 0 4px; font-weight: 700; font-size: 13px; color: #ffffff; letter-spacing: 0.3px;">$1</h5>');
+      html = html.replace(/^## (.*$)/gim, '<h4 style="margin: 12px 0 4px; font-weight: 700; font-size: 14px; color: #f8fafc; letter-spacing: 0.3px;">$1</h4>');
+      html = html.replace(/^# (.*$)/gim, '<h3 style="margin: 14px 0 6px; font-weight: 700; font-size: 15px; color: #ffffff; letter-spacing: 0.4px;">$1</h3>');
+      
+      // Bold transformations
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #39FF14; font-weight: 600;">$1</strong>');
+      
+      // Italics transformations
+      html = html.replace(/\*([^*]+)\*/g, '<em style="color: #e4e4e7;">$1</em>');
+      
+      // Nested list item processing loops
+      var lines = html.split('\n');
+      var inList = false;
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          var itemText = line.substring(2);
+          if (!inList) {
+            lines[i] = '<ul style="margin: 6px 0 6px 14px; padding: 0; list-style-type: square; color: #cbd5e1;"><li style="margin-bottom: 4px; line-height: 1.4;">' + itemText + '</li>';
+            inList = true;
+          } else {
+            lines[i] = '<li style="margin-bottom: 4px; line-height: 1.4;">' + itemText + '</li>';
+          }
+        } else {
+          if (inList) {
+            lines[i] = '</ul>' + lines[i];
+            inList = false;
+          }
+        }
+      }
+      if (inList) {
+        lines.push('</ul>');
+      }
+      html = lines.join('\n');
+      
+      // Structural spacer mappings
+      html = html.replace(/\n\n/g, '</p><p style="margin: 8px 0; line-height: 1.5;">');
+      html = html.replace(/\n/g, '<br>');
+      
+      return html;
+    }
+
+    // Monitor input changes to adjust text box height and update metrics dynamically
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      
+      var text = this.value;
+      var charCount = text.length;
+      var wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+      counterDisplay.innerText = charCount + ' chars • ' + wordCount + ' words';
+      
+      if (charCount > 0) {
+        clearInputBtn.style.display = 'block';
+        sendBtn.removeAttribute('disabled');
+      } else {
+        clearInputBtn.style.display = 'none';
+        sendBtn.setAttribute('disabled', 'true');
+      }
+    });
+
+    // Clear active editing buffer values smoothly
+    clearInputBtn.addEventListener('click', function() {
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      clearInputBtn.style.display = 'none';
+      sendBtn.setAttribute('disabled', 'true');
+      counterDisplay.innerText = '0 chars • 0 words';
+      chatInput.focus();
+    });
+
+    // Keyboard action hooks (intercept return commands, allow lines splits via shift modifiers)
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+    refreshBtn.addEventListener('click', function() { loadContext(false); });
+
+    // History deletion confirmation safeguards
+    clearHistoryBtn.addEventListener('click', function() {
+      if (confirm('Are you sure you want to completely clear the conversation history?')) {
+        chatHistory = [];
+        chatContainer.innerHTML = '';
+        
+        var welcomeCard = document.createElement('div');
+        welcomeCard.className = 'welcome-card';
+        welcomeCard.id = 'welcomeCard';
+        welcomeCard.innerHTML = `
+          <div class="welcome-icon">
+            <span class="material-icons-round">assistant</span>
+          </div>
+          <div class="welcome-title">Welcome to HecTech AI Chat</div>
+          <div class="welcome-body">
+            Ask me to brainstorm, polish, or rewrite comments. I'll automatically adapt to your selected student and follow the comment styling rules.
+          </div>
+        `;
+        chatContainer.appendChild(welcomeCard);
+        showToast('Chat history cleared.', 'info');
+      }
+    });
+
+    // Auto-Sync Toggle tracking control listener
+    autoSyncToggle.addEventListener('change', function() {
+      if (this.checked) {
+        autoSyncInterval = setInterval(function() {
+          loadContext(true); // Fire background context sync pass safely
+        }, 5000);
+        showToast('Auto-Sync enabled (polls every 5s).', 'success');
+      } else {
+        if (autoSyncInterval) {
+          clearInterval(autoSyncInterval);
+          autoSyncInterval = null;
+        }
+        showToast('Auto-Sync disabled.', 'info');
+      }
+    });
+
+    window.addEventListener('load', function() { loadContext(false); });
+
+    function showToast(message, type) {
+      toastText.innerText = message;
+      if (type === 'success') {
+        toastIcon.innerText = 'check_circle';
+        toastOverlay.className = 'toast-overlay show success';
+      } else if (type === 'warning') {
+        toastIcon.innerText = 'warning';
+        toastOverlay.className = 'toast-overlay show warning';
+      } else {
+        toastIcon.innerText = 'info';
+        toastOverlay.className = 'toast-overlay show';
+      }
+      setTimeout(function() { toastOverlay.classList.remove('show'); }, 3000);
+    }
+
+    /**
+     * Extracts coordinates and student metadata vectors directly from spreadsheet context channels.
+     */
+    function loadContext(isSilent) {
+      // 🟢 FIXED: Drop lookup attempts if a previous execution loop thread is actively running
+      if (isSilent && isContextPollingActive) return;
+
+      if (!isSilent) {
+        refreshBtn.style.animation = 'spin 1s linear infinite';
+        refreshBtn.setAttribute('disabled', 'true');
+      } else {
+        isContextPollingActive = true;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(context) {
+          if (!isSilent) {
+            refreshBtn.style.animation = '';
+            refreshBtn.removeAttribute('disabled');
+          } else {
+            isContextPollingActive = false; // Reset background processing locks cleanly
+          }
+          
+          currentContext = context;
+          
+          if (context.studentName) {
+            var initials = context.studentName.substring(0, 2).toUpperCase();
+            studentAvatar.innerText = initials;
+            studentAvatar.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+            
+            var details = context.studentName;
+            if (context.studentGender) details += ' (' + context.studentGender + ')';
+            if (context.rowIndex) details += ' • Row ' + context.rowIndex;
+            studentNameDisplay.innerText = details;
+          } else {
+            studentAvatar.innerText = '🤖';
+            studentAvatar.style.background = 'linear-gradient(135deg, #4b5563, #374151)';
+            studentNameDisplay.innerText = 'No student row selected';
+          }
+          sendBtn.removeAttribute('disabled');
+        })
+        .withFailureHandler(function(e) {
+          if (!isSilent) {
+            refreshBtn.style.animation = '';
+            refreshBtn.removeAttribute('disabled');
+            showToast('Failed to load sheet context: ' + e.message, 'warning');
+          } else {
+            isContextPollingActive = false;
+          }
+        })
+        .getChatContext();
+    }
+
+    /**
+     * Message processing pipeline orchestration logic block.
+     */
+    function sendMessage() {
+      var text = chatInput.value.trim();
+      if (!text) return;
+
+      // Render the user message container immediately on the interface layout
+      appendMessage('user', text);
+      
+      // 🟢 FIXED: Create a isolated deep copy of the active history state frame
+      // This prevents sending duplicate message blocks on back-to-back interaction passes
+      var contextPayloadHistory = JSON.parse(JSON.stringify(chatHistory));
+      
+      // Commit prompt parameters to persistent memory *after* copying the history payload
+      chatHistory.push({ sender: 'user', text: text });
+      
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      clearInputBtn.style.display = 'none';
+      sendBtn.setAttribute('disabled', 'true');
+      counterDisplay.innerText = '0 chars • 0 words';
+      
+      var welcomeCard = document.getElementById('welcomeCard');
+      if (welcomeCard) welcomeCard.remove();
+
+      var typingId = appendTypingIndicator();
+      scrollToBottom();
+
+      chatInput.setAttribute('disabled', 'true');
+      var isGeneralMode = !draftRulesToggle.checked;
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          removeTypingIndicator(typingId);
+          chatInput.removeAttribute('disabled');
+          chatInput.focus();
+          
+          if (response.error) {
+            appendMessage('bot', '⚠️ Error: ' + response.message);
+          } else {
+            appendMessage('bot', response.text);
+            chatHistory.push({ sender: 'bot', text: response.text });
+          }
+          scrollToBottom();
+        })
+        .withFailureHandler(function(e) {
+          removeTypingIndicator(typingId);
+          chatInput.removeAttribute('disabled');
+          chatInput.focus();
+          appendMessage('bot', '⚠️ Error calling server: ' + e.message);
+          scrollToBottom();
+        })
+        // Pass the structural clean copy array forward to ensure stable context routing
+        .getChatResponse(contextPayloadHistory, text, currentContext.selectedText, currentContext, isGeneralMode);
+    }
+
+    function handleChipClick(chipText) {
+      chatInput.value = chipText;
+      chatInput.dispatchEvent(new Event('input'));
+      chatInput.focus();
+      sendMessage(); 
+    }
+
+    function appendMessage(sender, text) {
+      var messageDiv = document.createElement('div');
+      messageDiv.className = 'message ' + sender;
+      
+      var bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'bubble';
+      
+      if (sender === 'bot') {
+        if (text.includes("===OPTION_START===")) {
+          var segments = text.split(/===OPTION_START===|===OPTION_END===/);
+          segments.forEach(function(segment) {
+            var cleanSegment = segment.trim();
+            if (!cleanSegment) return;
+            
+            if (isPureCommentBlock(cleanSegment)) {
+              var optionCard = createIsolatedOptionCard(cleanSegment);
+              bubbleDiv.appendChild(optionCard);
+            } else {
+              var textNode = document.createElement('p');
+              textNode.style.margin = '6px 0';
+              textNode.style.lineHeight = '1.5';
+              textNode.innerHTML = parseMarkdown(cleanSegment);
+              bubbleDiv.appendChild(textNode);
+            }
+          });
+        } else {
+          bubbleDiv.innerHTML = parseMarkdown(text);
+        }
+      } else {
+        bubbleDiv.innerText = text;
+      }
+      
+      messageDiv.appendChild(bubbleDiv);
+
+      if (sender === 'bot' && !text.startsWith('⚠️') && !text.includes("===OPTION_START===")) {
+        var actionsDiv = document.createElement('div');
+        actionsDiv.className = 'bot-actions';
+
+        var wordCountSpan = document.createElement('span');
+        wordCountSpan.style.fontSize = '10px';
+        wordCountSpan.style.color = '#94a3b8';
+        wordCountSpan.style.display = 'inline-flex';
+        wordCountSpan.style.alignItems = 'center';
+        wordCountSpan.style.gap = '2px';
+        wordCountSpan.style.marginRight = 'auto';
+        
+        var words = text.split(/\s+/).filter(Boolean).length;
+        wordCountSpan.innerHTML = '<span class="material-icons-round" style="font-size: 12px;">bar_chart</span><span>' + words + ' words</span>';
+        actionsDiv.appendChild(wordCountSpan);
+
+        var insertBtn = document.createElement('button');
+        insertBtn.className = 'action-btn';
+        insertBtn.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
+        insertBtn.onclick = function() { executeCellInsertion(text, insertBtn); };
+        actionsDiv.appendChild(insertBtn);
+
+        var appendBtn = document.createElement('button');
+        appendBtn.className = 'action-btn';
+        appendBtn.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+        appendBtn.onclick = function() { executeCellAppend(text, appendBtn); };
+        actionsDiv.appendChild(appendBtn);
+
+        var copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn';
+        copyBtn.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
+        copyBtn.onclick = function() { copyToClipboard(text, copyBtn); };
+        actionsDiv.appendChild(copyBtn);
+
+        bubbleDiv.appendChild(actionsDiv);
+      }
+      
+      chatContainer.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function isPureCommentBlock(text) {
+      return !text.includes("###") && !text.includes("Option") && text.length > 20;
+    }
+
+    function createIsolatedOptionCard(commentText) {
+      var card = document.createElement("div");
+      card.className = "ui-option-card";
+      card.style.background = "rgba(255,255,255,0.02)";
+      card.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+      card.style.padding = "10px";
+      card.style.margin = "8px 0";
+      card.style.borderRadius = "var(--radius-sm)";
+      card.style.display = "flex";
+      card.style.flexDirection = "column";
+      card.style.gap = "8px";
+
+      var textPreview = document.createElement("div");
+      textPreview.className = "option-preview-text";
+      textPreview.style.fontSize = "12.5px";
+      textPreview.style.color = "#ffffff";
+      textPreview.style.lineHeight = "1.4";
+      textPreview.style.fontStyle = "italic";
+      textPreview.innerText = '"' + commentText + '"';
+
+      var actionsWrapper = document.createElement("div");
+      actionsWrapper.style.display = "flex";
+      actionsWrapper.style.gap = "6px";
+      actionsWrapper.style.alignItems = "center";
+
+      var insertBtn = document.createElement("button");
+      insertBtn.className = "action-btn";
+      insertBtn.style.background = "var(--primary-bg)";
+      insertBtn.style.color = "var(--primary-light)";
+      insertBtn.style.border = "1px solid rgba(139, 92, 246, 0.3)";
+      insertBtn.style.padding = "4px 8px";
+      insertBtn.style.fontSize = "11px";
+      insertBtn.style.fontWeight = "600";
+      insertBtn.style.borderRadius = "4px";
+      insertBtn.style.cursor = "pointer";
+      insertBtn.style.display = "flex";
+      insertBtn.style.alignItems = "center";
+      insertBtn.style.gap = "4px";
+      insertBtn.innerHTML = '<span class="material-icons-round" style="font-size:12px;">forward</span> Use Option';
+      insertBtn.onclick = function() {
+        executeCellInsertion(commentText, insertBtn);
+      };
+
+      var appendBtn = document.createElement("button");
+      appendBtn.className = "action-btn";
+      appendBtn.style.background = "rgba(255, 255, 255, 0.05)";
+      appendBtn.style.color = "#e2e8f0";
+      appendBtn.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+      appendBtn.style.padding = "4px 8px";
+      appendBtn.style.fontSize = "11px";
+      appendBtn.style.fontWeight = "600";
+      appendBtn.style.borderRadius = "4px";
+      appendBtn.style.cursor = "pointer";
+      appendBtn.style.display = "flex";
+      appendBtn.style.alignItems = "center";
+      appendBtn.style.gap = "4px";
+      appendBtn.innerHTML = '<span class="material-icons-round" style="font-size:12px;">add</span> Append';
+      appendBtn.onclick = function() {
+        executeCellAppend(commentText, appendBtn);
+      };
+
+      var copyBtn = document.createElement("button");
+      copyBtn.className = "action-btn";
+      copyBtn.style.background = "rgba(255, 255, 255, 0.05)";
+      copyBtn.style.color = "#e2e8f0";
+      copyBtn.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+      copyBtn.style.padding = "4px 8px";
+      copyBtn.style.fontSize = "11px";
+      copyBtn.style.fontWeight = "600";
+      copyBtn.style.borderRadius = "4px";
+      copyBtn.style.cursor = "pointer";
+      copyBtn.style.display = "flex";
+      copyBtn.style.alignItems = "center";
+      copyBtn.style.gap = "4px";
+      copyBtn.innerHTML = '<span class="material-icons-round" style="font-size:12px;">content_copy</span> Copy';
+      copyBtn.onclick = function() {
+        copyToClipboard(commentText, copyBtn);
+      };
+
+      actionsWrapper.appendChild(insertBtn);
+      actionsWrapper.appendChild(appendBtn);
+      actionsWrapper.appendChild(copyBtn);
+
+      card.appendChild(textPreview);
+      card.appendChild(actionsWrapper);
+      return card;
+    }
+
+    function appendTypingIndicator() {
+      var id = 'typing_' + Date.now();
+      var messageDiv = document.createElement('div');
+      messageDiv.className = 'message bot';
+      messageDiv.id = id;
+      
+      var bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'bubble';
+      
+      var indicator = document.createElement('div');
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+      
+      bubbleDiv.appendChild(indicator);
+      messageDiv.appendChild(bubbleDiv);
+      chatContainer.appendChild(messageDiv);
+      return id;
+    }
+
+    function removeTypingIndicator(id) {
+      var elem = document.getElementById(id);
+      if (elem) elem.remove();
+    }
+
+    function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+
+    function cleanTextPayload(rawTextPayload) {
+      if (!rawTextPayload || typeof rawTextPayload !== 'string') {
+        return "";
+      }
+
+      // STEP 1: DEFENSIVE CLEANING — Strip out any accidental structural markdown wrappers
+      var cleanedComment = rawTextPayload
+        .replace(/===OPTION_START===|===OPTION_END===/g, '') // Strip internal framework tokens
+        .replace(/^["'\s]+|["'\s]+$/g, '')                 // Clean out leading/trailing quote fragments
+        .trim();
+
+      // STEP 2: CONVERSATIONAL CONCEALMENT SHIELD
+      // Try to match student name or pronouns dynamically
+      var firstName = currentContext.studentName ? currentContext.studentName.split(' ')[0] : "";
+      var namePattern = firstName ? firstName + "|" : "";
+      var regexPattern = new RegExp("(?:" + namePattern + "She|He|This student)\\b[^]*?\\.", "i");
+      
+      var reportingPatternMatch = cleanedComment.match(regexPattern);
+      if (reportingPatternMatch) {
+        cleanedComment = reportingPatternMatch[0];
+      } else {
+        // Fallback: defensively strip common conversational prefaces
+        cleanedComment = cleanedComment
+          .replace(/^(Certainly|Sure|Here is|I have|Based on|According to|Thank you)[^.\n]*?(here is the|here are|a draft|polished comment|revised comment)[:\s\n]*/i, '')
+          .replace(/^Here is a polished version of the comment[:\s\n]*/i, '')
+          .replace(/^Here is a draft for you to look over[:\s\n]*/i, '')
+          .replace(/^Here is the polished comment[:\s\n]*/i, '')
+          .replace(/^Thank you for sharing that\.[^]*?Here is a draft for you to look over:\s*/i, '')
+          .replace(/\s*Does this feel like the right balance?[^]*$/i, '')
+          .replace(/[\s\n]*(Does this|Let me know|Would you|Please let|I hope|Is there|Does that)[^.?!\n]*?[.?!\s]*$/i, '')
+          .trim();
+      }
+      return cleanedComment;
+    }
+
+    function executeCellInsertion(rawTextPayload, buttonElement) {
+      if (buttonElement) {
+        buttonElement.setAttribute('disabled', 'true');
+        buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Inserting...</span>';
+      }
+      showToast("Synchronising comment with active row context...");
+
+      var cleanedComment = cleanTextPayload(rawTextPayload);
+
+      google.script.run
+        .withSuccessHandler(function() {
+          if (buttonElement) {
+            buttonElement.className = 'action-btn success';
+            buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Inserted!</span>';
+          }
+          showToast('✅ Report cell updated successfully!', 'success');
+          
+          try {
+            google.script.run.toast("HecTech AI: Active cell comment synchronized cleanly.", "Success");
+          } catch(e) {}
+          
+          if (buttonElement) {
+            setTimeout(function() {
+              buttonElement.className = 'action-btn';
+              buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
+              buttonElement.removeAttribute('disabled');
+            }, 2200);
+          }
+        })
+        .withFailureHandler(function(e) {
+          if (buttonElement) {
+            buttonElement.className = 'action-btn';
+            buttonElement.innerHTML = '<span class="material-icons-round">forward</span><span>Insert</span>';
+            buttonElement.removeAttribute('disabled');
+          }
+          console.error("Anti-Gravity Engine Error during cell flush: " + e.message);
+          showToast('❌ Synchronization failed: ' + e.message, 'warning');
+        })
+        .insertTextIntoActiveCell(cleanedComment);
+    }
+
+    function executeCellAppend(rawTextPayload, buttonElement) {
+      if (buttonElement) {
+        buttonElement.setAttribute('disabled', 'true');
+        buttonElement.innerHTML = '<span class="material-icons-round">hourglass_empty</span><span>Appending...</span>';
+      }
+      showToast("Appending comment with active row context...");
+
+      var cleanedComment = cleanTextPayload(rawTextPayload);
+
+      google.script.run
+        .withSuccessHandler(function() {
+          if (buttonElement) {
+            buttonElement.className = 'action-btn success';
+            buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Appended!</span>';
+          }
+          showToast('✅ Report cell appended successfully!', 'success');
+          
+          if (buttonElement) {
+            setTimeout(function() {
+              buttonElement.className = 'action-btn';
+              buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+              buttonElement.removeAttribute('disabled');
+            }, 2200);
+          }
+        })
+        .withFailureHandler(function(e) {
+          if (buttonElement) {
+            buttonElement.className = 'action-btn';
+            buttonElement.innerHTML = '<span class="material-icons-round">add</span><span>Append</span>';
+            buttonElement.removeAttribute('disabled');
+          }
+          showToast('❌ Append failed: ' + e.message, 'warning');
+        })
+        .appendTextIntoActiveCell(cleanedComment);
+    }
+
+    /**
+     * Copies target generated commentary rows out to the secure local clip matrix.
+     */
+    function copyToClipboard(text, buttonElement) {
+      var cleaned = cleanTextPayload(text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cleaned).then(function() {
+          executeCopyUiSuccess(buttonElement);
+        }).catch(function() {
+          fallbackCopyToClipboard(cleaned, buttonElement);
+        });
+      } else {
+        fallbackCopyToClipboard(cleaned, buttonElement);
+      }
+    }
+
+    function executeCopyUiSuccess(buttonElement) {
+      buttonElement.className = 'action-btn success';
+      buttonElement.innerHTML = '<span class="material-icons-round">done</span><span>Copied!</span>';
+      showToast('Text clip copied to workspace clipboard.', 'success');
+      setTimeout(function() {
+        buttonElement.className = 'action-btn';
+        buttonElement.innerHTML = '<span class="material-icons-round">content_copy</span><span>Copy</span>';
+      }, 2200);
+    }
+
+    function fallbackCopyToClipboard(text, buttonElement) {
+      var el = document.createElement('textarea');
+      el.value = text;
+      el.style.position = 'fixed'; // Keep element completely invisible off canvas view limits
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      try {
+        document.execCommand('copy');
+        executeCopyUiSuccess(buttonElement);
+      } catch (err) {
+        showToast('Clipboard access was blocked.', 'warning');
+      }
+      document.body.removeChild(el);
+    }
+</script>

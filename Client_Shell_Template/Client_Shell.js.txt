@@ -1,21 +1,14 @@
 // =========================================================================
-// HECTECH CLIENT SHELL (this vault project only)
+// HECTECH CLIENT SHELL (Production Ready Sync)
 // =========================================================================
-// Bridge between the Google Sheet and this repo’s vault library.
-// Add exactly one library; identifier must be HecTechVault.
-//
-// Class settings, subject context (CTX_*), and other per-user keys live in
-// THIS project’s Script Properties — not the library’s. The library is
-// hydrated from these properties before each menu action.
-//
-// INSTRUCTIONS:
-// 1. Libraries (+) → paste this vault’s Script ID → latest version.
-// 2. Set Identifier to exactly: HecTechVault
-//
-// Bundled defaults: the library can ship non-secret default Script Property keys. On open,
-// missing/blank keys are filled from the library version (secrets still set per school).
+// Bridge framework between the client Google Sheet and the vault library.
+// Target Identifier: HecTechVault
 // =========================================================================
 
+/**
+ * Hydrates the central library cache with local container properties.
+ * Always fires prior to cross-project execution runs.
+ */
 function _hydrateClientScriptProperties() {
   if (typeof HecTechVault !== 'undefined' && HecTechVault.hydrateClientScriptProperties) {
     HecTechVault.hydrateClientScriptProperties(PropertiesService.getScriptProperties().getProperties());
@@ -23,7 +16,7 @@ function _hydrateClientScriptProperties() {
 }
 
 /**
- * 🟢 REQUIRED PERMISSIONS (DO NOT DELETE)
+ * 🟢 REQUIRED PERMISSIONS MAPPING (Maintains active compilation scopes)
  */
 function _forcePermissions() {
   if (false) {
@@ -37,29 +30,33 @@ function _forcePermissions() {
 }
 
 /**
- * Fills container Script Properties from library-bundled defaults only where a key is
- * missing or empty. Does not overwrite tokens or any non-empty value.
+ * Synchronizes library-bundled defaults safely into local storage parameters
+ * without altering active configuration keys or secret credentials.
  */
 function _applyBundledVaultDefaultsIfMissing() {
   if (typeof HecTechVault === 'undefined' || !HecTechVault.getBundledContainerPropertyDefaults) return;
+  
   var patch = HecTechVault.getBundledContainerPropertyDefaults();
   if (!patch || typeof patch !== 'object') return;
+  
   var props = PropertiesService.getScriptProperties();
   var cur = props.getProperties();
+  var writeBuffer = {};
   var n = 0;
+  
   Object.keys(patch).forEach(function (k) {
     var v = patch[k];
     if (v == null || v === '') return;
     var existing = cur[k];
     if (existing != null && String(existing).trim() !== '') return;
-    props.setProperty(k, String(v));
+    writeBuffer[k] = String(v);
     n++;
   });
+  
   if (n > 0) {
-    var ver = HecTechVault.getBundledContainerDefaultsVersion
-      ? HecTechVault.getBundledContainerDefaultsVersion()
-      : '?';
-    console.log('HecTech: merged ' + n + ' bundled script property default(s) (defaults bundle v' + ver + ').');
+    props.setProperties(writeBuffer); // Optimized atomic batch write operation
+    var ver = HecTechVault.getBundledContainerDefaultsVersion ? HecTechVault.getBundledContainerDefaultsVersion() : '?';
+    console.log('HecTech Master: Populated ' + n + ' baseline default configurations [Bundle v' + ver + '].');
   }
 }
 
@@ -70,19 +67,20 @@ function onOpen() {
     HecTechVault.onOpen();
   } else {
     SpreadsheetApp.getUi().createMenu('HecTech AI 🎓 (Error)')
-      .addItem('⚠️ Library Not Connected', 'showLibraryError')
+      .addItem('⚠️ Library Link Broken', 'showLibraryError')
       .addToUi();
   }
 }
 
 function showLibraryError() {
   SpreadsheetApp.getUi().alert(
-    "Library Connection Error",
-    "Add this vault under Libraries with identifier HecTechVault (exactly one library).",
+    "Critical System Link Disconnected",
+    "Please attach the master engine vault library under project configurations using the target identifier: HecTechVault",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
 
+// --- DYNAMIC MODULE WRAPPERS ---
 function openSettingsSidebar() { _hydrateClientScriptProperties(); HecTechVault.openSettingsSidebar(); }
 function openSubjectContextSidebar() { _hydrateClientScriptProperties(); HecTechVault.openSubjectContextSidebar(); }
 function runCommentGenerator() { _hydrateClientScriptProperties(); HecTechVault.runCommentGenerator(); }
@@ -95,25 +93,31 @@ function runAudit() { _hydrateClientScriptProperties(); HecTechVault.runAudit();
 function runFinalize() { _hydrateClientScriptProperties(); HecTechVault.runFinalize(); }
 function RUN_SYSTEM_READINESS_CHECK() { _hydrateClientScriptProperties(); HecTechVault.RUN_SYSTEM_READINESS_CHECK(); }
 
+// --- REPORT CARD SCRIPT GENERATION FLOWS ---
 function runReportPreview() { _hydrateClientScriptProperties(); HecTechVault.runReportPreview_Client(ScriptApp.getOAuthToken()); }
 function runFullReportBatch() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Client(ScriptApp.getOAuthToken()); }
-function runFullReportBatch_Trigger() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Trigger(); }
 function runMidtermPreview() { _hydrateClientScriptProperties(); HecTechVault.runMidtermPreview_Client(ScriptApp.getOAuthToken()); }
 function runMidtermBatch() { _hydrateClientScriptProperties(); HecTechVault.runMidtermBatch_Client(ScriptApp.getOAuthToken()); }
+
+// 🟢 FIXED: Hydrate property scopes instantly upon background trigger activation to protect state values
+function runFullReportBatch_Trigger() { _hydrateClientScriptProperties(); HecTechVault.runFullReportBatch_Trigger(); }
 function runMidtermBatch_Trigger() { _hydrateClientScriptProperties(); HecTechVault.runMidtermBatch_Trigger(); }
 
+// --- DISTRIBUTION AND INFRASTRUCTURE MANAGEMENT ---
 function runEmailBatch() { _hydrateClientScriptProperties(); HecTechVault.runEmailBatch(); }
 function runWhatsAppBlaster() { _hydrateClientScriptProperties(); HecTechVault.runWhatsAppBlaster(); }
 function runTestWhatsAppTemplate() { _hydrateClientScriptProperties(); HecTechVault.runTestWhatsAppTemplate(); }
 function runTestGemini() { _hydrateClientScriptProperties(); HecTechVault.runTestGemini(); }
 function runResetStatuses() { _hydrateClientScriptProperties(); HecTechVault.runResetStatuses(); }
 function runResetFolderConfig() { _hydrateClientScriptProperties(); HecTechVault.runResetFolderConfig(); }
+function runNuclearCleanup() { _hydrateClientScriptProperties(); HecTechVault.runNuclearCleanup(PropertiesService.getScriptProperties()); }
 function runUndo() { _hydrateClientScriptProperties(); HecTechVault.runUndo(); }
 
 function getSelectionInfo() { _hydrateClientScriptProperties(); return HecTechVault.getSelectionInfo(); }
 function processChunk(action, start, count) { _hydrateClientScriptProperties(); return HecTechVault.processChunk(action, start, count); }
 function toast(msg, title) { return HecTechVault.toast(msg, title); }
 
+// --- DYNAMIC DATA STORAGE EXTRACTORS ---
 function getSettingsData() {
   var map = PropertiesService.getScriptProperties().getProperties();
   var ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
@@ -142,5 +146,22 @@ function getSidebarData() { _hydrateClientScriptProperties(); return HecTechVaul
 function pollCurrentStudent() { _hydrateClientScriptProperties(); return HecTechVault.pollCurrentStudent(); }
 function processGeneralCommentWithTraits(traits, rowIndex) { _hydrateClientScriptProperties(); return HecTechVault.processGeneralCommentWithTraits(traits, rowIndex); }
 function getChatContext() { _hydrateClientScriptProperties(); return HecTechVault.getChatContext(); }
-function getChatResponse(history, message, selectedText, studentContext) { _hydrateClientScriptProperties(); return HecTechVault.getChatResponse(history, message, selectedText, studentContext); }
-function insertTextIntoActiveCell(text) { _hydrateClientScriptProperties(); return HecTechVault.insertTextIntoActiveCell(text); }
+
+// --- CONVERSATIONAL CHATBOT INTEGRATION PORTS ---
+
+// 🟢 FIXED: Complete argument matrix pass ensures isGeneralMode config settings map to central engines safely
+function getChatResponse(history, message, selectedText, studentContext, isGeneralMode) { 
+  _hydrateClientScriptProperties(); 
+  return HecTechVault.getChatResponse(history, message, selectedText, studentContext, isGeneralMode); 
+}
+
+function insertTextIntoActiveCell(text) { 
+  _hydrateClientScriptProperties(); 
+  return HecTechVault.insertTextIntoActiveCell(text); 
+}
+
+// 🟢 FIXED: Bridges UI components seamlessly to support streaming appends on active selections
+function appendTextIntoActiveCell(text) {
+  _hydrateClientScriptProperties();
+  return HecTechVault.appendTextIntoActiveCell(text);
+}

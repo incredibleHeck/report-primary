@@ -1,23 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  
   <style>
+    /* ==========================================
+     * HECTECH 2.0 PREMIUM OBSIDIAN UI MATRIX
+     * SettingsSidebar Core Stylesheet (Dark Theme)
+     * ========================================== */
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --primary-light: #a5b4fc;
-      --primary-bg: rgba(99, 102, 241, 0.08);
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #1e293b;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --radius: 12px;
+      --primary: #8b5cf6;
+      --primary-dark: #6d28d9;
+      --primary-light: #c084fc;
+      --primary-bg: rgba(139, 92, 246, 0.08);
+      --success: #39FF14; /* HecTech Neon Green */
+      --success-bg: rgba(57, 255, 20, 0.08);
+      --warning: #f59e0b;
+      --error: #ff3333;
+      --bg: #09090b; /* Pure space velvet */
+      --surface: #121214; /* Charcoal dark panel canvas */
+      --text: #f4f4f5; /* High-readability silver white */
+      --text-secondary: #a1a1aa; /* Steel gray */
+      --text-muted: #52525b; /* Shadow zinc */
+      --border: #27272a; /* Clean edge borders */
+      --radius: 14px;
       --radius-sm: 8px;
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
     
     * {
@@ -27,22 +39,21 @@
     }
     
     body { 
-      font-family: 'Inter', sans-serif; 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
       padding: 16px; 
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      background: linear-gradient(135deg, #09090b 0%, #121214 100%);
       color: var(--text); 
       min-height: 100vh;
+      overflow-y: auto;
     }
     
     h2 {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       margin-bottom: 16px;
-      color: var(--text);
+      color: #ffffff;
       text-align: center;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.4px;
     }
     
     .card {
@@ -56,177 +67,185 @@
       flex-direction: column;
     }
     
-    /* Tabs styling */
+    /* --- TAB ROUTING CONTROLS --- */
     .tab-header {
       display: flex;
-      background: var(--bg);
+      background: #18181b;
       border-radius: var(--radius-sm);
       padding: 4px;
       margin-bottom: 20px;
       border: 1px solid var(--border);
+      gap: 2px;
     }
     
     .tab-btn {
       flex: 1;
-      padding: 8px 4px;
+      padding: 8px 2px;
       font-size: 11px;
       font-weight: 600;
       text-align: center;
       cursor: pointer;
       border-radius: 6px;
       color: var(--text-secondary);
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       user-select: none;
+      white-space: nowrap;
     }
     
     .tab-btn:hover {
-      color: var(--text);
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.02);
     }
     
     .tab-btn.active {
       background: var(--surface);
-      color: var(--primary-dark);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      color: var(--primary-light);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.03);
     }
     
     .tab-content {
       display: none;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .tab-content.active {
       display: block;
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
+    /* --- FORM ELEMENTS --- */
     .form-group { 
       margin-bottom: 16px; 
     }
     
     label { 
       display: block; 
-      font-size: 11px; 
+      font-size: 10px; 
       font-weight: 700; 
       margin-bottom: 6px; 
       color: var(--text-secondary); 
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
     
     input { 
       width: 100%; 
       padding: 10px 12px; 
-      border: 2px solid var(--border); 
+      border: 1px solid var(--border); 
       border-radius: var(--radius-sm); 
       box-sizing: border-box; 
       font-size: 13px; 
       font-family: inherit; 
-      background: var(--surface);
-      color: var(--text);
-      transition: all 0.2s;
+      background: var(--bg);
+      color: #ffffff;
+      transition: all 0.15s ease;
+      outline: none;
     }
     
     input:focus { 
-      outline: none; 
-      border-color: var(--primary); 
-      box-shadow: 0 0 0 3px var(--primary-bg); 
+      border-color: var(--primary-light); 
+      background: #000000;
+      box-shadow: 0 0 0 2px var(--primary-bg); 
     }
     
+    input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    /* --- SYSTEM BUTTON LAYOUTS --- */
     button { 
       width: 100%; 
-      padding: 14px 20px; 
+      padding: 12px 20px; 
       background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
-      color: white; 
+      color: #ffffff; 
       border: none; 
       border-radius: var(--radius-sm); 
       font-weight: 600; 
+      font-size: 13.5px;
       cursor: pointer; 
-      margin-top: 16px; 
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      margin-top: 8px; 
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
     
     button:hover:not(:disabled) { 
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
-      transform: translateY(-1px);
-    }
-    
-    button:active:not(:disabled) {
-      transform: translateY(0);
+      filter: brightness(1.1);
     }
     
     button:disabled {
-      background: linear-gradient(135deg, var(--text-muted), #cbd5e1);
+      background: #27272a !important;
+      color: var(--text-muted) !important;
       cursor: not-allowed;
-      transform: none;
       box-shadow: none;
     }
     
     #status { 
-      margin-top: 12px; 
+      margin-top: 14px; 
       font-size: 12px; 
       text-align: center; 
-      color: #10b981; 
       font-weight: 600; 
       min-height: 16px; 
+      letter-spacing: 0.2px;
     }
     
     .teacher-section {
       border-top: 1px dashed var(--border); 
       padding-top: 16px;
-      margin-top: 8px;
+      margin-top: 12px;
     }
     
     .teacher-section label {
-      color: var(--primary-dark);
+      color: var(--primary-light);
     }
     
     .hint {
       font-size: 11px; 
-      color: var(--text-muted); 
+      color: var(--text-secondary); 
       margin-top: 6px;
       line-height: 1.4;
     }
     
     .spinner {
       display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
       border-radius: 50%;
-      border-top-color: white;
-      animation: spin 0.8s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
+      border-top-color: #ffffff;
+      animation: spin 0.7s linear infinite;
     }
     
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
+
   <h2>⚙️ Class Settings</h2>
   
   <div class="card">
     <div id="loading" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-      <div class="spinner" style="border-top-color: var(--primary); width: 24px; height: 24px; margin-bottom: 12px;"></div>
-      <div>Loading settings...</div>
+      <div class="spinner" style="border-top-color: var(--primary-light); width: 22px; height: 22px; margin-bottom: 12px;"></div>
+      <div style="font-size: 12px; font-weight: 500;">Ingesting active parameters...</div>
     </div>
     
     <div id="form-content" style="display: none;">
-      <!-- Tab Headers -->
+      
       <div class="tab-header">
         <div class="tab-btn active" onclick="switchTab(event, 'school-tab')">🏫 School</div>
         <div class="tab-btn" onclick="switchTab(event, 'dates-tab')">📅 Dates</div>
-        <div class="tab-btn" onclick="switchTab(event, 'wa-tab')">⚙️ Delivery</div>
+        <div class="tab-btn" onclick="switchTab(event, 'wa-tab')">📱 Delivery</div>
       </div>
       
-      <!-- Tab 1: School Details -->
       <div class="tab-content active" id="school-tab">
         <div class="form-group">
           <label>Class Name</label>
@@ -241,13 +260,12 @@
           <input type="text" id="TERM_YEAR_INFO" placeholder="e.g. Year: 2025 / 2026 Term: ONE (1)">
         </div>
         <div class="form-group teacher-section">
-          <label>👨‍🏫 Class Teacher Name</label>
+          <label>👨🏫 Class Teacher Name</label>
           <input type="text" id="TEACHER_NAME" placeholder="e.g. Mr. John Doe">
-          <div class="hint">This name will be automatically populated into the Report Sheet for all students.</div>
+          <div class="hint">This name writes down your data lines dynamically starting from Row 3 forward across records.</div>
         </div>
       </div>
       
-      <!-- Tab 2: Dates & Attendance -->
       <div class="tab-content" id="dates-tab">
         <div class="form-group">
           <label>Report Date</label>
@@ -271,17 +289,16 @@
         </div>
       </div>
       
-      <!-- Tab 3: Delivery Config -->
       <div class="tab-content" id="wa-tab">
         <div class="form-group">
-          <label style="color: var(--primary-dark);">📱 WhatsApp Template Name</label>
+          <label style="color: var(--primary-light);">📱 WhatsApp Template Name</label>
           <input type="text" id="WHATSAPP_TEMPLATE_NAME" placeholder="e.g. student_report_pdf">
-          <div class="hint">Exact name from Meta WhatsApp Manager.</div>
+          <div class="hint">Must match your approved Meta Developer Account identifier string accurately.</div>
         </div>
         <div class="form-group">
           <label>WhatsApp Template Language</label>
           <input type="text" id="WHATSAPP_TEMPLATE_LANGUAGE" placeholder="e.g. en, en_US, or en_GB">
-          <div class="hint">Must match the language code in Meta exactly.</div>
+          <div class="hint">Locale identification string matching Meta registry criteria.</div>
         </div>
       </div>
       
@@ -295,17 +312,15 @@
       google.script.run
         .withSuccessHandler(populateForm)
         .withFailureHandler(e => {
-            document.getElementById('loading').innerHTML = `<span style="color: #ef4444;">Error loading settings: ${e.message}</span>`;
+            document.getElementById('loading').innerHTML = `<span style="color: var(--error); font-size: 12px; font-weight: 600;">Failed to pull system settings: ${e.message}</span>`;
         })
         .getSettingsData();
     };
 
     function switchTab(event, tabId) {
-      // Deactivate all tabs
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       
-      // Activate clicked tab
       event.currentTarget.classList.add('active');
       document.getElementById(tabId).classList.add('active');
     }
@@ -345,7 +360,7 @@
           btn.innerHTML = 'Save Settings';
           btn.disabled = false;
           const status = document.getElementById('status');
-          status.style.color = '#10b981';
+          status.style.color = 'var(--success)';
           status.innerText = 'Settings saved successfully!';
           setTimeout(() => status.innerText = '', 4000);
         })
@@ -353,7 +368,7 @@
           btn.innerHTML = 'Save Settings';
           btn.disabled = false;
           const status = document.getElementById('status');
-          status.style.color = '#ef4444';
+          status.style.color = 'var(--error)';
           status.innerText = 'Error: ' + e.message;
         })
         .saveSettingsData(settings);

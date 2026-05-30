@@ -1,11 +1,11 @@
 // ==========================================
-// HECTECH GeneralCommentsManager.js
+// HECTECH GeneralCommentsManager.js (Hardened for Dark Theme)
 // ==========================================
 
 const GeneralCommentsManager = {
 
-    // 🟢 STRICT CONFIG: Only these sheets are checked for "Areas of Improvement"
-    SUBJECT_SHEETS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES", "BIBLE KNOWLEDGE"],
+    // 🟢 FILTER: Only these subjects are evaluated for core academic weaknesses
+    ACADEMIC_SUBJECTS: ["ENGLISH", "MATHEMATICS", "SCIENCE", "FRENCH", "COMPUTING", "HUMANITIES", "BIBLE KNOWLEDGE"],
 
     openSidebar: function() {
         const template = HtmlService.createTemplateFromFile('GCSidebar_Main');
@@ -22,8 +22,7 @@ const GeneralCommentsManager = {
         if (!range) return { valid: false };
 
         const row = range.getRow();
-        // 🛡️ Safety: Ensure Config is loaded, default to 3 if not
-        const minRow = 3; // 🟢 HARDCODED for General Comments Sheet which starts on Row 3 
+        const minRow = 3; // General Comments Data starts on Row 3
         
         if (row < minRow) return { valid: false, rowIndex: row }; 
         return { valid: true, rowIndex: row };
@@ -36,26 +35,24 @@ const GeneralCommentsManager = {
             if (!activeRange) return { error: "Please click on a student row." };
             
             const row = activeRange.getRow();
-            const minRow = 3; // 🟢 HARDCODED for General Comments Sheet which starts on Row 3 
+            const minRow = 3; 
 
             if (row < minRow) return { error: `Please select a valid student (Row ${minRow}+).` };
 
             const ss = SpreadsheetApp.getActiveSpreadsheet();
-            // 🛡️ Safety: Hardcoded fallback if Config fails
             const classSheetName = (typeof Config !== 'undefined' && Config.CLASSLIST_SHEET_NAME) ? Config.CLASSLIST_SHEET_NAME : "CLASSLIST";
             const classlist = ss.getSheetByName(classSheetName);
             
             if (!classlist) return { error: `Critical: '${classSheetName}' sheet not found.` };
             
-            // 🟢 HARDENED ROW ALIGNMENT
+            // HARDENED ROW ALIGNMENT
             const subjectDataStart = minRow; 
             const classlistDataStart = 3; 
             const rowOffset = subjectDataStart - classlistDataStart; 
             const classlistRow = row - rowOffset;
 
-            // 🛡️ CRITICAL FIX: Ensure Column Index is a Number
             let nameCol = (typeof Config !== 'undefined' && Config.CLASSLIST_NAME_COL) ? Config.CLASSLIST_NAME_COL : 2;
-            if (!nameCol || isNaN(nameCol)) nameCol = 2; // Fallback to Column B
+            if (!nameCol || isNaN(nameCol)) nameCol = 2; 
 
             const fullName = classlist.getRange(classlistRow, nameCol).getValue(); 
 
@@ -75,7 +72,6 @@ const GeneralCommentsManager = {
     processWithTraits: function(selectedTraits, targetRowIndex) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sheet = ss.getActiveSheet();
-        // 🛡️ Fix: Ensure row is integer
         const row = parseInt(targetRowIndex) || sheet.getActiveRange().getRow();
 
         // 1. GATHER DATA 
@@ -99,12 +95,20 @@ const GeneralCommentsManager = {
                 outputText = outputText.comment || outputText.text || JSON.stringify(outputText);
             }
 
-            // 3. WRITE RESULT
-            const activeCol = sheet.getActiveRange().getColumn();
-            const targetCell = sheet.getRange(row, activeCol);
+            // 3. HARDENED TARGET WRITE-BACK (Finds General Comment Column explicitly)
+            let targetColIndex = Config.getColByName(sheet.getName(), "GENERAL COMMENT", -1);
+            if (targetColIndex === -1) targetColIndex = Config.getColByName(sheet.getName(), "COMMENT", -1);
+            if (targetColIndex === -1) {
+                // Fallback safely to active cell column only if header discovery completely fails
+                targetColIndex = sheet.getActiveRange().getColumn();
+                console.warn("Could not find explicit General Comment column header. Defaulting to selection column.");
+            }
 
+            const targetCell = sheet.getRange(row, targetColIndex);
             targetCell.setValue(outputText);
-            targetCell.setFontColor("#1155CC"); 
+            
+            // 🟢 NEON GREEN INJECTION FOR DARK THEMES
+            targetCell.setFontColor("#39FF14"); 
             targetCell.setFontWeight("bold");
             targetCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
 
@@ -119,12 +123,10 @@ const GeneralCommentsManager = {
         const classSheetName = (typeof Config !== 'undefined' && Config.CLASSLIST_SHEET_NAME) ? Config.CLASSLIST_SHEET_NAME : "CLASSLIST";
         const classlist = ss.getSheetByName(classSheetName);
         
-        // Dynamic Alignment
         const reportFirstRow = (typeof Config !== 'undefined' && Config.REPORT_DATA_FIRST_ROW) ? Config.REPORT_DATA_FIRST_ROW : 3;
         const rowOffset = reportFirstRow - 3;
         const classlistRow = row - rowOffset;
 
-        // Safety: Fallback Columns
         let nameCol = (typeof Config !== 'undefined' && Config.CLASSLIST_NAME_COL) ? Config.CLASSLIST_NAME_COL : 2;
         let genderCol = (typeof Config !== 'undefined' && Config.CLASSLIST_GENDER_COL) ? Config.CLASSLIST_GENDER_COL : 5;
 
@@ -147,14 +149,19 @@ const GeneralCommentsManager = {
         let totalScore = 0;
         let count = 0;
         let weakSubjects = [];
+        let totalAcademicCount = 0;
+        let straightAsCount = 0;
 
         const subjects = (typeof Config !== 'undefined') ? Config.SUBJECT_CONFIG : {};
         for (const subj in subjects) {
+            // Check if subject belongs to clean academic core list
+            const cleanSubjName = subj.toUpperCase().trim();
+            if (this.ACADEMIC_SUBJECTS.indexOf(cleanSubjName) === -1) continue;
+
             const startIdx = subjects[subj].startIdx;
-            // Bound check
             if (reportRowData.length > startIdx + 4) {
-                const scoreVal = reportRowData[startIdx + 3]; // Total 100 (e.g. Col 6 relative to startIdx)
-                const gradeVal = reportRowData[startIdx + 4]; // Grade (e.g. Col 7 relative to startIdx)
+                const scoreVal = reportRowData[startIdx + 3]; 
+                const gradeVal = reportRowData[startIdx + 4]; 
                 
                 if (scoreVal !== "" && !isNaN(scoreVal)) {
                     const numScore = parseFloat(scoreVal);
@@ -164,8 +171,15 @@ const GeneralCommentsManager = {
                 }
 
                 if (gradeVal) {
+                    totalAcademicCount++;
                     const g = String(gradeVal).trim().toUpperCase();
-                    // Below B means C, D, E, U
+                    
+                    // Count absolute top tier metrics for calibration
+                    if (g === "A*" || g === "A") {
+                        straightAsCount++;
+                    }
+                    
+                    // Below B means C, D, E, U (True academic improvement gaps)
                     if (["C", "D", "E", "U"].indexOf(g) !== -1) {
                         weakSubjects.push(subj);
                     }
@@ -181,9 +195,13 @@ const GeneralCommentsManager = {
             else summary.performanceBand = "Below Average";
         }
 
-        // Determine lowestSubjects using weakSubjects list
+        // 🟢 HARDENED CALIBRATION LOGIC: Check for strict profile boundaries
         if (weakSubjects.length === 0) {
-            summary.lowestSubjects = "ALL_EXCELLENT"; 
+            if (straightAsCount === totalAcademicCount && totalAcademicCount > 0) {
+                summary.lowestSubjects = "ALL_EXCELLENT"; // Perfectly triggers straight-A prompt rules
+            } else {
+                summary.lowestSubjects = ""; // Triggers average/steady performer prompt branch
+            }
         } else {
             const bottom = weakSubjects;
             if (bottom.length === 1) {
@@ -201,6 +219,6 @@ const GeneralCommentsManager = {
 // ==========================================
 // GLOBAL HOOKS
 // ==========================================
-function getSidebarData() { return GeneralCommentsManager.getSidebarData(); }
-function pollCurrentStudent() { return GeneralCommentsManager.pollCurrentStudent(); }
-function processGeneralCommentWithTraits(traits, rowIndex) { return GeneralCommentsManager.processWithTraits(traits, rowIndex); }
+function getSidebarData() { verifyLicenseAuthorization(); return GeneralCommentsManager.getSidebarData(); }
+function pollCurrentStudent() { verifyLicenseAuthorization(); return GeneralCommentsManager.pollCurrentStudent(); }
+function processGeneralCommentWithTraits(traits, rowIndex) { verifyLicenseAuthorization(); return GeneralCommentsManager.processWithTraits(traits, rowIndex); }

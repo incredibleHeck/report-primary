@@ -1,5 +1,5 @@
 // ==========================================
-// HECTECH PromptGenerateSubject.js (Updated)
+// HECTECH PromptGenerateSubject.js (Production Ready)
 // ==========================================
 
 const PromptGenerateSubject = {
@@ -36,13 +36,13 @@ const PromptGenerateSubject = {
     - You are STRICTLY FORBIDDEN from reusing unique multi-word descriptive phrases across different students in this JSON array. 
     - Vary your vocabulary constantly (e.g., alternate between: cheerful attitude, high enthusiasm, wonderful focus, great dedication, fantastic energy). Every single comment must sound individually tailored.
 
-    // GHANA REPORT TONE & CLOSING STRATEGY (UPDATED):
+    // GHANA REPORT TONE & CLOSING STRATEGY:
     - Write the way a real class teacher in a standard Ghanaian school would write to a parent. Use short, warm, conversational sentences. Simple, natural English only.
     - STUDENT NAME ONLY: Refer to the student by their name (e.g. "Kofi" or "Yaa") or standard pronouns ("he", "she"). Do NOT prefix their name with "your child" or "your ward".
-    - DYNAMIC CLOSING SENTENCE: The final sentence of the comment must wrap up the review naturally. You MUST vary your closing strategy across the batch based on the student's needs:
+    - DYNAMIC CLOSING SENTENCE: The final sentence of the comment must wrap up the review naturally. It MUST ALWAYS be at the end. You MUST vary your closing strategy across the batch based on the student's needs:
       1. [High Achievers / [80-100]]: End with pure praise, celebration, or a future-facing nudge (e.g., "He is a true credit to the class and should keep shining.", "I am confident she will maintain this wonderful momentum next term."). Do NOT give parents action chores for top-performing students.
       2. [Average / Steady Achievers / [60-79]]: End with an encouraging independent goal or a light motivational push (e.g., "Aiming for more consistency will help him reach the top marks.", "Staying active in class discussions will help to stretch her abilities.").
-      3. [Struggling Achievers / [0-59]]: End with a direct parent-partnership appeal (e.g., "Kindly assist him at home with daily counting exercises.", "Please support her to revise her computing notes at home.").
+      3. [Struggling Achievers / [0-59]]: End with a direct parent-partnership appeal. Do NOT start every recommendation with "Please". Mix it up dynamically (e.g., "Kindly assist him at home with daily counting exercises.", "I encourage you to support her revision at home.", "It will help if you guide her through her computing notes.").
     - Detached, cold third-person declarations (e.g., "He must study harder.") are still strictly banned. Every closure must sound warm and supportive.
 
     // STRICT JARGON BAN:
@@ -108,17 +108,17 @@ const PromptGenerateSubject = {
         // ==================================================
         // 3. FEW-SHOT TRAINING EXAMPLES (RADICALLY VARIED STRUCTURES)
         // ==================================================
-        Look closely at how these examples use completely different sentence layouts and flows. Do NOT use a single rigid template for the batch:
+        Look closely at how these examples use completely different sentence layouts and flows. Alternate where the club names or topics appear. Do NOT use a single rigid template for the batch:
         
-        - Example 1 (Excellent / [90-100]) - Structure: Direct Praise -> Detail -> Next Step Action
+        - Example 1 (Excellent / [90-100]) - Structure: Direct Praise -> Detail -> Next Step Celebration
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 95, "subject": "Coding Club" }
           Output: "Kofi is very fast and shows great technique with logic during our Coding Club sessions. He works with real focus. Please encourage him to keep expanding his programming skills at home."
         
-        - Example 2 (Good / [70-79]) - Structure: Trait -> Focus Area -> Recommendation
+        - Example 2 (Good / [70-79]) - Structure: Trait First -> Focus Area -> Closing Nudge
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 75, "subject": "Arts Club" }
-          Output: "Yaa has a creative eye and is learning fine drawing steps in Arts Club. I encourage you to support her talents."
+          Output: "Possessing a creative eye, Yaa is learning fine drawing steps in Arts Club. Staying focused during group exercises will help to expand her talents."
         
-        - Example 3 (Struggling / [40-49]) - Structure: Direct Action Request -> Observation -> Support
+        - Example 3 (Struggling / [40-49]) - Structure: Observation -> Detail -> Parent Partnership Action
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 45, "subject": "Chess Club" }
           Output: "Kwame is finding the patience and planning required in Chess Club quite challenging this term. He often struggles to remain focused when planning his moves. Please help him practice staying patient at home."
 
@@ -132,10 +132,6 @@ const PromptGenerateSubject = {
         [50-59] PASSIVE: Quiet or hesitant. Nudge to join in more and build confidence.
         [40-49] STRUGGLING: Rarely joins in or finds coordination hard. Extra basic practice basics.
         [0-39] URGENT: Often not prepared or not taking part. Needs a plan with parents.
-
-        STRUCTURAL VARIETY RULES:
-        - Do NOT start every parent recommendation with the word "Please". Mix it up using phrases like "Kindly assist...", "I encourage you to...", "It will help if you...", or "I advise you to...".
-        - Alternate where the club names or topics appear.
 
         STUDENT DATA: 
         ${JSON.stringify(data)}
@@ -164,17 +160,17 @@ const PromptGenerateSubject = {
         // ==================================================
         // 3. FEW-SHOT TRAINING EXAMPLES (RADICALLY VARIED STRUCTURES)
         // ==================================================
-        Look closely at how these examples use completely different sentence layouts and flows. Do NOT use a single rigid template for the batch:
+        Look closely at how these examples use completely different sentence layouts and flows. Alternate where the topics appear. Do NOT use a single rigid template for the batch:
 
         - Example 1 (Excellent / [90-100]) - Structure: Focus/Behavior -> Topics -> Action
           Input: { "id": "0", "name": "Kofi", "gender": "Male", "score": 92, "subject": "Mathematics" }
           Output: "With his excellent classroom focus, Kofi handles complex fraction and decimal exercises with total ease. He is doing very well. Kindly challenge him to keep aiming for top marks next term."
         
-        - Example 2 (Inconsistent / [60-69]) - Structure: Struggle Warning -> Topics -> Parent Remedy
+        - Example 2 (Inconsistent / [60-69]) - Structure: Struggle Warning -> Topics -> Closing Motivation
           Input: { "id": "1", "name": "Yaa", "gender": "Female", "score": 65, "subject": "Science" }
-          Output: "Rushing through classwork often prevents Yaa from showing her true potential in plant topics. I advise helping her revise her notes."
+          Output: "Rushing through classwork often prevents Yaa from showing her true potential in plant topics. Aiming for more consistency will help her reach the top marks."
         
-        - Example 3 (Struggling / [40-49]) - Structure: Direct Appeal -> Topics -> Encouragement
+        - Example 3 (Struggling / [40-49]) - Structure: Observation -> Inner Struggle -> Parent Partnership Appeal
           Input: { "id": "2", "name": "Kwame", "gender": "Male", "score": 42, "subject": "English" }
           Output: "Kwame is finding standard grammar and spelling exercises quite difficult to grasp this term. Identifying basic nouns and pronouns without close supervision remains a struggle. Please guide him through daily revision at home."
 
@@ -188,10 +184,6 @@ const PromptGenerateSubject = {
         [50-59] BELOW AVERAGE: Some topics hard. Needs steady practice to catch up.
         [40-49] STRUGGLING: Big gaps. Review older topics and ask for extra help.
         [0-39] CRITICAL: Very far behind. Needs a clear support plan with parents at home.
-        
-        STRUCTURAL VARIETY RULES:
-        - Do NOT start every parent recommendation with the word "Please". Mix it up using phrases like "Kindly assist...", "I encourage you to...", "It will help if you...", or "I advise you to...".
-        - Alternate where the topics appear.
         
         STUDENT DATA: 
         ${JSON.stringify(data)}

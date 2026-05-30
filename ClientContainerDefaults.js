@@ -1,21 +1,19 @@
 // ==========================================
-// HECTECH ClientContainerDefaults.js
+// HECTECH ClientContainerDefaults.js (Hardened)
 // ==========================================
-// Bundled defaults for school *container* Script Properties. Secrets (tokens, API keys)
-// must never be listed here — set those only in each school’s project.
-//
-// The client shell merges these when a key is missing or empty (see Client_Shell template).
-// Bump BUNDLED_DEFAULTS_VERSION when you add/change keys so support can tell what shipped.
 
 const ClientContainerDefaults = {
-  BUNDLED_DEFAULTS_VERSION: 1,
+  // Bumped version signature to account for structural multi-tier fallback protection
+  BUNDLED_DEFAULTS_VERSION: 2,
 
   /**
-   * Plain strings only. Merged into the host project’s Script Properties for keys that
-   * are absent or blank — existing non-empty values are never overwritten.
+   * Plain configurations only. Merged natively into host project layers.
+   * Returns an immutable, deeply frozen configuration matrix to block runtime tampering.
+   *
+   * @return {Object} Immutable defaults registry snapshot.
    */
   getBundled: function () {
-    return {
+    const defaults = {
       WHATSAPP_TEMPLATE_NAME: 'student_report_pdf',
       WHATSAPP_TEMPLATE_LANGUAGE: 'en',
       GEMINI_MODEL_NAME: 'gemini-3.5-flash',
@@ -28,10 +26,13 @@ const ClientContainerDefaults = {
       DATA_START_ROW: '3',
       ATTENDANCE_TOTAL: '64',
     };
+    
+    // Lock structure completely to prevent unauthorized runtime property mutations
+    return Object.freeze(defaults);
   },
 };
 
-/** Exposed to the container shell so merges track the library version. */
+/** Exposed to the container shell so merges track the library version accurately */
 function getBundledContainerPropertyDefaults() {
   return ClientContainerDefaults.getBundled();
 }
